@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcUnitController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
@@ -22,6 +23,9 @@ Route::get('/', function () {
     }
     return view('home');
 })->name('home');
+
+// Contact form route (public, no auth required)
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 // Operations system route - redirects to login or dashboard
 Route::get('/ops', function () {
