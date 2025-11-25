@@ -7,6 +7,7 @@ use App\Models\InventoryItem;
 use App\Models\Job;
 use App\Models\PettyCash;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -23,34 +24,34 @@ class DashboardController extends Controller
 
         // Jobs this week (with sales - created this week)
         $jobsThisWeek = Job::where('total_amount', '>', 0)
-            ->whereRaw('created_at >= ?', [$startOfWeek->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp", [$startOfWeek->toDateTimeString()])
             ->count();
 
         // Jobs this month (with sales - created this month)
         $jobsThisMonth = Job::where('total_amount', '>', 0)
-            ->whereRaw('created_at >= ?', [$startOfMonth->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
             ->count();
 
         // Sales today (jobs created today with total_amount > 0)
         $salesToday = Job::where('total_amount', '>', 0)
-            ->whereRaw('created_at >= ? AND created_at <= ?', [$startOfDay->toDateTimeString(), $endOfDay->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp AND created_at <= ?::timestamp", [$startOfDay->toDateTimeString(), $endOfDay->toDateTimeString()])
             ->sum('total_amount');
 
         // Sales this month (jobs created this month with total_amount > 0)
         $salesThisMonth = Job::where('total_amount', '>', 0)
-            ->whereRaw('created_at >= ?', [$startOfMonth->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
             ->sum('total_amount');
 
         // Sales this month - AC jobs
         $salesThisMonthAC = Job::where('total_amount', '>', 0)
             ->where('job_type', 'ac')
-            ->whereRaw('created_at >= ?', [$startOfMonth->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
             ->sum('total_amount');
 
         // Sales this month - Moto jobs
         $salesThisMonthMoto = Job::where('total_amount', '>', 0)
             ->where('job_type', 'moto')
-            ->whereRaw('created_at >= ?', [$startOfMonth->toDateTimeString()])
+            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
             ->sum('total_amount');
 
         // Total inventory items (active, non-service)
