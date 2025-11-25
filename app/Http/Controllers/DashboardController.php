@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\InventoryItem;
 use App\Models\Job;
+use App\Models\Payment;
 use App\Models\PettyCash;
 use Carbon\Carbon;
 
@@ -31,28 +32,25 @@ class DashboardController extends Controller
             ->where('created_at', '>=', Job::formatCreatedAtForQuery($startOfMonth))
             ->count();
 
-        // Sales today (jobs created today with total_amount > 0)
-        $salesToday = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', Job::formatCreatedAtForQuery($startOfDay))
-            ->where('created_at', '<=', Job::formatCreatedAtForQuery($endOfDay))
-            ->sum('total_amount');
+        // Sales today (payments received today)
+        $salesToday = Payment::whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->sum('amount');
 
-        // Sales this month (jobs created this month with total_amount > 0)
-        $salesThisMonth = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', Job::formatCreatedAtForQuery($startOfMonth))
-            ->sum('total_amount');
+        // Sales this month (payments received this month)
+        $salesThisMonth = Payment::where('created_at', '>=', $startOfMonth)
+            ->sum('amount');
 
-        // Sales this month - AC jobs
-        $salesThisMonthAC = Job::where('total_amount', '>', 0)
-            ->where('job_type', 'ac')
-            ->where('created_at', '>=', Job::formatCreatedAtForQuery($startOfMonth))
-            ->sum('total_amount');
+        // Sales this month - AC jobs (payments for AC jobs)
+        $salesThisMonthAC = Payment::where('payments.created_at', '>=', $startOfMonth)
+            ->join('jobs', 'payments.job_id', '=', 'jobs.id')
+            ->where('jobs.job_type', 'ac')
+            ->sum('payments.amount');
 
-        // Sales this month - Moto jobs
-        $salesThisMonthMoto = Job::where('total_amount', '>', 0)
-            ->where('job_type', 'moto')
-            ->where('created_at', '>=', Job::formatCreatedAtForQuery($startOfMonth))
-            ->sum('total_amount');
+        // Sales this month - Moto jobs (payments for Moto jobs)
+        $salesThisMonthMoto = Payment::where('payments.created_at', '>=', $startOfMonth)
+            ->join('jobs', 'payments.job_id', '=', 'jobs.id')
+            ->where('jobs.job_type', 'moto')
+            ->sum('payments.amount');
 
         // Total inventory items (active, non-service)
         $totalInventoryItems = InventoryItem::active()
