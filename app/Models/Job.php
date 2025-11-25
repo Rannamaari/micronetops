@@ -15,6 +15,44 @@ class Job extends Model
      */
     public $timestamps = false;
 
+    /**
+     * Check if created_at is stored as integer (Unix timestamp).
+     * Cache the result to avoid repeated checks.
+     */
+    protected static $createdAtIsInteger = null;
+
+    public static function createdAtIsInteger(): bool
+    {
+        if (static::$createdAtIsInteger === null) {
+            try {
+                // Check if any existing job has an integer created_at
+                $sample = static::orderBy('id', 'desc')->first();
+                if ($sample && isset($sample->attributes['created_at'])) {
+                    $value = $sample->attributes['created_at'];
+                    static::$createdAtIsInteger = is_numeric($value) && $value > 1000000000;
+                } else {
+                    // Default to false (timestamp column)
+                    static::$createdAtIsInteger = false;
+                }
+            } catch (\Exception $e) {
+                static::$createdAtIsInteger = false;
+            }
+        }
+        return static::$createdAtIsInteger;
+    }
+
+    /**
+     * Convert datetime to the format needed for created_at queries.
+     */
+    public static function formatCreatedAtForQuery($datetime)
+    {
+        if (!($datetime instanceof \DateTimeInterface)) {
+            $datetime = \Carbon\Carbon::parse($datetime);
+        }
+
+        return static::createdAtIsInteger() ? $datetime->timestamp : $datetime;
+    }
+
     protected $fillable = [
         'job_type',
         'job_category',
