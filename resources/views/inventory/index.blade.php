@@ -24,8 +24,14 @@
             </div>
 
             @if (session('success'))
-                <div class="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3 text-sm text-green-600 dark:text-green-400">
-                    {{ session('success') }}
+                <div class="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3 text-sm text-green-600 dark:text-green-400 flex justify-between items-center">
+                    <span>{{ session('success') }}</span>
+                    @if (session('item_id'))
+                        <a href="{{ route('inventory.show', session('item_id')) }}"
+                           class="ml-4 text-xs font-medium text-green-700 dark:text-green-300 hover:underline whitespace-nowrap">
+                            View Item →
+                        </a>
+                    @endif
                 </div>
             @endif
 
@@ -38,6 +44,24 @@
             {{-- Filters --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 mb-4">
                 <form method="GET" action="{{ route('inventory.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {{-- Search --}}
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+                        <div class="flex gap-2">
+                            <input type="text"
+                                   name="search"
+                                   value="{{ $search ?? '' }}"
+                                   placeholder="Search by name, SKU, or brand..."
+                                   class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @if($search ?? false)
+                                <a href="{{ route('inventory.index') }}"
+                                   class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none">
+                                    Clear Search
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category Type</label>
                         <select name="category_type" class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -149,7 +173,12 @@
                                 @endif
                             </td>
                             <td class="px-4 py-4 text-right text-xs text-gray-600 dark:text-gray-400">
-                                {{ number_format($item->cost_price, 2) }} MVR
+                                @if($item->has_gst)
+                                    {{ number_format($item->cost_price_with_gst, 2) }} MVR
+                                    <div class="text-[10px] text-gray-400">(incl. 8% GST)</div>
+                                @else
+                                    {{ number_format($item->cost_price, 2) }} MVR
+                                @endif
                             </td>
                             <td class="px-4 py-4 text-right text-xs font-medium text-gray-900 dark:text-gray-100">
                                 {{ number_format($item->sell_price, 2) }} MVR

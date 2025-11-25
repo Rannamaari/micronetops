@@ -57,7 +57,65 @@ class PettyCashController extends Controller
         // Reverse to show newest first (most recent at top)
         $ledgerWithBalance = array_reverse($ledgerWithBalance);
 
-        return view('petty_cash.index', compact('entries', 'balance', 'status', 'type', 'ledgerWithBalance'));
+        // Limit to last 10 transactions for display on main page
+        $ledgerWithBalanceLimited = array_slice($ledgerWithBalance, 0, 10);
+        $hasMoreTransactions = count($ledgerWithBalance) > 10;
+
+        return view('petty_cash.index', compact('entries', 'balance', 'status', 'type', 'ledgerWithBalanceLimited', 'hasMoreTransactions'));
+    }
+
+    /** Show full transaction history with pagination */
+    public function history(Request $request)
+    {
+        $balance = PettyCash::currentBalance();
+        $perPage = 50; // Show 50 transactions per page
+        $currentPage = $request->get('page', 1);
+
+        // Get all approved entries for calculating running balances
+        $allLedgerEntries = PettyCash::with(['user', 'approver'])
+            ->where('status', 'approved')
+            ->orderBy('paid_at', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // Calculate running balance for ALL entries (needed for accurate balances)
+        $runningBalance = 0;
+        $allLedgerWithBalance = [];
+
+        foreach ($allLedgerEntries as $entry) {
+            if ($entry->type === 'topup') {
+                $runningBalance += $entry->amount;
+            } else {
+                $runningBalance -= $entry->amount;
+            }
+
+            $allLedgerWithBalance[] = [
+                'entry' => $entry,
+                'balance_after' => $runningBalance,
+            ];
+        }
+
+        // Reverse to show newest first
+        $allLedgerWithBalance = array_reverse($allLedgerWithBalance);
+
+        // Create manual pagination
+        $total = count($allLedgerWithBalance);
+        $lastPage = (int) ceil($total / $perPage);
+        $currentPage = max(1, min($currentPage, $lastPage));
+        $offset = ($currentPage - 1) * $perPage;
+
+        $ledgerWithBalance = array_slice($allLedgerWithBalance, $offset, $perPage);
+
+        // Create pagination object
+        $pagination = new \Illuminate\Pagination\LengthAwarePaginator(
+            $ledgerWithBalance,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('petty_cash.history', compact('balance', 'pagination'));
     }
 
     /** Show form to create topup / expense (we'll use inline forms on index later if you prefer) */

@@ -22,11 +22,13 @@ class InventoryItem extends Model
         'low_stock_limit',
         'is_active',
         'is_service',
+        'has_gst',
     ];
 
     protected $casts = [
         'is_active'  => 'boolean',
         'is_service' => 'boolean',
+        'has_gst'    => 'boolean',
     ];
 
     public function inventoryCategory()
@@ -88,5 +90,24 @@ class InventoryItem extends Model
             return false;
         }
         return $this->quantity <= $this->low_stock_limit;
+    }
+
+    /**
+     * Calculate GST amount (8%) on cost price
+     */
+    public function getGstAmountAttribute(): float
+    {
+        if (!$this->has_gst) {
+            return 0;
+        }
+        return round((float) $this->cost_price * 0.08, 2);
+    }
+
+    /**
+     * Get cost price including GST
+     */
+    public function getCostPriceWithGstAttribute(): float
+    {
+        return round((float) $this->cost_price + $this->gst_amount, 2);
     }
 }

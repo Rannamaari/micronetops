@@ -7,12 +7,34 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-4 lg:px-8">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     All Customers
                 </h3>
+
+                {{-- Search Bar --}}
+                <div class="flex flex-1 max-w-md gap-2">
+                    <form method="GET" action="{{ route('customers.index') }}" class="flex-1 flex gap-2">
+                        <input type="text"
+                               name="search"
+                               value="{{ $search ?? '' }}"
+                               placeholder="Search by name, phone, email, or address..."
+                               class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <button type="submit"
+                                class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:outline-none">
+                            Search
+                        </button>
+                        @if($search ?? false)
+                            <a href="{{ route('customers.index') }}"
+                               class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none">
+                                Clear
+                            </a>
+                        @endif
+                    </form>
+                </div>
+
                 <a href="{{ route('customers.create') }}"
-                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
+                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none whitespace-nowrap">
                     + New Customer
                 </a>
             </div>

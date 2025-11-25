@@ -25,13 +25,21 @@
                 </div>
 
                 {{-- Ledger History --}}
-                @if(count($ledgerWithBalance) > 0)
+                @if(count($ledgerWithBalanceLimited) > 0)
                     <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-                            Transaction History (Calculator Style)
-                        </h4>
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                                Transaction History (Last 10)
+                            </h4>
+                            @if($hasMoreTransactions)
+                                <a href="{{ route('petty-cash.history') }}"
+                                   class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                                    View All History →
+                                </a>
+                            @endif
+                        </div>
                         <div class="space-y-1.5 max-h-80 overflow-y-auto bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                            @foreach($ledgerWithBalance as $ledgerItem)
+                            @foreach($ledgerWithBalanceLimited as $ledgerItem)
                                 @php
                                     $entry = $ledgerItem['entry'];
                                     $balanceAfter = $ledgerItem['balance_after'];

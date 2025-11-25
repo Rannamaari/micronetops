@@ -8,15 +8,26 @@ use Illuminate\Http\Request;
 class CustomerController extends Controller
 {
     /**
-     * List customers.
+     * List customers with search.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::with('vehicles')
-            ->orderBy('name')
-            ->paginate(20);
+        $search = $request->get('search');
 
-        return view('customers.index', compact('customers'));
+        $query = Customer::with('vehicles');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('phone', 'ilike', "%{$search}%")
+                  ->orWhere('email', 'ilike', "%{$search}%")
+                  ->orWhere('address', 'ilike', "%{$search}%");
+            });
+        }
+
+        $customers = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        return view('customers.index', compact('customers', 'search'));
     }
 
     /**

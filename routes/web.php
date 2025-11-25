@@ -84,6 +84,7 @@ Route::middleware('auth')->group(function () {
 
     // Petty Cash - All authenticated users can view and create
     Route::get('petty-cash', [PettyCashController::class, 'index'])->name('petty-cash.index');
+    Route::get('petty-cash/history', [PettyCashController::class, 'history'])->name('petty-cash.history');
     Route::get('petty-cash/create', [PettyCashController::class, 'create'])->name('petty-cash.create');
     Route::post('petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
 

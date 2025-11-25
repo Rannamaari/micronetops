@@ -92,8 +92,24 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Cost Price (MVR) <span class="text-red-500">*</span>
                             </label>
-                            <input type="number" step="0.01" name="cost_price" value="{{ old('cost_price', $inventoryItem->cost_price) }}" required min="0"
+                            <input type="number" step="0.01" name="cost_price" id="cost_price" value="{{ old('cost_price', $inventoryItem->cost_price) }}" required min="0"
                                    class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <div id="gst-info" class="mt-2 text-xs text-gray-600 dark:text-gray-400 hidden">
+                                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-2">
+                                    <div class="flex justify-between">
+                                        <span>Cost Price:</span>
+                                        <span id="display-cost-price">MVR 0.00</span>
+                                    </div>
+                                    <div class="flex justify-between font-medium text-blue-600 dark:text-blue-400">
+                                        <span>GST (8%):</span>
+                                        <span id="display-gst">MVR 0.00</span>
+                                    </div>
+                                    <div class="flex justify-between font-bold border-t border-blue-200 dark:border-blue-700 pt-1 mt-1">
+                                        <span>Total with GST:</span>
+                                        <span id="display-total">MVR 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -137,6 +153,20 @@
                         </div>
 
                         <div class="md:col-span-2">
+                            <input type="hidden" name="has_gst" value="0">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="has_gst" value="1" {{ old('has_gst', $inventoryItem->has_gst) ? 'checked' : '' }}
+                                       id="has_gst"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Include 8% GST in cost price</span>
+                            </label>
+                            <p class="ml-6 mt-1 text-xs text-gray-500 dark:text-gray-400">Check this if the item purchase requires GST calculation</p>
+                            @error('has_gst')
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="md:col-span-2">
                             <input type="hidden" name="is_active" value="0">
                             <label class="flex items-center">
                                 <input type="checkbox" name="is_active" value="1" {{ old('is_active', $inventoryItem->is_active) ? 'checked' : '' }}
@@ -165,6 +195,7 @@
     </div>
 
     <script>
+        // Handle service checkbox
         document.getElementById('is_service').addEventListener('change', function() {
             const quantityField = document.getElementById('quantity-field');
             const lowStockField = document.getElementById('low-stock-field');
@@ -178,6 +209,37 @@
         });
         // Trigger on page load
         document.getElementById('is_service').dispatchEvent(new Event('change'));
+
+        // Handle GST calculations
+        const hasGstCheckbox = document.getElementById('has_gst');
+        const costPriceInput = document.getElementById('cost_price');
+        const gstInfo = document.getElementById('gst-info');
+        const displayCostPrice = document.getElementById('display-cost-price');
+        const displayGst = document.getElementById('display-gst');
+        const displayTotal = document.getElementById('display-total');
+
+        function calculateGst() {
+            const hasGst = hasGstCheckbox.checked;
+            const costPrice = parseFloat(costPriceInput.value) || 0;
+
+            if (hasGst && costPrice > 0) {
+                const gstAmount = costPrice * 0.08;
+                const totalWithGst = costPrice + gstAmount;
+
+                displayCostPrice.textContent = 'MVR ' + costPrice.toFixed(2);
+                displayGst.textContent = 'MVR ' + gstAmount.toFixed(2);
+                displayTotal.textContent = 'MVR ' + totalWithGst.toFixed(2);
+                gstInfo.classList.remove('hidden');
+            } else {
+                gstInfo.classList.add('hidden');
+            }
+        }
+
+        hasGstCheckbox.addEventListener('change', calculateGst);
+        costPriceInput.addEventListener('input', calculateGst);
+
+        // Trigger on page load
+        calculateGst();
     </script>
 </x-app-layout>
 

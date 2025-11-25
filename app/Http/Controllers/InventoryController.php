@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 class InventoryController extends Controller
 {
     /**
-     * List inventory items with filters
+     * List inventory items with filters and search
      */
     public function index(Request $request)
     {
@@ -24,6 +24,16 @@ class InventoryController extends Controller
         $itemType = $request->query('item_type', 'all'); // service, parts, all
         $status = $request->query('status', 'all'); // active, inactive, all
         $categoryId = $request->query('category_id', 'all'); // specific category
+        $search = $request->query('search'); // search term
+
+        // Search
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('sku', 'ilike', "%{$search}%")
+                  ->orWhere('brand', 'ilike', "%{$search}%");
+            });
+        }
 
         if ($categoryType !== 'all') {
             $query->ofCategory($categoryType);
@@ -49,7 +59,7 @@ class InventoryController extends Controller
 
         $categories = InventoryCategory::active()->orderBy('name')->get();
 
-        return view('inventory.index', compact('items', 'categories', 'categoryType', 'itemType', 'status', 'categoryId'));
+        return view('inventory.index', compact('items', 'categories', 'categoryType', 'itemType', 'status', 'categoryId', 'search'));
     }
 
     /**
@@ -102,11 +112,12 @@ class InventoryController extends Controller
             $validated['quantity'] = 0;
         }
 
-        InventoryItem::create($validated);
+        $item = InventoryItem::create($validated);
 
         return redirect()
             ->route('inventory.index')
-            ->with('success', 'Inventory item created successfully.');
+            ->with('success', "Inventory item '{$item->name}' created successfully.")
+            ->with('item_id', $item->id);
     }
 
     /**
@@ -170,7 +181,8 @@ class InventoryController extends Controller
 
         return redirect()
             ->route('inventory.index')
-            ->with('success', 'Inventory item updated successfully.');
+            ->with('success', "Inventory item '{$inventory->name}' updated successfully.")
+            ->with('item_id', $inventory->id);
     }
 
     /**

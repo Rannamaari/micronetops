@@ -198,6 +198,38 @@
     <div class="mt-6 text-xs">
         Thank you for choosing {{ $brand['name'] }}.
     </div>
+
+    {{-- Payment Details Footer --}}
+    <div class="mt-6" style="border-top: 2px solid #e5e7eb; padding-top: 15px;">
+        <div class="text-sm font-bold mb-2">Payment Details</div>
+        <div class="text-xs mb-1">
+            <strong>Bank Transfer:</strong>
+            @if($job->job_type === 'ac')
+                7730000785866
+            @else
+                7730000140010
+            @endif
+        </div>
+        <div class="text-xs mb-1">
+            <strong>Account Name:</strong>
+            @if($job->job_type === 'ac')
+                Hussain M. Ibrahim
+            @else
+                Micronet
+            @endif
+        </div>
+        <div class="text-xs mb-3">
+            After payment, please WhatsApp the receipt to <strong>9996210</strong> for confirmation.
+        </div>
+
+        <div class="text-sm font-bold mb-2">Payment Terms</div>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+            <li class="text-xs">Payment is due upon receipt of invoice.</li>
+            <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
+            <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
+            <li class="text-xs">Late or pending payments may delay future service appointments.</li>
+        </ul>
+    </div>
 </div>
 </body>
 </html>
