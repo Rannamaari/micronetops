@@ -23,29 +23,29 @@ class RoadWorthinessReportController extends Controller
         // Expired vehicles
         $expired = Vehicle::with('customer')
             ->whereNotNull('road_worthiness_expires_at')
-            ->where('road_worthiness_expires_at', '<', now())
+            ->where('road_worthiness_expires_at', '<', now()->toDateTimeString())
             ->orderBy('road_worthiness_expires_at', 'desc')
             ->get();
 
         // Expiring soon (within 30 days)
         $expiringSoon = Vehicle::with('customer')
             ->whereNotNull('road_worthiness_expires_at')
-            ->where('road_worthiness_expires_at', '>=', now())
-            ->where('road_worthiness_expires_at', '<=', now()->addDays(30))
+            ->where('road_worthiness_expires_at', '>=', now()->toDateTimeString())
+            ->where('road_worthiness_expires_at', '<=', now()->addDays(30)->toDateTimeString())
             ->orderBy('road_worthiness_expires_at', 'asc')
             ->get();
 
         // Expiring this month
         $expiringThisMonth = Vehicle::with('customer')
             ->whereNotNull('road_worthiness_expires_at')
-            ->whereBetween('road_worthiness_expires_at', [$startOfMonth, $endOfMonth])
+            ->whereBetween('road_worthiness_expires_at', [$startOfMonth->toDateTimeString(), $endOfMonth->toDateTimeString()])
             ->orderBy('road_worthiness_expires_at', 'asc')
             ->get();
 
         // Recently issued (this month)
         $recentlyIssued = Vehicle::with('customer')
             ->whereNotNull('road_worthiness_created_at')
-            ->whereBetween('road_worthiness_created_at', [$startOfMonth, $endOfMonth])
+            ->whereBetween('road_worthiness_created_at', [$startOfMonth->toDateTimeString(), $endOfMonth->toDateTimeString()])
             ->orderBy('road_worthiness_created_at', 'desc')
             ->get();
 

@@ -42,12 +42,12 @@ class JobController extends Controller
                 case 'previous_month':
                     $firstDayPreviousMonth = $now->copy()->subMonth()->startOfMonth();
                     $firstDayCurrentMonth = $now->copy()->startOfMonth();
-                    $query->where('created_at', '>=', $firstDayPreviousMonth)
-                        ->where('created_at', '<', $firstDayCurrentMonth);
+                    $query->where('created_at', '>=', $firstDayPreviousMonth->toDateTimeString())
+                        ->where('created_at', '<', $firstDayCurrentMonth->toDateTimeString());
                     break;
                 case 'current_month':
                     $firstDayCurrentMonth = $now->copy()->startOfMonth();
-                    $query->where('created_at', '>=', $firstDayCurrentMonth);
+                    $query->where('created_at', '>=', $firstDayCurrentMonth->toDateTimeString());
                     break;
             }
         }
