@@ -25,13 +25,25 @@ class Job extends Model
     {
         if (static::$createdAtIsInteger === null) {
             try {
-                // Check if any existing job has an integer created_at
-                $sample = static::orderBy('id', 'desc')->first();
-                if ($sample && isset($sample->attributes['created_at'])) {
-                    $value = $sample->attributes['created_at'];
-                    static::$createdAtIsInteger = is_numeric($value) && $value > 1000000000;
+                // Check the actual column type from the database
+                $connection = \Illuminate\Support\Facades\DB::connection();
+                $table = (new static)->getTable();
+
+                if ($connection->getDriverName() === 'pgsql') {
+                    $result = $connection->selectOne(
+                        "SELECT data_type FROM information_schema.columns
+                         WHERE table_name = ? AND column_name = 'created_at'",
+                        [$table]
+                    );
+
+                    if ($result) {
+                        // integer, bigint, int4, int8 = integer column
+                        static::$createdAtIsInteger = in_array(strtolower($result->data_type), ['integer', 'bigint', 'int4', 'int8']);
+                    } else {
+                        static::$createdAtIsInteger = false;
+                    }
                 } else {
-                    // Default to false (timestamp column)
+                    // For non-PostgreSQL, default to false
                     static::$createdAtIsInteger = false;
                 }
             } catch (\Exception $e) {
