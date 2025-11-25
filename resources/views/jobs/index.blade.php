@@ -117,6 +117,7 @@
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Total</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Created</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
                     </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -157,10 +158,19 @@
                             <td class="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
                                 {{ $job->created_at?->format('Y-m-d H:i') }}
                             </td>
+                            <td class="px-4 py-4" onclick="event.stopPropagation()">
+                                <form action="{{ route('jobs.destroy', $job) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this job?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-xs">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No jobs yet.
                             </td>
                         </tr>

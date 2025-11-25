@@ -209,4 +209,16 @@ class JobController extends Controller
             'invoiceNumber' => $invoiceNumber,
         ]);
     }
+
+    /**
+     * Delete a job.
+     */
+    public function destroy(Job $job)
+    {
+        $job->delete();
+
+        return redirect()
+            ->route('jobs.index')
+            ->with('success', 'Job deleted successfully.');
+    }
 }
