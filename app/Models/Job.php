@@ -9,6 +9,12 @@ class Job extends Model
 {
     use HasFactory;
 
+    /**
+     * Disable Laravel's automatic timestamp management.
+     * We handle timestamps manually due to mixed column types.
+     */
+    public $timestamps = false;
+
     protected $fillable = [
         'job_type',
         'job_category',
@@ -44,30 +50,22 @@ class Job extends Model
     ];
 
     /**
-     * Boot the model and set up event listeners.
+     * Boot the model and manually handle timestamps.
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Convert created_at to Unix timestamp before creating
+        // Manually set timestamps on create
         static::creating(function ($model) {
-            if (!$model->isDirty('created_at')) {
-                $model->created_at = time();
-            }
-            if (!$model->isDirty('updated_at')) {
-                $model->updated_at = now();
-            }
+            $now = now();
+            $model->created_at = $now->timestamp;  // Unix timestamp (integer)
+            $model->updated_at = $now;             // Carbon instance (will be converted to datetime)
         });
 
-        // Convert created_at to Unix timestamp before updating
+        // Manually set updated_at on update
         static::updating(function ($model) {
-            if ($model->isDirty('created_at') && $model->created_at instanceof \DateTimeInterface) {
-                $model->created_at = $model->created_at->getTimestamp();
-            }
-            if (!$model->isDirty('updated_at')) {
-                $model->updated_at = now();
-            }
+            $model->updated_at = now();
         });
     }
 
