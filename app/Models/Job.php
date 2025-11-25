@@ -44,7 +44,6 @@ class Job extends Model
         'travel_charges'  => 'decimal:2',
         'discount'        => 'decimal:2',
         'total_amount'    => 'decimal:2',
-        'created_at'      => 'timestamp',  // Cast integer to Carbon when reading
         'updated_at'      => 'datetime',
         'started_at'      => 'datetime',
         'completed_at'    => 'datetime',
@@ -61,8 +60,8 @@ class Job extends Model
         // Manually set timestamps and queue columns on create
         static::creating(function ($model) {
             $now = now();
-            $model->created_at = $now->timestamp;  // Unix timestamp (integer)
-            $model->updated_at = $now;             // Carbon instance (will be converted to datetime)
+            $model->attributes['created_at'] = $now->timestamp;  // Unix timestamp (integer)
+            $model->attributes['updated_at'] = $now;             // Carbon instance (will be converted to datetime)
 
             // Set default values for Laravel queue columns (not used but required by schema)
             $model->queue = $model->queue ?? 'default';
@@ -73,8 +72,30 @@ class Job extends Model
 
         // Manually set updated_at on update
         static::updating(function ($model) {
-            $model->updated_at = now();
+            $model->attributes['updated_at'] = now();
         });
+    }
+
+    /**
+     * Get created_at as Carbon instance (stored as Unix timestamp integer).
+     */
+    public function getCreatedAtAttribute($value)
+    {
+        return $value ? \Carbon\Carbon::createFromTimestamp($value) : null;
+    }
+
+    /**
+     * Set created_at as Unix timestamp integer.
+     */
+    public function setCreatedAtAttribute($value)
+    {
+        if ($value instanceof \DateTimeInterface) {
+            $this->attributes['created_at'] = $value->getTimestamp();
+        } elseif (is_numeric($value)) {
+            $this->attributes['created_at'] = $value;
+        } elseif (is_string($value)) {
+            $this->attributes['created_at'] = strtotime($value);
+        }
     }
 
     public function customer()
