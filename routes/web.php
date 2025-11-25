@@ -47,7 +47,7 @@ Route::middleware('auth')->group(function () {
 
     // Jobs - All authenticated users can manage
     Route::resource('jobs', JobController::class)->only([
-        'index', 'create', 'store', 'show', 'update',
+        'index', 'create', 'store', 'show', 'update', 'destroy',
     ]);
 
     // Job items (parts & consumables on a job)

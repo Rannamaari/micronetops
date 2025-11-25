@@ -23,35 +23,35 @@ class DashboardController extends Controller
 
         // Jobs this week (with sales - created this week)
         $jobsThisWeek = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', $startOfWeek->timestamp)
+            ->where('created_at', '>=', $startOfWeek)
             ->count();
 
         // Jobs this month (with sales - created this month)
         $jobsThisMonth = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', $startOfMonth->timestamp)
+            ->where('created_at', '>=', $startOfMonth)
             ->count();
 
         // Sales today (jobs created today with total_amount > 0)
         $salesToday = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', $startOfDay->timestamp)
-            ->where('created_at', '<=', $endOfDay->timestamp)
+            ->where('created_at', '>=', $startOfDay)
+            ->where('created_at', '<=', $endOfDay)
             ->sum('total_amount');
 
         // Sales this month (jobs created this month with total_amount > 0)
         $salesThisMonth = Job::where('total_amount', '>', 0)
-            ->where('created_at', '>=', $startOfMonth->timestamp)
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Sales this month - AC jobs
         $salesThisMonthAC = Job::where('total_amount', '>', 0)
             ->where('job_type', 'ac')
-            ->where('created_at', '>=', $startOfMonth->timestamp)
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Sales this month - Moto jobs
         $salesThisMonthMoto = Job::where('total_amount', '>', 0)
             ->where('job_type', 'moto')
-            ->where('created_at', '>=', $startOfMonth->timestamp)
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Total inventory items (active, non-service)

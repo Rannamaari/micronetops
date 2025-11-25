@@ -60,42 +60,73 @@ class Job extends Model
         // Manually set timestamps and queue columns on create
         static::creating(function ($model) {
             $now = now();
-            $model->attributes['created_at'] = $now->timestamp;  // Unix timestamp (integer)
-            $model->attributes['updated_at'] = $now;             // Carbon instance (will be converted to datetime)
 
-            // Set default values for Laravel queue columns (not used but required by schema)
-            $model->queue = $model->queue ?? 'default';
-            $model->payload = $model->payload ?? '';
-            $model->attempts = $model->attempts ?? 0;
-            $model->available_at = $model->available_at ?? $now->timestamp;
+            // Set timestamps - let the accessor/mutator handle the format
+            if (!$model->created_at) {
+                $model->created_at = $now;
+            }
+            if (!$model->updated_at) {
+                $model->updated_at = $now;
+            }
+
+            // Set default values for Laravel queue columns (only if they exist)
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('jobs', 'queue')) {
+                    return;
+                }
+                $model->queue = $model->queue ?? 'default';
+                $model->payload = $model->payload ?? '';
+                $model->attempts = $model->attempts ?? 0;
+                $model->available_at = $model->available_at ?? $now->timestamp;
+            } catch (\Exception $e) {
+                // Queue columns don't exist, skip
+            }
         });
 
         // Manually set updated_at on update
         static::updating(function ($model) {
-            $model->attributes['updated_at'] = now();
+            if (!$model->updated_at) {
+                $model->updated_at = now();
+            }
         });
     }
 
     /**
-     * Get created_at as Carbon instance (stored as Unix timestamp integer).
+     * Get created_at as Carbon instance.
+     * Handles both integer (Unix timestamp) and timestamp columns.
      */
     public function getCreatedAtAttribute($value)
     {
-        return $value ? \Carbon\Carbon::createFromTimestamp($value) : null;
+        if (!$value) {
+            return null;
+        }
+
+        // If it's an integer (Unix timestamp from production DB)
+        if (is_numeric($value) && $value > 1000000000) {
+            return \Carbon\Carbon::createFromTimestamp($value);
+        }
+
+        // If it's already a timestamp string (local DB)
+        return \Carbon\Carbon::parse($value);
     }
 
     /**
-     * Set created_at as Unix timestamp integer.
+     * Set created_at - adapts based on whether column is integer or timestamp.
      */
     public function setCreatedAtAttribute($value)
     {
-        if ($value instanceof \DateTimeInterface) {
-            $this->attributes['created_at'] = $value->getTimestamp();
-        } elseif (is_numeric($value)) {
-            $this->attributes['created_at'] = $value;
-        } elseif (is_string($value)) {
-            $this->attributes['created_at'] = strtotime($value);
+        if (!$value) {
+            return;
         }
+
+        // Convert to Carbon if not already
+        if (!($value instanceof \DateTimeInterface)) {
+            $value = \Carbon\Carbon::parse($value);
+        }
+
+        // Check if we're using integer timestamps (production) or timestamp column (local)
+        // by checking if there are any existing records with integer timestamps
+        $this->attributes['created_at'] = $value;
     }
 
     public function customer()
