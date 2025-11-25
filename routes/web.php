@@ -50,6 +50,10 @@ Route::middleware('auth')->group(function () {
         'index', 'create', 'store', 'show', 'update', 'destroy',
     ]);
 
+    // Customer search for job creation
+    Route::get('jobs/search/customers', [JobController::class, 'searchCustomers'])
+        ->name('jobs.search-customers');
+
     // Job items (parts & consumables on a job)
     Route::post('jobs/{job}/items', [JobItemController::class, 'store'])
         ->name('jobs.items.store');

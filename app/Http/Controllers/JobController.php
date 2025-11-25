@@ -70,13 +70,54 @@ class JobController extends Controller
      */
     public function create()
     {
-        // Load customers with their bikes & AC units
+        // Load only the 5 most recent customers by default
         $customers = Customer::with([
             'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
-        ])->orderBy('name')->get();
+        ])->latest()->limit(5)->get();
 
         return view('jobs.create', compact('customers'));
+    }
+
+    /**
+     * Search customers (for AJAX dropdown).
+     */
+    public function searchCustomers(Request $request)
+    {
+        $search = $request->get('q', '');
+
+        $customers = Customer::with([
+            'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
+            'acUnits:id,customer_id,brand,btu,gas_type,location_description',
+        ])
+        ->where(function($query) use ($search) {
+            $query->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('phone', 'ilike', "%{$search}%");
+        })
+        ->orderBy('name')
+        ->limit(20)
+        ->get();
+
+        return response()->json([
+            'results' => $customers->map(function ($customer) {
+                return [
+                    'id' => $customer->id,
+                    'text' => $customer->name . ' (' . $customer->phone . ')',
+                    'vehicles' => $customer->vehicles->map(function ($v) {
+                        return [
+                            'id' => $v->id,
+                            'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))
+                        ];
+                    })->values()->all(),
+                    'ac_units' => $customer->acUnits->map(function ($a) {
+                        return [
+                            'id' => $a->id,
+                            'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))
+                        ];
+                    })->values()->all(),
+                ];
+            })
+        ]);
     }
 
     /**

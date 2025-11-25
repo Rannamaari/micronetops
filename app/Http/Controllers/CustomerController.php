@@ -34,9 +34,9 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'phone'    => ['required', 'string', 'max:50'],
+            'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone'],
             'email'    => ['nullable', 'email', 'max:255'],
-            'address'  => ['nullable', 'string', 'max:255'],
+            'address'  => ['nullable', 'string', 'max:500'],
             'category' => ['required', 'string', 'max:20'], // moto, ac, both
             'notes'    => ['nullable', 'string'],
         ]);
@@ -73,9 +73,9 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'phone'    => ['required', 'string', 'max:50'],
+            'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone,' . $customer->id],
             'email'    => ['nullable', 'email', 'max:255'],
-            'address'  => ['nullable', 'string', 'max:255'],
+            'address'  => ['nullable', 'string', 'max:500'],
             'category' => ['required', 'string', 'max:20'],
             'notes'    => ['nullable', 'string'],
         ]);
@@ -88,12 +88,24 @@ class CustomerController extends Controller
     }
 
     /**
-     * Optional: we can allow deleting later.
+     * Delete a customer.
      */
     public function destroy(Customer $customer)
     {
-        // For now, you might not want to delete if jobs exist.
-        // So we just prevent it, or you can implement soft deletes later.
-        return back()->with('error', 'Deleting customers is disabled for now.');
+        // Check if customer has any jobs
+        if ($customer->jobs()->count() > 0) {
+            return back()->with('error', 'Cannot delete customer with existing jobs.');
+        }
+
+        // Delete associated vehicles and AC units
+        $customer->vehicles()->delete();
+        $customer->acUnits()->delete();
+
+        // Delete the customer
+        $customer->delete();
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'Customer deleted successfully.');
     }
 }

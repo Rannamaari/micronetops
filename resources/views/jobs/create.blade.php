@@ -7,6 +7,45 @@
         </h2>
     </x-slot>
 
+    {{-- Include Select2 CSS --}}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Dark mode styles for Select2 */
+        .select2-container--default .select2-selection--single {
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            height: 38px;
+            padding: 4px 8px;
+        }
+        .dark .select2-container--default .select2-selection--single {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f3f4f6;
+        }
+        .dark .select2-dropdown {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+        .dark .select2-container--default .select2-results__option {
+            color: #f3f4f6;
+        }
+        .dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #4f46e5;
+        }
+        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: #1f2937;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+
     <div class="py-6">
         <div class="max-w-3xl mx-auto sm:px-4 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
@@ -65,10 +104,12 @@
                         <select id="customer_id" name="customer_id"
                                 class="block w-full rounded-md border-gray-300 shadow-sm text-sm
                                        focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">Select customer</option>
+                            <option value="">Search or select customer...</option>
                             @foreach($customers as $customer)
                                 <option value="{{ $customer->id }}"
-                                    {{ (int)old('customer_id') === $customer->id ? 'selected' : '' }}>
+                                    {{ (int)old('customer_id') === $customer->id ? 'selected' : '' }}
+                                    data-vehicles="{{ json_encode($customer->vehicles->map(fn($v) => ['id' => $v->id, 'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))])) }}"
+                                    data-ac-units="{{ json_encode($customer->acUnits->map(fn($a) => ['id' => $a->id, 'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))])) }}">
                                     {{ $customer->name }} ({{ $customer->phone }})
                                 </option>
                             @endforeach
@@ -78,7 +119,10 @@
                         @enderror
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Need to add a new customer? <a href="{{ route('customers.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create here</a>.
+                            Showing 5 recent customers. Type to search all customers.
+                            <a href="{{ route('customers.create') }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                Create new customer
+                            </a>
                         </p>
                     </div>
 
@@ -181,99 +225,128 @@
         </div>
     </div>
 
-    {{-- Simple inline JS for dynamic vehicle/AC loading --}}
-    @php
-        $customerAssetsData = $customers->mapWithKeys(function ($c) {
-            return [
-                $c->id => [
-                    'vehicles' => $c->vehicles->map(function ($v) {
-                        return [
-                            'id' => $v->id,
-                            'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))
-                        ];
-                    })->values()->all(),
-                    'ac_units' => $c->acUnits->map(function ($a) {
-                        return [
-                            'id' => $a->id,
-                            'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))
-                        ];
-                    })->values()->all(),
-                ]
-            ];
-        })->all();
-    @endphp
+    {{-- Include jQuery and Select2 JS --}}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script>
-        // Build a map of customers -> vehicles and ac_units
-        const customerAssets = @json($customerAssetsData);
+        $(document).ready(function() {
+            // Store for customer assets (vehicles and AC units)
+            let customerAssetsCache = {};
 
-        const customerSelect = document.getElementById('customer_id');
-        const jobTypeRadios = document.querySelectorAll('input[name="job_type"]');
-        const vehicleWrapper = document.getElementById('vehicle-wrapper');
-        const acWrapper = document.getElementById('ac-unit-wrapper');
-        const vehicleSelect = document.getElementById('vehicle_id');
-        const acSelect = document.getElementById('ac_unit_id');
-        const customerVehicleLink = document.getElementById('customer-vehicle-link');
-        const customerAcLink = document.getElementById('customer-ac-link');
-
-        function getSelectedJobType() {
-            const checked = Array.from(jobTypeRadios).find(r => r.checked);
-            return checked ? checked.value : 'moto';
-        }
-
-        function updateTypeVisibility() {
-            const type = getSelectedJobType();
-            if (type === 'moto') {
-                vehicleWrapper.classList.remove('hidden');
-                acWrapper.classList.add('hidden');
-            } else {
-                acWrapper.classList.remove('hidden');
-                vehicleWrapper.classList.add('hidden');
-            }
-        }
-
-        function updateCustomerLinks() {
-            const customerId = customerSelect.value;
-            if (!customerId) {
-                if (customerVehicleLink) customerVehicleLink.href = '#';
-                if (customerAcLink) customerAcLink.href = '#';
-                return;
-            }
-            const url = "{{ url('customers') }}/" + customerId;
-            if (customerVehicleLink) customerVehicleLink.href = url;
-            if (customerAcLink) customerAcLink.href = url;
-        }
-
-        function populateAssets() {
-            const customerId = customerSelect.value;
-            const assets = customerAssets[customerId] || { vehicles: [], ac_units: [] };
-
-            // Clear existing options (except first)
-            vehicleSelect.innerHTML = '<option value="">Select vehicle (optional)</option>';
-            acSelect.innerHTML = '<option value="">Select AC unit (optional)</option>';
-
-            assets.vehicles.forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v.id;
-                opt.textContent = v.label || ('Vehicle #' + v.id);
-                vehicleSelect.appendChild(opt);
+            // Initialize Select2 with AJAX search
+            $('#customer_id').select2({
+                ajax: {
+                    url: '{{ route('jobs.search-customers') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        // Cache the customer assets for later use
+                        data.results.forEach(function(customer) {
+                            customerAssetsCache[customer.id] = {
+                                vehicles: customer.vehicles,
+                                ac_units: customer.ac_units
+                            };
+                        });
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                },
+                placeholder: 'Search or select customer...',
+                allowClear: true,
+                minimumInputLength: 0,
+                width: '100%'
             });
 
-            assets.ac_units.forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.label || ('AC Unit #' + a.id);
-                acSelect.appendChild(opt);
+            // Cache initial customer data from pre-loaded options
+            $('#customer_id option').each(function() {
+                const $option = $(this);
+                const customerId = $option.val();
+                if (customerId) {
+                    try {
+                        customerAssetsCache[customerId] = {
+                            vehicles: JSON.parse($option.data('vehicles') || '[]'),
+                            ac_units: JSON.parse($option.data('ac-units') || '[]')
+                        };
+                    } catch (e) {
+                        customerAssetsCache[customerId] = { vehicles: [], ac_units: [] };
+                    }
+                }
             });
 
-            updateCustomerLinks();
-        }
+            const jobTypeRadios = document.querySelectorAll('input[name="job_type"]');
+            const vehicleWrapper = document.getElementById('vehicle-wrapper');
+            const acWrapper = document.getElementById('ac-unit-wrapper');
+            const vehicleSelect = document.getElementById('vehicle_id');
+            const acSelect = document.getElementById('ac_unit_id');
+            const customerVehicleLink = document.getElementById('customer-vehicle-link');
+            const customerAcLink = document.getElementById('customer-ac-link');
 
-        // Events
-        customerSelect?.addEventListener('change', populateAssets);
-        jobTypeRadios.forEach(r => r.addEventListener('change', updateTypeVisibility));
+            function getSelectedJobType() {
+                const checked = Array.from(jobTypeRadios).find(r => r.checked);
+                return checked ? checked.value : 'moto';
+            }
 
-        // Init on load
-        document.addEventListener('DOMContentLoaded', function () {
+            function updateTypeVisibility() {
+                const type = getSelectedJobType();
+                if (type === 'moto') {
+                    vehicleWrapper.classList.remove('hidden');
+                    acWrapper.classList.add('hidden');
+                } else {
+                    acWrapper.classList.remove('hidden');
+                    vehicleWrapper.classList.add('hidden');
+                }
+            }
+
+            function updateCustomerLinks() {
+                const customerId = $('#customer_id').val();
+                if (!customerId) {
+                    if (customerVehicleLink) customerVehicleLink.href = '#';
+                    if (customerAcLink) customerAcLink.href = '#';
+                    return;
+                }
+                const url = "{{ url('customers') }}/" + customerId;
+                if (customerVehicleLink) customerVehicleLink.href = url;
+                if (customerAcLink) customerAcLink.href = url;
+            }
+
+            function populateAssets() {
+                const customerId = $('#customer_id').val();
+                const assets = customerAssetsCache[customerId] || { vehicles: [], ac_units: [] };
+
+                // Clear existing options (except first)
+                vehicleSelect.innerHTML = '<option value="">Select vehicle (optional)</option>';
+                acSelect.innerHTML = '<option value="">Select AC unit (optional)</option>';
+
+                assets.vehicles.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    opt.textContent = v.label || ('Vehicle #' + v.id);
+                    vehicleSelect.appendChild(opt);
+                });
+
+                assets.ac_units.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.textContent = a.label || ('AC Unit #' + a.id);
+                    acSelect.appendChild(opt);
+                });
+
+                updateCustomerLinks();
+            }
+
+            // Events
+            $('#customer_id').on('change', populateAssets);
+            jobTypeRadios.forEach(r => r.addEventListener('change', updateTypeVisibility));
+
+            // Init on load
             updateTypeVisibility();
             populateAssets();
         });

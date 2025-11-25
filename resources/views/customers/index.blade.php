@@ -36,6 +36,7 @@
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Phone</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Category</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Created</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
                     </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -69,10 +70,20 @@
                             <td class="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
                                 {{ $customer->created_at?->format('Y-m-d') }}
                             </td>
+                            <td class="px-4 py-4" onclick="event.stopPropagation()">
+                                <form action="{{ route('customers.destroy', $customer) }}" method="POST"
+                                      onsubmit="return confirm('Are you sure you want to delete this customer? All associated vehicles and AC units will also be deleted.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-xs">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No customers yet.
                             </td>
                         </tr>
