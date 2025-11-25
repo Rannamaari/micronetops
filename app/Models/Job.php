@@ -9,6 +9,13 @@ class Job extends Model
 {
     use HasFactory;
 
+    /**
+     * The storage format for created_at is integer (Unix timestamp).
+     * Laravel's default timestamp behavior expects datetime strings.
+     */
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+
     protected $fillable = [
         'job_type',
         'job_category',
@@ -38,6 +45,8 @@ class Job extends Model
         'travel_charges'  => 'decimal:2',
         'discount'        => 'decimal:2',
         'total_amount'    => 'decimal:2',
+        'created_at'      => 'timestamp',  // integer Unix timestamp
+        'updated_at'      => 'datetime',   // proper timestamp column
         'started_at'      => 'datetime',
         'completed_at'    => 'datetime',
         'closed_at'       => 'datetime',
@@ -130,5 +139,31 @@ class Job extends Model
         $this->save();
 
         $this->updatePaymentStatus();
+    }
+
+    /**
+     * Override to ensure created_at is stored as Unix timestamp (integer).
+     */
+    public function setCreatedAt($value)
+    {
+        if ($value instanceof \DateTimeInterface) {
+            $this->{static::CREATED_AT} = $value->getTimestamp();
+        } elseif (\is_string($value)) {
+            $this->{static::CREATED_AT} = strtotime($value);
+        } else {
+            $this->{static::CREATED_AT} = $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Override to ensure updated_at remains as datetime string.
+     */
+    public function setUpdatedAt($value)
+    {
+        $this->{static::UPDATED_AT} = $value;
+
+        return $this;
     }
 }
