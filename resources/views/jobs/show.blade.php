@@ -557,15 +557,16 @@
 
                     @if($job->status === 'pending')
                         <a href="{{ route('jobs.quotation', $job) }}" target="_blank"
-                           class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md
-                                  font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700
-                                  focus:outline-none">
+                           class="inline-flex items-center px-4 py-2 bg-amber-600 dark:bg-amber-600 border border-transparent rounded-md
+                                  font-semibold text-xs text-white dark:text-white uppercase tracking-widest hover:bg-amber-700
+                                  focus:outline-none"
+                           style="background-color: #d97706; color: white;">
                             View Quotation
                         </a>
                     @else
                         <a href="{{ route('jobs.invoice', $job) }}" target="_blank"
-                           class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md
-                                  font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-900
+                           class="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-800 border border-transparent rounded-md
+                                  font-semibold text-xs text-white dark:text-white uppercase tracking-widest hover:bg-gray-900
                                   focus:outline-none">
                             View Invoice
                         </a>
