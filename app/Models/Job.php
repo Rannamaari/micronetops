@@ -50,17 +50,23 @@ class Job extends Model
     ];
 
     /**
-     * Boot the model and manually handle timestamps.
+     * Boot the model and manually handle timestamps and queue columns.
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Manually set timestamps on create
+        // Manually set timestamps and queue columns on create
         static::creating(function ($model) {
             $now = now();
             $model->created_at = $now->timestamp;  // Unix timestamp (integer)
             $model->updated_at = $now;             // Carbon instance (will be converted to datetime)
+
+            // Set default values for Laravel queue columns (not used but required by schema)
+            $model->queue = $model->queue ?? 'default';
+            $model->payload = $model->payload ?? '';
+            $model->attempts = $model->attempts ?? 0;
+            $model->available_at = $model->available_at ?? $now->timestamp;
         });
 
         // Manually set updated_at on update
