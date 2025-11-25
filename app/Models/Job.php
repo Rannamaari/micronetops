@@ -44,6 +44,8 @@ class Job extends Model
         'travel_charges'  => 'decimal:2',
         'discount'        => 'decimal:2',
         'total_amount'    => 'decimal:2',
+        'created_at'      => 'timestamp',  // Cast integer to Carbon when reading
+        'updated_at'      => 'datetime',
         'started_at'      => 'datetime',
         'completed_at'    => 'datetime',
         'closed_at'       => 'datetime',
