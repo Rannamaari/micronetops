@@ -94,7 +94,7 @@ class JobController extends Controller
             $query->where('name', 'ilike', "%{$search}%")
                   ->orWhere('phone', 'ilike', "%{$search}%");
         })
-        ->orderBy('name')
+        ->latest()
         ->limit(20)
         ->get();
 
@@ -126,6 +126,7 @@ class JobController extends Controller
     public function store(Request $request)
     {
         $baseRules = [
+            'job_date' => ['required', 'date'],
             'job_type' => ['required', Rule::in(['moto', 'ac'])],
             'job_category' => ['required', 'string', 'max:50'],
             'customer_id' => ['required', 'exists:customers,id'],
@@ -157,6 +158,7 @@ class JobController extends Controller
         }
 
         $job = Job::create([
+            'job_date' => $validated['job_date'],
             'job_type' => $validated['job_type'],
             'job_category' => $validated['job_category'],
             'customer_id' => $validated['customer_id'],
@@ -252,10 +254,69 @@ class JobController extends Controller
     }
 
     /**
+     * Update job status (pending -> in_progress -> completed).
+     */
+    public function updateStatus(Request $request, Job $job)
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['in_progress', 'completed'])],
+        ]);
+
+        $job->status = $validated['status'];
+        $job->save();
+
+        $statusMessage = $validated['status'] === 'in_progress' ? 'Job started!' : 'Job marked as completed!';
+
+        return redirect()
+            ->route('jobs.show', $job)
+            ->with('success', $statusMessage);
+    }
+
+    /**
+     * Show quotation (for pending jobs).
+     */
+    public function quotation(Job $job)
+    {
+        // Reuse invoice view but change title to "QUOTATION"
+        $job->load(['customer', 'vehicle', 'acUnit', 'items.inventoryItem']);
+
+        if ($job->job_type === 'ac') {
+            $brand = [
+                'name' => 'Micro Cool',
+                'tagline' => 'Air Conditioning Service',
+                'address' => 'Hulhumale Phase 2, Maldives',
+                'phone' => '+960 9996210',
+                'website' => 'cool.micronet.mv',
+            ];
+        } else {
+            $brand = [
+                'name' => 'Micro Moto Garage',
+                'tagline' => 'Motorcycle Service & Repair',
+                'address' => 'Hulhumale Phase 2, Maldives',
+                'phone' => '+960 9996210',
+                'website' => 'garage.micronet.mv',
+            ];
+        }
+
+        $quotationNumber = 'QUO-' . str_pad($job->id, 5, '0', STR_PAD_LEFT);
+
+        return view('jobs.quotation', [
+            'job' => $job,
+            'brand' => $brand,
+            'quotationNumber' => $quotationNumber,
+        ]);
+    }
+
+    /**
      * Delete a job.
      */
     public function destroy(Job $job)
     {
+        // Prevent deletion if job is in progress or completed
+        if (in_array($job->status, ['in_progress', 'completed'])) {
+            return back()->with('error', 'Cannot delete a job that is in progress or completed.');
+        }
+
         $job->delete();
 
         return redirect()

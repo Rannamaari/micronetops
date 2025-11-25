@@ -68,9 +68,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('jobs/{job}/payments/{payment}', [PaymentController::class, 'destroy'])
         ->name('jobs.payments.destroy');
 
-    // Invoice
+    // Invoice & Quotation
     Route::get('jobs/{job}/invoice', [JobController::class, 'invoice'])
         ->name('jobs.invoice');
+
+    Route::get('jobs/{job}/quotation', [JobController::class, 'quotation'])
+        ->name('jobs.quotation');
+
+    // Job Status Update
+    Route::patch('jobs/{job}/status', [JobController::class, 'updateStatus'])
+        ->name('jobs.update-status');
 
     // Customers - All authenticated users can manage
     Route::resource('customers', CustomerController::class);

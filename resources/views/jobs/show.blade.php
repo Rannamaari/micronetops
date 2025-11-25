@@ -37,13 +37,47 @@
                     </div>
                     <div class="text-right">
                         <span class="inline-flex px-2 py-1 rounded text-xs
-                            {{ $job->job_type === 'moto' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                            {{ $job->job_type === 'moto' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' }}">
                             {{ strtoupper($job->job_type) }}
                         </span>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {{ $job->job_category }} • {{ ucfirst($job->status) }}
+                            {{ $job->job_category }}
+                        </div>
+                        <div class="mt-2">
+                            <span class="inline-flex px-2 py-1 rounded text-xs font-medium
+                                {{ $job->status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                {{ $job->status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                {{ $job->status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}">
+                                {{ strtoupper(str_replace('_', ' ', $job->status)) }}
+                            </span>
                         </div>
                     </div>
+                </div>
+
+                {{-- Status Change Buttons --}}
+                <div class="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    @if($job->status === 'pending')
+                        <form method="POST" action="{{ route('jobs.update-status', $job) }}" class="inline"
+                              onsubmit="return confirm('⚠️ Are you sure you want to start this job?\n\nOnce started, this job cannot be deleted.')">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="in_progress">
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none">
+                                ▶ Start Job
+                            </button>
+                        </form>
+                    @elseif($job->status === 'in_progress')
+                        <form method="POST" action="{{ route('jobs.update-status', $job) }}" class="inline">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit"
+                                    class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none">
+                                ✓ Mark as Completed
+                            </button>
+                        </form>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -199,7 +233,7 @@
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Service
                         </label>
-                        <select name="inventory_item_id"
+                        <select id="service-select" name="inventory_item_id"
                                 class="block w-full rounded-md border-gray-300 text-sm
                                        focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Select service</option>
@@ -299,7 +333,7 @@
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Inventory Item
                         </label>
-                        <select name="inventory_item_id"
+                        <select id="parts-select" name="inventory_item_id"
                                 class="block w-full rounded-md border-gray-300 text-sm
                                        focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Select item</option>
@@ -521,15 +555,97 @@
                         ← Back to jobs
                     </a>
 
-                    <a href="{{ route('jobs.invoice', $job) }}" target="_blank"
-                       class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md
-                              font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-900
-                              focus:outline-none">
-                        View Invoice
-                    </a>
+                    @if($job->status === 'pending')
+                        <a href="{{ route('jobs.quotation', $job) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md
+                                  font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700
+                                  focus:outline-none">
+                            View Quotation
+                        </a>
+                    @else
+                        <a href="{{ route('jobs.invoice', $job) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md
+                                  font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-900
+                                  focus:outline-none">
+                            View Invoice
+                        </a>
+                    @endif
                 </div>
             </div>
 
         </div>
     </div>
+
+    {{-- Include Select2 for searchable dropdowns --}}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Dark mode styles for Select2 */
+        .select2-container--default .select2-selection--single {
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            height: 38px;
+            padding: 4px 8px;
+        }
+        .dark .select2-container--default .select2-selection--single {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f3f4f6;
+        }
+        .dark .select2-dropdown {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+        .dark .select2-container--default .select2-results__option {
+            color: #f3f4f6;
+        }
+        .dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #4f46e5;
+        }
+        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: #1f2937;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 on service dropdown
+            $('#service-select').select2({
+                placeholder: 'Search or select service...',
+                allowClear: true,
+                width: '100%'
+            });
+
+            // Initialize Select2 on parts dropdown
+            $('#parts-select').select2({
+                placeholder: 'Search or select item...',
+                allowClear: true,
+                width: '100%'
+            });
+
+            // When user clicks on service section, auto-open the dropdown
+            $('#service-select').on('select2:open', function() {
+                setTimeout(function() {
+                    document.querySelector('.select2-search__field').focus();
+                }, 100);
+            });
+
+            // When user clicks on parts section, auto-open the dropdown
+            $('#parts-select').on('select2:open', function() {
+                setTimeout(function() {
+                    document.querySelector('.select2-search__field').focus();
+                }, 100);
+            });
+        });
+    </script>
 </x-app-layout>

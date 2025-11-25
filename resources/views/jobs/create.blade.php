@@ -52,6 +52,23 @@
                 <form method="POST" action="{{ route('jobs.store') }}" class="space-y-4">
                     @csrf
 
+                    {{-- Job Date --}}
+                    <div>
+                        <label for="job_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Job Date <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="job_date" name="job_date"
+                               value="{{ old('job_date', date('Y-m-d')) }}"
+                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                               required>
+                        @error('job_date')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Select the date for this job (defaults to today).
+                        </p>
+                    </div>
+
                     {{-- Job Type --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -263,6 +280,13 @@
                 allowClear: true,
                 minimumInputLength: 0,
                 width: '100%'
+            });
+
+            // Auto-focus search input when dropdown opens
+            $('#customer_id').on('select2:open', function() {
+                setTimeout(function() {
+                    document.querySelector('.select2-search__field').focus();
+                }, 100);
             });
 
             // Cache initial customer data from pre-loaded options

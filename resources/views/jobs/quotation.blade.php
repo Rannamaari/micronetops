@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice {{ $invoiceNumber }}</title>
+    <title>Quotation {{ $quotationNumber }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; color: #111827; margin: 0; padding: 20px; }
@@ -27,8 +27,7 @@
         th, td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
         th { background: #f9fafb; font-weight: 600; }
         .text-right { text-align: right; }
-        .badge-paid { display:inline-block; padding:2px 6px; border-radius:9999px; background:#dcfce7; color:#166534; font-size:10px; font-weight:600;}
-        .badge-unpaid { display:inline-block; padding:2px 6px; border-radius:9999px; background:#fee2e2; color:#b91c1c; font-size:10px; font-weight:600;}
+        .badge-pending { display:inline-block; padding:2px 6px; border-radius:9999px; background:#fef3c7; color:#92400e; font-size:10px; font-weight:600;}
         @media print {
             body { padding: 0; }
             .no-print { display: none; }
@@ -50,18 +49,19 @@
             <div class="text-xs">Website: {{ $brand['website'] }}</div>
         </div>
         <div style="text-align:right;">
-            <div class="font-bold">INVOICE</div>
-            <div class="text-xs mt-1">Invoice No: {{ $invoiceNumber }}</div>
+            <div class="font-bold">QUOTATION</div>
+            <div class="text-xs mt-1">Quotation No: {{ $quotationNumber }}</div>
             <div class="text-xs">Job ID: #{{ $job->id }}</div>
             <div class="text-xs">Date: {{ $job->job_date ? \Carbon\Carbon::parse($job->job_date)->format('Y-m-d') : now()->format('Y-m-d') }}</div>
             <div class="mt-1">
-                @if($job->payment_status === 'paid')
-                    <span class="badge-paid">PAID</span>
-                @else
-                    <span class="badge-unpaid">{{ strtoupper($job->payment_status) }}</span>
-                @endif
+                <span class="badge-pending">QUOTATION</span>
             </div>
         </div>
+    </div>
+
+    <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 8px; margin-bottom: 10px; border-radius: 4px;">
+        <div class="text-xs font-bold" style="color: #92400e;">Note: This is a quotation, not an invoice. Prices and services are estimates.</div>
+    </div>
     </div>
 
     <div class="flex justify-between items-start border rounded" style="padding:10px;">

@@ -66,6 +66,7 @@ class Job extends Model
     }
 
     protected $fillable = [
+        'job_date',
         'job_type',
         'job_category',
         'customer_id',
@@ -89,6 +90,7 @@ class Job extends Model
     ];
 
     protected $casts = [
+        'job_date'        => 'date',
         'labour_total'    => 'decimal:2',
         'parts_total'     => 'decimal:2',
         'travel_charges'  => 'decimal:2',
