@@ -24,34 +24,35 @@ class DashboardController extends Controller
 
         // Jobs this week (with sales - created this week)
         $jobsThisWeek = Job::where('total_amount', '>', 0)
-            ->whereRaw("created_at >= ?::timestamp", [$startOfWeek->toDateTimeString()])
+            ->where('created_at', '>=', $startOfWeek)
             ->count();
 
         // Jobs this month (with sales - created this month)
         $jobsThisMonth = Job::where('total_amount', '>', 0)
-            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
+            ->where('created_at', '>=', $startOfMonth)
             ->count();
 
         // Sales today (jobs created today with total_amount > 0)
         $salesToday = Job::where('total_amount', '>', 0)
-            ->whereRaw("created_at >= ?::timestamp AND created_at <= ?::timestamp", [$startOfDay->toDateTimeString(), $endOfDay->toDateTimeString()])
+            ->where('created_at', '>=', $startOfDay)
+            ->where('created_at', '<=', $endOfDay)
             ->sum('total_amount');
 
         // Sales this month (jobs created this month with total_amount > 0)
         $salesThisMonth = Job::where('total_amount', '>', 0)
-            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Sales this month - AC jobs
         $salesThisMonthAC = Job::where('total_amount', '>', 0)
             ->where('job_type', 'ac')
-            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Sales this month - Moto jobs
         $salesThisMonthMoto = Job::where('total_amount', '>', 0)
             ->where('job_type', 'moto')
-            ->whereRaw("created_at >= ?::timestamp", [$startOfMonth->toDateTimeString()])
+            ->where('created_at', '>=', $startOfMonth)
             ->sum('total_amount');
 
         // Total inventory items (active, non-service)
