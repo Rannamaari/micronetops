@@ -174,9 +174,13 @@ class Job extends Model
             $value = \Carbon\Carbon::parse($value);
         }
 
-        // Check if we're using integer timestamps (production) or timestamp column (local)
-        // by checking if there are any existing records with integer timestamps
-        $this->attributes['created_at'] = $value;
+        // If column is integer, store as Unix timestamp
+        if (static::createdAtIsInteger()) {
+            $this->attributes['created_at'] = $value->timestamp;
+        } else {
+            // Otherwise store as is (Laravel will handle datetime conversion)
+            $this->attributes['created_at'] = $value;
+        }
     }
 
     public function customer()
