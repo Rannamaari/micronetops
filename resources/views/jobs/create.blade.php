@@ -124,7 +124,7 @@
                             <option value="">Search or select customer...</option>
                             @foreach($customers as $customer)
                                 <option value="{{ $customer->id }}"
-                                    {{ (int)old('customer_id') === $customer->id ? 'selected' : '' }}
+                                    {{ (int)old('customer_id', $preselectedCustomer?->id) === $customer->id ? 'selected' : '' }}
                                     data-vehicles="{{ json_encode($customer->vehicles->map(fn($v) => ['id' => $v->id, 'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))])) }}"
                                     data-ac-units="{{ json_encode($customer->acUnits->map(fn($a) => ['id' => $a->id, 'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))])) }}">
                                     {{ $customer->name }} ({{ $customer->phone }})
@@ -136,10 +136,17 @@
                         @enderror
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Showing 5 recent customers. Type to search all customers.
-                            <a href="{{ route('customers.create') }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                Create new customer
-                            </a>
+                            @if($preselectedCustomer)
+                                Creating job for <strong>{{ $preselectedCustomer->name }}</strong>.
+                                <a href="{{ route('customers.show', $preselectedCustomer) }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    View customer details
+                                </a>
+                            @else
+                                Showing 5 recent customers. Type to search all customers.
+                                <a href="{{ route('customers.create') }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    Create new customer
+                                </a>
+                            @endif
                         </p>
                     </div>
 

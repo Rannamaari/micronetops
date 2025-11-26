@@ -68,15 +68,32 @@ class JobController extends Controller
     /**
      * Show the create job form.
      */
-    public function create()
+    public function create(Request $request)
     {
+        // Check if a specific customer is pre-selected
+        $preselectedCustomerId = $request->query('customer_id');
+        $preselectedCustomer = null;
+
         // Load only the 5 most recent customers by default
         $customers = Customer::with([
             'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])->latest()->limit(5)->get();
 
-        return view('jobs.create', compact('customers'));
+        // If a customer is pre-selected, make sure they're in the list
+        if ($preselectedCustomerId) {
+            $preselectedCustomer = Customer::with([
+                'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
+                'acUnits:id,customer_id,brand,btu,gas_type,location_description',
+            ])->find($preselectedCustomerId);
+
+            // Add to customers list if not already there
+            if ($preselectedCustomer && !$customers->contains('id', $preselectedCustomerId)) {
+                $customers->prepend($preselectedCustomer);
+            }
+        }
+
+        return view('jobs.create', compact('customers', 'preselectedCustomer'));
     }
 
     /**
