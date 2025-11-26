@@ -154,13 +154,15 @@ class DashboardController extends Controller
 
     private function getBestSellingData()
     {
+        $thirtyDaysAgo = Carbon::now()->subDays(30);
+
         // Best selling items for AC jobs (last 30 days)
         $acItems = JobItem::select('inventory_item_id', DB::raw('SUM(job_items.quantity) as total_quantity'))
             ->join('jobs', 'job_items.job_id', '=', 'jobs.id')
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
             ->where('jobs.job_type', 'ac')
             ->where('inventory_items.is_service', false)
-            ->where('jobs.created_at', '>=', Carbon::now()->subDays(30))
+            ->whereRaw('jobs.created_at >= ?::timestamp', [$thirtyDaysAgo])
             ->groupBy('inventory_item_id')
             ->orderByDesc('total_quantity')
             ->limit(5)
@@ -173,7 +175,7 @@ class DashboardController extends Controller
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
             ->where('jobs.job_type', 'ac')
             ->where('inventory_items.is_service', true)
-            ->where('jobs.created_at', '>=', Carbon::now()->subDays(30))
+            ->whereRaw('jobs.created_at >= ?::timestamp', [$thirtyDaysAgo])
             ->groupBy('inventory_item_id')
             ->orderByDesc('total_quantity')
             ->limit(5)
@@ -186,7 +188,7 @@ class DashboardController extends Controller
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
             ->where('jobs.job_type', 'moto')
             ->where('inventory_items.is_service', false)
-            ->where('jobs.created_at', '>=', Carbon::now()->subDays(30))
+            ->whereRaw('jobs.created_at >= ?::timestamp', [$thirtyDaysAgo])
             ->groupBy('inventory_item_id')
             ->orderByDesc('total_quantity')
             ->limit(5)
@@ -199,7 +201,7 @@ class DashboardController extends Controller
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
             ->where('jobs.job_type', 'moto')
             ->where('inventory_items.is_service', true)
-            ->where('jobs.created_at', '>=', Carbon::now()->subDays(30))
+            ->whereRaw('jobs.created_at >= ?::timestamp', [$thirtyDaysAgo])
             ->groupBy('inventory_item_id')
             ->orderByDesc('total_quantity')
             ->limit(5)
