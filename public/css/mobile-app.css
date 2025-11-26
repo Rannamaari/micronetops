@@ -1,0 +1,275 @@
+/* Mobile App Optimizations */
+
+/* Minimum touch target size: 44x44px (Apple) / 48x48px (Material Design) */
+:root {
+    --touch-target-min: 48px;
+    --mobile-padding: 1rem;
+    --mobile-button-height: 3rem;
+}
+
+/* Global mobile improvements */
+@media (max-width: 768px) {
+    /* Larger text for readability */
+    body {
+        font-size: 16px !important;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    /* Bigger buttons */
+    button,
+    .btn,
+    a.inline-flex {
+        min-height: var(--mobile-button-height);
+        min-width: var(--touch-target-min);
+        padding: 0.75rem 1.5rem !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Primary action buttons even bigger */
+    .btn-primary,
+    .bg-indigo-600,
+    .bg-blue-600 {
+        min-height: 3.5rem;
+        font-size: 1.125rem !important;
+    }
+
+    /* Form inputs larger */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="tel"],
+    select,
+    textarea {
+        min-height: var(--mobile-button-height);
+        font-size: 1rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    /* Radio buttons and checkboxes larger */
+    input[type="radio"],
+    input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+    }
+
+    /* Labels more prominent */
+    label {
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Navigation links bigger */
+    nav a {
+        padding: 1rem !important;
+        font-size: 1rem !important;
+    }
+
+    /* Table cells more spacious */
+    td, th {
+        padding: 1rem !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Cards with better spacing */
+    .bg-white,
+    .bg-gray-800 {
+        padding: 1.25rem !important;
+    }
+
+    /* Sticky header for mobile */
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Bottom navigation style */
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        padding: 0.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        gap: 0.25rem;
+        z-index: 50;
+    }
+
+    .dark .mobile-bottom-nav {
+        background: #1f2937;
+        border-top-color: #374151;
+    }
+
+    .mobile-bottom-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem !important;
+        min-height: 60px;
+        font-size: 0.75rem !important;
+        text-align: center;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s;
+    }
+
+    .mobile-bottom-nav a:hover,
+    .mobile-bottom-nav a.active {
+        background-color: #eef2ff;
+    }
+
+    .dark .mobile-bottom-nav a:hover,
+    .dark .mobile-bottom-nav a.active {
+        background-color: #312e81;
+    }
+
+    .mobile-bottom-nav svg {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Add padding to content to account for bottom nav */
+    main {
+        padding-bottom: 80px;
+    }
+
+    /* Hide desktop navigation on mobile */
+    .sm\\:flex.space-x-8 {
+        display: none !important;
+    }
+
+    /* Status badges larger */
+    .px-2.py-1,
+    .badge {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* Dropdown menus */
+    .dropdown-content {
+        font-size: 1rem !important;
+    }
+
+    /* Metric cards on dashboard */
+    .dashboard-card {
+        min-height: 120px;
+        padding: 1.5rem !important;
+    }
+
+    .dashboard-card .text-3xl {
+        font-size: 2.5rem !important;
+    }
+
+    /* Job cards */
+    .job-card {
+        padding: 1.25rem !important;
+        margin-bottom: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Action buttons in cards */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .action-buttons a,
+    .action-buttons button {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Search inputs */
+    input[type="search"] {
+        min-height: 3rem;
+        font-size: 1rem !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 0.75rem;
+    }
+
+    /* Modal/Dialog */
+    .modal {
+        padding: 1rem;
+    }
+
+    /* Floating action button (FAB) */
+    .fab {
+        position: fixed;
+        bottom: 90px;
+        right: 1rem;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 40;
+    }
+
+    /* Pull to refresh indicator space */
+    body {
+        overscroll-behavior-y: contain;
+    }
+
+    /* Prevent text selection on buttons */
+    button, a {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+
+    /* Larger hit areas for links */
+    a {
+        position: relative;
+        padding: 0.5rem;
+    }
+
+    /* Table scroll on mobile */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Swipeable cards */
+    .swipeable-card {
+        touch-action: pan-y;
+    }
+}
+
+/* iOS safe area support */
+@supports (padding: max(0px)) {
+    @media (max-width: 768px) {
+        .mobile-bottom-nav {
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+        }
+
+        main {
+            padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom)));
+        }
+    }
+}
+
+/* Landscape mode adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+    .mobile-bottom-nav {
+        display: none;
+    }
+
+    main {
+        padding-bottom: 1rem;
+    }
+}
