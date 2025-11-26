@@ -312,8 +312,8 @@ class JobController extends Controller
      */
     public function destroy(Job $job)
     {
-        // Prevent deletion if job is in progress or completed
-        if (in_array($job->status, ['in_progress', 'completed'])) {
+        // Prevent deletion if job is in progress or completed (unless user is admin)
+        if (!auth()->user()->isAdmin() && in_array($job->status, ['in_progress', 'completed'])) {
             return back()->with('error', 'Cannot delete a job that is in progress or completed.');
         }
 

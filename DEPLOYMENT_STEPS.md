@@ -5,18 +5,21 @@ Quick reference for deploying to `micronet.mv` domain.
 ## On Your Droplet - Run These Commands
 
 ### 1. Check PHP-FPM Socket
+
 ```bash
 ls -la /var/run/php/
 # Note the socket path (e.g., php8.1-fpm.sock or php8.2-fpm.sock)
 ```
 
 ### 2. Check Existing Config (to match style)
+
 ```bash
 cat /etc/nginx/sites-available/cool.micronet.mv
 # This shows you the PHP-FPM socket path
 ```
 
 ### 3. Install PostgreSQL Extension (if needed)
+
 ```bash
 # Check if installed
 php -m | grep pgsql
@@ -33,14 +36,16 @@ sudo systemctl restart php8.2-fpm
 ```
 
 ### 4. Clone Repository
+
 ```bash
 cd /var/www
 sudo git clone https://github.com/Rannamaari/micronetops.git
-sudo chown -R www-data:www-data /var/www/micronetops
-sudo chmod -R 755 /var/www/micronetops
+sudo chown -R www-data:www-data /var/www/micronet.mv
+sudo chmod -R 755 /var/www/micronet.mv
 ```
 
 ### 5. Install Dependencies
+
 ```bash
 cd /var/www/micronetops
 sudo -u www-data composer install --optimize-autoloader --no-dev
@@ -49,12 +54,14 @@ sudo -u www-data npm run build
 ```
 
 ### 6. Configure Environment
+
 ```bash
 sudo -u www-data cp .env.example .env
 sudo nano .env
 ```
 
 **Update these values:**
+
 ```env
 APP_NAME="MicroNET Sales"
 APP_ENV=production
@@ -77,11 +84,13 @@ APP_BUILD=1
 ```
 
 **Generate key:**
+
 ```bash
 sudo -u www-data php artisan key:generate
 ```
 
 ### 7. Run Migrations
+
 ```bash
 sudo -u www-data php artisan migrate --force
 sudo -u www-data php artisan app:cleanup-for-deployment
@@ -92,12 +101,14 @@ sudo -u www-data php artisan view:cache
 ```
 
 ### 8. Set Permissions
+
 ```bash
 sudo chmod -R 775 /var/www/micronetops/storage
 sudo chmod -R 775 /var/www/micronetops/bootstrap/cache
 ```
 
 ### 9. Create Nginx Config
+
 ```bash
 sudo nano /etc/nginx/sites-available/micronet.mv
 ```
@@ -108,7 +119,7 @@ sudo nano /etc/nginx/sites-available/micronet.mv
 server {
     listen 80;
     server_name micronet.mv www.micronet.mv;
-    
+
     root /var/www/micronetops/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
@@ -142,6 +153,7 @@ server {
 ```
 
 ### 10. Enable and Test
+
 ```bash
 # Enable site
 sudo ln -s /etc/nginx/sites-available/micronet.mv /etc/nginx/sites-enabled/
@@ -154,14 +166,16 @@ sudo systemctl reload nginx
 ```
 
 ### 11. SSL Certificate
+
 ```bash
 sudo certbot --nginx -d micronet.mv -d www.micronet.mv
 ```
 
 ### 12. Test
-- Visit `https://micronet.mv` - should show landing page
-- Visit `https://micronet.mv/ops` - should redirect to login
-- Verify other sites still work
+
+-   Visit `https://micronet.mv` - should show landing page
+-   Visit `https://micronet.mv/ops` - should redirect to login
+-   Verify other sites still work
 
 ---
 
@@ -170,6 +184,7 @@ sudo certbot --nginx -d micronet.mv -d www.micronet.mv
 Make sure your DNS records are set:
 
 **A Record for main domain:**
+
 ```
 Type: A
 Name: @ (or leave blank)
@@ -178,6 +193,7 @@ TTL: 3600
 ```
 
 **A Record for www:**
+
 ```
 Type: A
 Name: www
@@ -186,6 +202,7 @@ TTL: 3600
 ```
 
 Or CNAME for www:
+
 ```
 Type: CNAME
 Name: www
@@ -198,12 +215,14 @@ TTL: 3600
 ## Troubleshooting
 
 ### If Nginx test fails:
+
 ```bash
 sudo nginx -t
 sudo tail -f /var/log/nginx/error.log
 ```
 
 ### If other sites break:
+
 ```bash
 # Temporarily disable
 sudo rm /etc/nginx/sites-enabled/micronet.mv
@@ -213,6 +232,7 @@ sudo systemctl reload nginx
 ```
 
 ### Check Laravel logs:
+
 ```bash
 tail -f /var/www/micronetops/storage/logs/laravel.log
 ```
@@ -220,4 +240,3 @@ tail -f /var/www/micronetops/storage/logs/laravel.log
 ---
 
 **That's it! Your site will be live at `https://micronet.mv`** 🚀
-

@@ -64,27 +64,18 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Roles
+                        <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Role <span class="text-red-500">*</span>
                         </label>
-                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3">
-                            @forelse($roles as $role)
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="roles[]" value="{{ $role->id }}"
-                                           {{ in_array($role->id, old('roles', $user->roles->pluck('id')->toArray())) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $role->name }}
-                                        @if($role->description)
-                                            <span class="text-gray-400 text-xs">({{ \Illuminate\Support\Str::limit($role->description, 40) }})</span>
-                                        @endif
-                                    </span>
-                                </label>
-                            @empty
-                                <p class="text-sm text-gray-500 dark:text-gray-400">No roles available. <a href="{{ route('roles.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create one</a></p>
-                            @endforelse
-                        </div>
-                        @error('roles')
+                        <select name="role" id="role" required
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Select a role</option>
+                            <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin - Full access, can delete anything</option>
+                            <option value="manager" {{ old('role', $user->role) === 'manager' ? 'selected' : '' }}>Manager - Can do everything except delete</option>
+                            <option value="mechanic" {{ old('role', $user->role) === 'mechanic' ? 'selected' : '' }}>Mechanic - Can manage customers, jobs, and expenses</option>
+                            <option value="cashier" {{ old('role', $user->role) === 'cashier' ? 'selected' : '' }}>Cashier - Dashboard and reports only</option>
+                        </select>
+                        @error('role')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>

@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -66,23 +67,20 @@ class User extends Authenticatable
         return $this->hasMany(InventoryLog::class);
     }
 
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'user_roles');
-    }
+    /**
+     * Hardcoded roles
+     */
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_MANAGER = 'manager';
+    public const ROLE_MECHANIC = 'mechanic';
+    public const ROLE_CASHIER = 'cashier';
 
     /**
      * Check if user has a specific role
      */
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()
-            ->where(function($query) use ($roleName) {
-                $query->where('name', $roleName)
-                      ->orWhere('slug', $roleName);
-            })
-            ->where('is_active', true)
-            ->exists();
+        return $this->role === $roleName;
     }
 
     /**
@@ -90,13 +88,7 @@ class User extends Authenticatable
      */
     public function hasAnyRole(array $roleNames): bool
     {
-        return $this->roles()
-            ->where(function($query) use ($roleNames) {
-                $query->whereIn('name', $roleNames)
-                      ->orWhereIn('slug', $roleNames);
-            })
-            ->where('is_active', true)
-            ->exists();
+        return in_array($this->role, $roleNames);
     }
 
     /**
@@ -104,6 +96,94 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if user is manager
+     */
+    public function isManager(): bool
+    {
+        return $this->role === self::ROLE_MANAGER;
+    }
+
+    /**
+     * Check if user is mechanic
+     */
+    public function isMechanic(): bool
+    {
+        return $this->role === self::ROLE_MECHANIC;
+    }
+
+    /**
+     * Check if user is cashier
+     */
+    public function isCashier(): bool
+    {
+        return $this->role === self::ROLE_CASHIER;
+    }
+
+    /**
+     * Check if user can delete (only admin)
+     */
+    public function canDelete(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    /**
+     * Check if user can manage users (admin or manager)
+     */
+    public function canManageUsers(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Check if user can approve expenses (admin or manager)
+     */
+    public function canApproveExpenses(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Check if user can manage top-ups (admin only)
+     */
+    public function canManageTopUps(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    /**
+     * Check if user can create jobs
+     */
+    public function canCreateJobs(): bool
+    {
+        return !$this->isCashier();
+    }
+
+    /**
+     * Check if user can view customers
+     */
+    public function canViewCustomers(): bool
+    {
+        return !$this->isCashier();
+    }
+
+    /**
+     * Check if user can create expenses
+     */
+    public function canCreateExpenses(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MECHANIC]);
+    }
+
+    /**
+     * Check if user can view reports
+     */
+    public function canViewReports(): bool
+    {
+        return true; // All users can view reports
     }
 }

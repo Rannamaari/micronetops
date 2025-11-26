@@ -66,15 +66,13 @@
                                     {{ $user->email }}
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="flex flex-wrap gap-1">
-                                        @forelse($user->roles as $role)
-                                            <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                                {{ $role->name }}
-                                            </span>
-                                        @empty
-                                            <span class="text-xs text-gray-400">No roles</span>
-                                        @endforelse
-                                    </div>
+                                    @if($user->role)
+                                        <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                            {{ ucfirst($user->role) }}
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-gray-400">No role</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
                                     {{ $user->created_at?->format('Y-m-d') }}

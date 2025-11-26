@@ -4,10 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 Roles Management
             </h2>
-            <a href="{{ route('roles.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
-                + New Role
-            </a>
+            <span class="text-sm text-gray-500 dark:text-gray-400 italic">
+                Roles are hardcoded and cannot be modified
+            </span>
         </div>
     </x-slot>
 
@@ -51,61 +50,39 @@
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($roles as $role)
-                            <tr class="group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ease-in-out"
-                                onclick="window.location='{{ route('roles.edit', $role) }}'">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ease-in-out">
                                 <td class="px-4 py-4">
                                     <span class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $role->name }}
+                                        {{ $role['name'] }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $role->slug }}
+                                    {{ $role['slug'] }}
                                 </td>
                                 <td class="px-4 py-4 text-xs text-gray-600 dark:text-gray-400">
-                                    {{ \Illuminate\Support\Str::limit($role->description ?? '—', 50) }}
+                                    {{ $role['description'] ?? '—' }}
                                 </td>
                                 <td class="px-4 py-4 text-xs text-gray-600 dark:text-gray-400">
-                                    {{ $role->users_count }} user(s)
+                                    {{ $role['users_count'] }} user(s)
                                 </td>
                                 <td class="px-4 py-4">
-                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
-                                        {{ $role->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
-                                        {{ $role->is_active ? 'Active' : 'Inactive' }}
+                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        Active
                                     </span>
                                 </td>
                                 <td class="px-4 py-4 text-right">
-                                    <div class="flex gap-2 justify-end">
-                                        <a href="{{ route('roles.edit', $role) }}"
-                                           class="px-3 py-1.5 bg-indigo-500 text-white rounded-md text-xs font-semibold hover:bg-indigo-600 focus:outline-none"
-                                           onclick="event.stopPropagation();">
-                                            Edit
-                                        </a>
-                                        <form method="POST" action="{{ route('roles.destroy', $role) }}" class="inline-block"
-                                              onsubmit="return confirm('Delete this role?');"
-                                              onclick="event.stopPropagation();">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="px-3 py-1.5 bg-red-500 text-white rounded-md text-xs font-semibold hover:bg-red-600 focus:outline-none">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 italic">Hardcoded</span>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="6" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No roles found. <a href="{{ route('roles.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create one</a>
+                                    No roles found.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
-
-                <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-                    {{ $roles->links() }}
-                </div>
             </div>
         </div>
     </div>

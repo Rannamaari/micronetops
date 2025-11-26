@@ -17,7 +17,35 @@ class RoleController extends Controller
         if (!Gate::allows('manage-roles')) {
             abort(403, 'Unauthorized. You do not have permission to manage roles.');
         }
-        $roles = Role::withCount('users')->orderBy('name')->paginate(20);
+
+        // Hardcoded roles with user counts
+        $roles = collect([
+            [
+                'name' => 'Admin',
+                'slug' => 'admin',
+                'description' => 'Full access, can delete anything',
+                'users_count' => \App\Models\User::where('role', 'admin')->count(),
+            ],
+            [
+                'name' => 'Manager',
+                'slug' => 'manager',
+                'description' => 'Can do everything except delete',
+                'users_count' => \App\Models\User::where('role', 'manager')->count(),
+            ],
+            [
+                'name' => 'Mechanic',
+                'slug' => 'mechanic',
+                'description' => 'Can manage customers, jobs, and expenses',
+                'users_count' => \App\Models\User::where('role', 'mechanic')->count(),
+            ],
+            [
+                'name' => 'Cashier',
+                'slug' => 'cashier',
+                'description' => 'Dashboard and reports only',
+                'users_count' => \App\Models\User::where('role', 'cashier')->count(),
+            ],
+        ]);
+
         return view('roles.index', compact('roles'));
     }
 

@@ -76,15 +76,19 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 text-right action-buttons" onclick="event.stopPropagation()">
-                                <form method="POST" action="{{ route('inventory-categories.destroy', $category) }}"
-                                      onsubmit="return confirm('Delete this category?');" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors touch-manipulation">
-                                        Delete
-                                    </button>
-                                </form>
+                                @if(Auth::user()->canDelete())
+                                    <form method="POST" action="{{ route('inventory-categories.destroy', $category) }}"
+                                          onsubmit="return confirm('Delete this category?');" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors touch-manipulation">
+                                            Delete
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-gray-400 dark:text-gray-600 text-xs">—</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

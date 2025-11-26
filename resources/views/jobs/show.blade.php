@@ -204,15 +204,19 @@
                                 <td class="px-2 py-1 text-right">{{ number_format($item->unit_price, 2) }}</td>
                                 <td class="px-2 py-1 text-right">{{ number_format($item->subtotal, 2) }}</td>
                                 <td class="px-2 py-1 text-right">
-                                    <form method="POST" action="{{ route('jobs.items.destroy', [$job, $item]) }}"
-                                          onsubmit="return confirm('Remove this service?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-xs text-red-600 dark:text-red-400 hover:underline">
-                                            Remove
-                                        </button>
-                                    </form>
+                                    @if(Auth::user()->canDelete())
+                                        <form method="POST" action="{{ route('jobs.items.destroy', [$job, $item]) }}"
+                                              onsubmit="return confirm('Remove this service?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-xs text-gray-400 dark:text-gray-600">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -303,15 +307,19 @@
                                 <td class="px-2 py-1 text-right">{{ number_format($item->unit_price, 2) }}</td>
                                 <td class="px-2 py-1 text-right">{{ number_format($item->subtotal, 2) }}</td>
                                 <td class="px-2 py-1 text-right">
-                                    <form method="POST" action="{{ route('jobs.items.destroy', [$job, $item]) }}"
-                                          onsubmit="return confirm('Remove this item?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-xs text-red-600 dark:text-red-400 hover:underline">
-                                            Remove
-                                        </button>
-                                    </form>
+                                    @if(Auth::user()->canDelete())
+                                        <form method="POST" action="{{ route('jobs.items.destroy', [$job, $item]) }}"
+                                              onsubmit="return confirm('Remove this item?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-xs text-gray-400 dark:text-gray-600">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -443,15 +451,19 @@
                                     {{ $payment->reference }}
                                 </td>
                                 <td class="px-2 py-1 text-right">
-                                    <form method="POST" action="{{ route('jobs.payments.destroy', [$job, $payment]) }}"
-                                          onsubmit="return confirm('Remove this payment?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-xs text-red-600 dark:text-red-400 hover:underline">
-                                            Remove
-                                        </button>
-                                    </form>
+                                    @if(Auth::user()->canDelete())
+                                        <form method="POST" action="{{ route('jobs.payments.destroy', [$job, $payment]) }}"
+                                              onsubmit="return confirm('Remove this payment?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-xs text-red-600 dark:text-red-400 hover:underline">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-xs text-gray-400 dark:text-gray-600">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

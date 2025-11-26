@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +18,7 @@ class UserManagementController extends Controller
         if (!Gate::allows('manage-users')) {
             abort(403, 'Unauthorized. You do not have permission to manage users.');
         }
-        $users = User::with('roles')->orderBy('name')->paginate(20);
+        $users = User::orderBy('name')->paginate(20);
         return view('users.index', compact('users'));
     }
 
@@ -31,8 +30,7 @@ class UserManagementController extends Controller
         if (!Gate::allows('manage-users')) {
             abort(403, 'Unauthorized. You do not have permission to manage users.');
         }
-        $roles = Role::active()->orderBy('name')->get();
-        return view('users.create', compact('roles'));
+        return view('users.create');
     }
 
     /**
@@ -47,19 +45,15 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'roles'    => ['nullable', 'array'],
-            'roles.*'  => ['exists:roles,id'],
+            'role'     => ['required', 'in:admin,manager,mechanic,cashier'],
         ]);
 
         $user = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role'     => $validated['role'],
         ]);
-
-        if (!empty($validated['roles'])) {
-            $user->roles()->sync($validated['roles']);
-        }
 
         return redirect()
             ->route('users.index')
@@ -74,9 +68,7 @@ class UserManagementController extends Controller
         if (!Gate::allows('manage-users')) {
             abort(403, 'Unauthorized. You do not have permission to manage users.');
         }
-        $roles = Role::active()->orderBy('name')->get();
-        $user->load('roles');
-        return view('users.edit', compact('user', 'roles'));
+        return view('users.edit', compact('user'));
     }
 
     /**
@@ -91,22 +83,18 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'roles'    => ['nullable', 'array'],
-            'roles.*'  => ['exists:roles,id'],
+            'role'     => ['required', 'in:admin,manager,mechanic,cashier'],
         ]);
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
+        $user->role = $validated['role'];
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
 
         $user->save();
-
-        if (isset($validated['roles'])) {
-            $user->roles()->sync($validated['roles']);
-        }
 
         return redirect()
             ->route('users.index')

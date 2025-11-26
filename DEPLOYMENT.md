@@ -4,20 +4,21 @@ This guide will help you deploy the MicroNET Sales application to your DigitalOc
 
 ## Prerequisites
 
-- ✅ DigitalOcean droplet with Ubuntu 22.04 or later
-- ✅ DigitalOcean managed PostgreSQL database (already configured)
-- ✅ Domain name pointing to your droplet IP
-- ✅ SSH access to your droplet
+-   ✅ DigitalOcean droplet with Ubuntu 22.04 or later
+-   ✅ DigitalOcean managed PostgreSQL database (already configured)
+-   ✅ Domain name pointing to your droplet IP
+-   ✅ SSH access to your droplet
 
 ## Database Configuration
 
 Your database is already configured:
-- **Host**: `micronetdb-do-user-24249606-0.d.db.ondigitalocean.com`
-- **Port**: `25060`
-- **Database**: `micromoto_ops`
-- **Username**: `doadmin`
-- **Password**: `your_database_password_here`
-- **SSL Mode**: `require`
+
+-   **Host**: `micronetdb-do-user-24249606-0.d.db.ondigitalocean.com`
+-   **Port**: `25060`
+-   **Database**: `micromoto_ops`
+-   **Username**: `doadmin`
+-   **Password**: `your_database_password_here`
+-   **SSL Mode**: `require`
 
 ---
 
@@ -103,6 +104,7 @@ sudo nano .env
 ```
 
 Update these values in `.env`:
+
 ```env
 APP_NAME="MicroNET Sales"
 APP_ENV=production
@@ -125,6 +127,7 @@ APP_BUILD=1
 ```
 
 **Generate application key:**
+
 ```bash
 cd /var/www/micronetops
 sudo -u www-data php artisan key:generate
@@ -178,11 +181,13 @@ sudo chown -R www-data:www-data storage bootstrap/cache
 ## Step 8: Configure Nginx
 
 Create Nginx configuration:
+
 ```bash
 sudo nano /etc/nginx/sites-available/micronetops
 ```
 
 Paste this configuration (replace `your-domain.com` with your actual domain):
+
 ```nginx
 server {
     listen 80;
@@ -219,6 +224,7 @@ server {
 ```
 
 Enable the site:
+
 ```bash
 # Create symlink
 sudo ln -s /etc/nginx/sites-available/micronetops /etc/nginx/sites-enabled/
@@ -264,11 +270,13 @@ sudo certbot --nginx -d your-domain.com -d www.your-domain.com
 ### Quick Deployment Script
 
 Create a deployment script:
+
 ```bash
 sudo nano /var/www/micronetops/deploy.sh
 ```
 
 Add this content:
+
 ```bash
 #!/bin/bash
 cd /var/www/micronetops
@@ -298,6 +306,7 @@ echo "Deployment completed!"
 ```
 
 Make it executable:
+
 ```bash
 sudo chmod +x /var/www/micronetops/deploy.sh
 ```
@@ -305,44 +314,50 @@ sudo chmod +x /var/www/micronetops/deploy.sh
 ### Deployment Workflow
 
 1. **Update version in `.env`** (on your local machine):
-   ```bash
-   nano .env
-   # Change APP_VERSION and APP_BUILD
-   ```
+
+    ```bash
+    nano .env
+    # Change APP_VERSION and APP_BUILD
+    ```
 
 2. **Commit and push to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Version 1.0.1-beta Build 2"
-   git push origin main
-   ```
+
+    ```bash
+    git add .
+    git commit -m "Version 1.0.1-beta Build 2"
+    git push origin main
+    ```
 
 3. **SSH into droplet and run**:
-   ```bash
-   cd /var/www/micronetops
-   ./deploy.sh
-   ```
+    ```bash
+    cd /var/www/micronetops
+    ./deploy.sh
+    ```
 
 ---
 
 ## Troubleshooting
 
 ### Check Nginx Error Logs
+
 ```bash
 sudo tail -f /var/log/nginx/error.log
 ```
 
 ### Check PHP-FPM Status
+
 ```bash
 sudo systemctl status php8.2-fpm
 ```
 
 ### Check Laravel Logs
+
 ```bash
 tail -f /var/www/micronetops/storage/logs/laravel.log
 ```
 
 ### If Permissions Issues
+
 ```bash
 cd /var/www/micronetops
 sudo chown -R www-data:www-data .
@@ -350,6 +365,7 @@ sudo chmod -R 775 storage bootstrap/cache
 ```
 
 ### Clear All Caches
+
 ```bash
 cd /var/www/micronetops
 sudo -u www-data php artisan config:clear
@@ -361,6 +377,7 @@ sudo -u www-data php artisan cache:clear
 ### Database Connection Issues
 
 If you get SSL connection errors, verify:
+
 1. Database host, port, username, password in `.env`
 2. `DB_SSLMODE=require` is set
 3. Your droplet's IP is allowed in DigitalOcean database firewall rules
@@ -369,12 +386,12 @@ If you get SSL connection errors, verify:
 
 ## Security Checklist
 
-- [x] `APP_DEBUG=false` in production
-- [x] Strong database passwords (already set)
-- [ ] SSL certificate installed
-- [ ] Firewall configured (UFW)
-- [ ] Regular backups of database
-- [x] `.env` file not in git
+-   [x] `APP_DEBUG=false` in production
+-   [x] Strong database passwords (already set)
+-   [ ] SSL certificate installed
+-   [ ] Firewall configured (UFW)
+-   [ ] Regular backups of database
+-   [x] `.env` file not in git
 
 ### Configure Firewall (Optional but Recommended)
 
@@ -416,12 +433,11 @@ sudo tail -f /var/www/micronetops/storage/logs/laravel.log
 
 ## Notes
 
-- The cleanup command (`app:cleanup-for-deployment`) removes all non-admin users and all inventory items
-- Only users with the "admin" role will remain after cleanup
-- You'll need to manually add inventory items (services and parts) after deployment
-- Make sure to update `APP_URL` in `.env` with your actual domain
+-   The cleanup command (`app:cleanup-for-deployment`) removes all non-admin users and all inventory items
+-   Only users with the "admin" role will remain after cleanup
+-   You'll need to manually add inventory items (services and parts) after deployment
+-   Make sure to update `APP_URL` in `.env` with your actual domain
 
 ---
 
 **Ready to deploy!** Follow these steps in order, and your application should be live on DigitalOcean. 🚀
-

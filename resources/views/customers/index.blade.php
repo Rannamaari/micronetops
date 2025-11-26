@@ -93,14 +93,18 @@
                                 {{ $customer->created_at?->format('Y-m-d') }}
                             </td>
                             <td class="px-4 py-4" onclick="event.stopPropagation()">
-                                <form action="{{ route('customers.destroy', $customer) }}" method="POST"
-                                      onsubmit="return confirm('Are you sure you want to delete this customer? All associated vehicles and AC units will also be deleted.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-xs">
-                                        Delete
-                                    </button>
-                                </form>
+                                @if(Auth::user()->canDelete())
+                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST"
+                                          onsubmit="return confirm('Are you sure you want to delete this customer? All associated vehicles and AC units will also be deleted.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-xs">
+                                            Delete
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-gray-400 dark:text-gray-600 text-xs">—</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

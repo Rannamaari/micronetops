@@ -23,13 +23,11 @@
                         <div>
                             <h1 class="text-2xl font-bold text-white">{{ $user->name }}</h1>
                             <p class="text-indigo-100">{{ $user->email }}</p>
-                            @if($user->roles->count() > 0)
+                            @if($user->role)
                                 <div class="flex gap-2 mt-2">
-                                    @foreach($user->roles as $role)
-                                        <span class="px-2 py-1 rounded text-xs font-medium bg-white/20 text-white">
-                                            {{ $role->name }}
-                                        </span>
-                                    @endforeach
+                                    <span class="px-2 py-1 rounded text-xs font-medium bg-white/20 text-white">
+                                        {{ ucfirst($user->role) }}
+                                    </span>
                                 </div>
                             @endif
                         </div>

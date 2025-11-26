@@ -23,7 +23,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         // Define authorization gates based on roles
         Gate::define('manage-users', function ($user) {
-            return $user->hasRole('admin');
+            return $user->hasAnyRole(['admin', 'manager']);
         });
 
         Gate::define('manage-roles', function ($user) {
@@ -39,7 +39,8 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('view-reports', function ($user) {
-            return $user->hasAnyRole(['admin', 'manager']);
+            // All users can view reports
+            return true;
         });
 
         Gate::define('manage-jobs', function ($user) {

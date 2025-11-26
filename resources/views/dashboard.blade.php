@@ -203,6 +203,194 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Charts Section --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                {{-- Daily Sales Chart --}}
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Daily Total Sales (Last 10 Days)</h3>
+                    <canvas id="dailySalesChart"></canvas>
+                </div>
+
+                {{-- Monthly Trends Chart --}}
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Monthly Revenue Trends</h3>
+                    <canvas id="monthlyTrendsChart"></canvas>
+                </div>
+            </div>
+
+            {{-- Best Selling Items & Services --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- Micro Cool (AC) Best Sellers --}}
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Micro Cool - Best Sellers (Last 30 Days)</h3>
+
+                    {{-- Best Services --}}
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Top Services</h4>
+                        @forelse($bestSellingData['acServices'] as $item)
+                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ $item->inventoryItem->name ?? 'Unknown' }}</span>
+                                <span class="text-sm font-semibold text-green-600 dark:text-green-400">{{ $item->total_quantity }} times</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No data yet</p>
+                        @endforelse
+                    </div>
+
+                    {{-- Best Items --}}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Top Items</h4>
+                        @forelse($bestSellingData['acItems'] as $item)
+                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ $item->inventoryItem->name ?? 'Unknown' }}</span>
+                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $item->total_quantity }} units</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No data yet</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Micro Moto Garage Best Sellers --}}
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Micro Moto - Best Sellers (Last 30 Days)</h3>
+
+                    {{-- Best Services --}}
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Top Services</h4>
+                        @forelse($bestSellingData['motoServices'] as $item)
+                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ $item->inventoryItem->name ?? 'Unknown' }}</span>
+                                <span class="text-sm font-semibold text-green-600 dark:text-green-400">{{ $item->total_quantity }} times</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No data yet</p>
+                        @endforelse
+                    </div>
+
+                    {{-- Best Items --}}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Top Items</h4>
+                        @forelse($bestSellingData['motoItems'] as $item)
+                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-900 dark:text-gray-100">{{ $item->inventoryItem->name ?? 'Unknown' }}</span>
+                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $item->total_quantity }} units</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400">No data yet</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    {{-- Chart.js Library --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Daily Sales Chart
+        const dailySalesCtx = document.getElementById('dailySalesChart').getContext('2d');
+        new Chart(dailySalesCtx, {
+            type: 'line',
+            data: {
+                labels: @json($dailySalesData['labels']),
+                datasets: [{
+                    label: 'Daily Sales (MVR)',
+                    data: @json($dailySalesData['data']),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Monthly Trends Chart
+        const monthlyTrendsCtx = document.getElementById('monthlyTrendsChart').getContext('2d');
+        new Chart(monthlyTrendsCtx, {
+            type: 'bar',
+            data: {
+                labels: @json($monthlyTrendsData['labels']),
+                datasets: [
+                    {
+                        label: 'Micro Cool (AC)',
+                        data: @json($monthlyTrendsData['acData']),
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Micro Moto Garage',
+                        data: @json($monthlyTrendsData['motoData']),
+                        backgroundColor: 'rgba(249, 115, 22, 0.8)',
+                        borderColor: 'rgb(249, 115, 22)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </x-app-layout>

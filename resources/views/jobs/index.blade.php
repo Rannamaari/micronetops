@@ -159,7 +159,8 @@
                                 {{ $job->created_at?->format('Y-m-d H:i') }}
                             </td>
                             <td class="px-4 py-4" onclick="event.stopPropagation()">
-                                @if($job->status === 'pending')
+                                @if(Auth::user()->canDelete())
+                                    {{-- Admin can delete any job --}}
                                     <form action="{{ route('jobs.destroy', $job) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this job?')">
                                         @csrf
                                         @method('DELETE')

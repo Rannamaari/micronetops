@@ -5,10 +5,11 @@ Based on your existing setup, here's a streamlined deployment guide.
 ## Prerequisites Check
 
 You already have:
-- ✅ Nginx installed and configured
-- ✅ PHP-FPM running
-- ✅ Other Laravel sites working
-- ✅ Git, Composer, Node.js (likely installed)
+
+-   ✅ Nginx installed and configured
+-   ✅ PHP-FPM running
+-   ✅ Other Laravel sites working
+-   ✅ Git, Composer, Node.js (likely installed)
 
 ## Step 1: Verify PHP Version
 
@@ -74,6 +75,7 @@ sudo nano .env
 ```
 
 Update these values:
+
 ```env
 APP_NAME="MicroNET Sales"
 APP_ENV=production
@@ -96,6 +98,7 @@ APP_BUILD=1
 ```
 
 Generate key:
+
 ```bash
 sudo -u www-data php artisan key:generate
 ```
@@ -131,7 +134,7 @@ sudo nano /etc/nginx/sites-available/micronet.mv
 server {
     listen 80;
     server_name micronet.mv www.micronet.mv;
-    
+
     root /var/www/micronetops/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
@@ -188,12 +191,13 @@ sudo certbot --nginx -d micronet.mv -d www.micronet.mv
 1. Visit `https://micronet.mv` - should show landing page
 2. Visit `https://micronet.mv/ops` - should redirect to login
 3. Verify other sites still work:
-   - `https://cool.micronet.mv`
-   - Your mmgweb site
+    - `https://cool.micronet.mv`
+    - Your mmgweb site
 
 ## Troubleshooting
 
 ### If Nginx test fails:
+
 ```bash
 # Check error
 sudo nginx -t
@@ -203,6 +207,7 @@ sudo tail -f /var/log/nginx/error.log
 ```
 
 ### If PHP errors:
+
 ```bash
 # Check PHP-FPM logs
 sudo tail -f /var/log/php8.1-fpm.log
@@ -211,6 +216,7 @@ sudo tail -f /var/log/php8.2-fpm.log
 ```
 
 ### If database connection fails:
+
 ```bash
 # Test from droplet
 cd /var/www/micronetops
@@ -220,6 +226,7 @@ DB::connection()->getPdo();
 ```
 
 ### If other sites break:
+
 ```bash
 # Temporarily disable new site
 sudo rm /etc/nginx/sites-enabled/micronet.mv
@@ -235,6 +242,7 @@ sudo systemctl reload nginx
 Make sure your DNS is configured for `micronet.mv`:
 
 **For main domain:**
+
 ```
 Type: A
 Name: @ (or micronet.mv)
@@ -243,6 +251,7 @@ TTL: 3600
 ```
 
 **For www subdomain:**
+
 ```
 Type: A
 Name: www
@@ -251,6 +260,7 @@ TTL: 3600
 ```
 
 Or use CNAME for www:
+
 ```
 Type: CNAME
 Name: www
@@ -261,4 +271,3 @@ TTL: 3600
 ---
 
 That's it! Your site should be live. 🚀
-

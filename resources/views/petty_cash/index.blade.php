@@ -140,52 +140,54 @@
             </div>
 
             {{-- Top-up + Expense forms --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{-- Add Top-up form --}}
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                        Add Top-up
-                    </h3>
-                    <form method="POST" action="{{ route('petty-cash.store') }}" class="space-y-3">
-                        @csrf
-                        <input type="hidden" name="type" value="topup">
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Amount (MVR)
-                            </label>
-                            <input type="number" step="0.01" name="amount" required
-                                   class="block w-full rounded-md border-gray-300 text-sm
-                                          focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Category (optional)
-                            </label>
-                            <input type="text" name="category" placeholder="e.g. Bank withdrawal"
-                                   class="block w-full rounded-md border-gray-300 text-sm
-                                          focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Purpose
-                            </label>
-                            <textarea name="purpose" rows="2" required
-                                      class="block w-full rounded-md border-gray-300 text-sm
-                                             focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="Reason for top-up"></textarea>
-                        </div>
-
-                        <button type="submit"
-                                class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md
-                                       font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700
-                                       focus:outline-none">
+            <div class="grid grid-cols-1 {{ Auth::user()->canManageTopUps() ? 'md:grid-cols-2' : '' }} gap-4">
+                {{-- Add Top-up form - Admin only --}}
+                @if(Auth::user()->canManageTopUps())
+                    <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
                             Add Top-up
-                        </button>
-                    </form>
-                </div>
+                        </h3>
+                        <form method="POST" action="{{ route('petty-cash.store') }}" class="space-y-3">
+                            @csrf
+                            <input type="hidden" name="type" value="topup">
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Amount (MVR)
+                                </label>
+                                <input type="number" step="0.01" name="amount" required
+                                       class="block w-full rounded-md border-gray-300 text-sm
+                                              focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Category (optional)
+                                </label>
+                                <input type="text" name="category" placeholder="e.g. Bank withdrawal"
+                                       class="block w-full rounded-md border-gray-300 text-sm
+                                              focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Purpose
+                                </label>
+                                <textarea name="purpose" rows="2" required
+                                          class="block w-full rounded-md border-gray-300 text-sm
+                                                 focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="Reason for top-up"></textarea>
+                            </div>
+
+                            <button type="submit"
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md
+                                           font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700
+                                           focus:outline-none">
+                                Add Top-up
+                            </button>
+                        </form>
+                    </div>
+                @endif
 
                 {{-- Record Expense form --}}
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
