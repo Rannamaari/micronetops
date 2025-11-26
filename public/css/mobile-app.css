@@ -90,7 +90,7 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    /* Bottom navigation style */
+    /* Bottom navigation style - MOBILE ONLY */
     .mobile-bottom-nav {
         position: fixed;
         bottom: 0;
@@ -109,6 +109,21 @@
         background: #1f2937;
         border-top-color: #374151;
     }
+}
+
+/* Hide bottom nav on desktop - IMPORTANT */
+@media (min-width: 768px) {
+    .mobile-bottom-nav {
+        display: none !important;
+    }
+
+    main {
+        padding-bottom: 1rem !important;
+    }
+}
+
+/* Show bottom nav ONLY on mobile */
+@media (max-width: 767px) {
 
     .mobile-bottom-nav a {
         display: flex;

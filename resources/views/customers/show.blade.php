@@ -1,246 +1,379 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Customer: {{ $customer->name }}
-            </h2>
-            <div class="flex gap-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div class="flex items-center gap-3">
                 <a href="{{ route('customers.index') }}"
-                   class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:outline-none transition ease-in-out duration-150">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    Back to Customers
                 </a>
-                @if(Auth::user()->canCreateJobs())
-                    <a href="{{ route('jobs.create', ['customer_id' => $customer->id]) }}"
-                       class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none transition ease-in-out duration-150">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Create Job
-                    </a>
-                @endif
+                <div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Customer</div>
+                    <h2 class="font-bold text-xl text-gray-800 dark:text-gray-200">
+                        {{ $customer->name }}
+                    </h2>
+                </div>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-5xl mx-auto sm:px-4 lg:px-8 space-y-6">
+    <div class="py-4 sm:py-6">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             {{-- Alerts --}}
             @if (session('success'))
-                <div class="text-sm text-green-600 dark:text-green-400">
-                    {{ session('success') }}
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
                 </div>
             @endif
             @if (session('error'))
-                <div class="text-sm text-red-600 dark:text-red-400">
-                    {{ session('error') }}
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
                 </div>
             @endif
 
-            {{-- Customer info --}}
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer</div>
-                        <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            {{ $customer->name }}
-                        </div>
-                        <div class="text-sm text-gray-700 dark:text-gray-300">
-                            {{ $customer->phone }}
-                        </div>
-                        @if($customer->address)
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {{ $customer->address }}
+            {{-- Quick Actions - Mobile First --}}
+            @if(Auth::user()->canCreateJobs())
+                <div class="block sm:hidden">
+                    <a href="{{ route('jobs.create', ['customer_id' => $customer->id]) }}"
+                       class="flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold text-white shadow-lg transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Create New Job</span>
+                    </a>
+                </div>
+            @endif
+
+            {{-- Customer Info Card --}}
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
+                <div class="p-5 sm:p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-14 h-14 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                                <svg class="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
                             </div>
-                        @endif
+                            <div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Full Name</div>
+                                <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    {{ $customer->name }}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ route('customers.edit', $customer) }}"
+                           class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            <span class="hidden sm:inline">Edit</span>
+                        </a>
                     </div>
-                    <div class="text-right text-xs text-gray-500 dark:text-gray-400">
-                        Category: <span class="font-semibold text-gray-800 dark:text-gray-200">
-                            {{ ucfirst($customer->category) }}
-                        </span>
-                        <div>
-                            <a href="{{ route('customers.edit', $customer) }}"
-                               class="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                Edit
-                            </a>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Phone</div>
+                                <a href="tel:{{ $customer->phone }}" class="text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                    {{ $customer->phone }}
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Category</div>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                    {{ ucfirst($customer->category) }}
+                                </span>
+                            </div>
                         </div>
                     </div>
+
+                    @if($customer->address)
+                        <div class="mt-4 flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Address</div>
+                                <div class="text-sm text-gray-700 dark:text-gray-300">{{ $customer->address }}</div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($customer->notes)
+                        <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <div class="text-xs text-amber-700 dark:text-amber-400 font-medium mb-1">Notes</div>
+                                    <div class="text-sm text-amber-900 dark:text-amber-200 whitespace-pre-line">{{ $customer->notes }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
-                @if($customer->notes)
-                    <div class="mt-3 text-sm text-gray-700 dark:text-gray-300">
-                        <div class="font-medium text-gray-600 dark:text-gray-400 mb-1">Notes</div>
-                        <div class="whitespace-pre-line">{{ $customer->notes }}</div>
+                {{-- Desktop Quick Action --}}
+                @if(Auth::user()->canCreateJobs())
+                    <div class="hidden sm:block border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/30">
+                        <a href="{{ route('jobs.create', ['customer_id' => $customer->id]) }}"
+                           class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold text-white shadow-sm transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>Create New Job for {{ $customer->name }}</span>
+                        </a>
                     </div>
                 @endif
             </div>
 
             {{-- Vehicles & AC units --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {{-- Vehicles --}}
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            Vehicles (Bikes)
-                        </h3>
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                Vehicles
+                            </h3>
+                        </div>
                     </div>
 
-                    @if($customer->vehicles->isEmpty())
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            No vehicles yet.
-                        </p>
-                    @else
-                        <ul class="space-y-2 text-sm">
-                            @foreach($customer->vehicles as $vehicle)
-                                @php
-                                    $rwStatus = $vehicle->roadWorthinessStatus();
-                                    $rwExpired = $vehicle->isRoadWorthinessExpired();
-                                    $rwExpiringSoon = $rwStatus === 'expiring_soon';
-                                @endphp
-                                <li class="border rounded px-2 py-1 {{ $rwExpired ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : ($rwExpiringSoon ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' : 'border-gray-200 dark:border-gray-700') }}">
-                                    <div class="flex justify-between items-start">
-                                        <div class="flex-1">
-                                            <div class="font-medium text-gray-900 dark:text-gray-100">
-                                                {{ $vehicle->brand }} {{ $vehicle->model }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                Reg: {{ $vehicle->registration_number ?? '—' }}
-                                                @if($vehicle->year)
-                                                    • {{ $vehicle->year }}
-                                                @endif
-                                                @if($vehicle->mileage)
-                                                    • {{ $vehicle->mileage }} km
+                    <div class="p-5">
+                        @if($customer->vehicles->isEmpty())
+                            <div class="text-center py-8">
+                                <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No vehicles registered yet</p>
+                            </div>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($customer->vehicles as $vehicle)
+                                    @php
+                                        $rwStatus = $vehicle->roadWorthinessStatus();
+                                        $rwExpired = $vehicle->isRoadWorthinessExpired();
+                                        $rwExpiringSoon = $rwStatus === 'expiring_soon';
+                                    @endphp
+                                    <div class="p-4 rounded-lg border-2 {{ $rwExpired ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : ($rwExpiringSoon ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30') }}">
+                                        <div class="flex justify-between items-start gap-3">
+                                            <div class="flex-1">
+                                                <div class="font-bold text-base text-gray-900 dark:text-gray-100 mb-1">
+                                                    {{ $vehicle->brand }} {{ $vehicle->model }}
+                                                </div>
+                                                <div class="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <span class="inline-flex items-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                                        </svg>
+                                                        {{ $vehicle->registration_number ?? 'No Reg' }}
+                                                    </span>
+                                                    @if($vehicle->year)
+                                                        <span>• {{ $vehicle->year }}</span>
+                                                    @endif
+                                                    @if($vehicle->mileage)
+                                                        <span>• {{ number_format($vehicle->mileage) }} km</span>
+                                                    @endif
+                                                </div>
+                                                @if($vehicle->road_worthiness_expires_at)
+                                                    <div class="mt-2 text-sm">
+                                                        <div class="flex items-center gap-2">
+                                                            <svg class="w-4 h-4 {{ $rwExpired ? 'text-red-500' : ($rwExpiringSoon ? 'text-yellow-500' : 'text-green-500') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                            </svg>
+                                                            <span class="{{ $rwExpired ? 'text-red-700 dark:text-red-300' : ($rwExpiringSoon ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-300') }}">
+                                                                <span class="font-medium">RW:</span> {{ $vehicle->road_worthiness_expires_at->format('M d, Y') }}
+                                                                @if($rwExpired)
+                                                                    <span class="font-bold">(EXPIRED)</span>
+                                                                @elseif($rwExpiringSoon)
+                                                                    <span>({{ $vehicle->daysUntilExpiry() }} days)</span>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="mt-2 text-sm text-gray-400 dark:text-gray-500 italic">
+                                                        No road worthiness
+                                                    </div>
                                                 @endif
                                             </div>
                                             @if($vehicle->road_worthiness_expires_at)
-                                                <div class="text-xs mt-1">
-                                                    <span class="font-medium">Road Worthiness:</span>
-                                                    <span class="{{ $rwExpired ? 'text-red-600 dark:text-red-400' : ($rwExpiringSoon ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400') }}">
-                                                        Expires {{ $vehicle->road_worthiness_expires_at->format('Y-m-d') }}
-                                                        @if($rwExpired)
-                                                            <span class="font-bold">(EXPIRED)</span>
-                                                        @elseif($rwExpiringSoon)
-                                                            <span>({{ $vehicle->daysUntilExpiry() }} days left)</span>
-                                                        @endif
-                                                    </span>
-                                                </div>
-                                            @else
-                                                <div class="text-xs mt-1 text-gray-400 dark:text-gray-500">
-                                                    No road worthiness certificate
-                                                </div>
+                                                <span class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase
+                                                    {{ $rwExpired
+                                                        ? 'bg-red-600 text-white'
+                                                        : ($rwExpiringSoon
+                                                            ? 'bg-yellow-500 text-white'
+                                                            : 'bg-green-500 text-white') }}">
+                                                    {{ $rwStatus === 'expired' ? 'Expired' : ($rwStatus === 'expiring_soon' ? 'Soon' : 'Valid') }}
+                                                </span>
                                             @endif
                                         </div>
-                                        @if($vehicle->road_worthiness_expires_at)
-                                            <span class="ml-2 px-2 py-0.5 rounded text-[10px] font-medium
-                                                {{ $rwExpired 
-                                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' 
-                                                    : ($rwExpiringSoon 
-                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' 
-                                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200') }}">
-                                                {{ $rwStatus === 'expired' ? 'EXPIRED' : ($rwStatus === 'expiring_soon' ? 'EXPIRING' : 'VALID') }}
-                                            </span>
-                                        @endif
                                     </div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
+                                @endforeach
+                            </div>
+                        @endif
 
-                    <form method="POST" action="{{ route('customers.vehicles.store', $customer) }}" class="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        @csrf
-                        <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
-                            Add Vehicle
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" name="brand" placeholder="Brand"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="text" name="model" placeholder="Model"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="text" name="registration_number" placeholder="Reg No."
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="number" name="year" placeholder="Year"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="number" name="mileage" placeholder="Mileage"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="submit"
-                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md
-                                           font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700
-                                           focus:outline-none">
-                                Save
-                            </button>
-                        </div>
-                    </form>
+                        {{-- Add Vehicle Form --}}
+                        <details class="mt-5 group">
+                            <summary class="cursor-pointer list-none">
+                                <div class="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 transition">
+                                    <svg class="w-5 h-5 group-open:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    <span>Add Vehicle</span>
+                                </div>
+                            </summary>
+                            <form method="POST" action="{{ route('customers.vehicles.store', $customer) }}" class="mt-4 space-y-3 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                                @csrf
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="text" name="brand" placeholder="Brand (e.g., Honda)" required
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="text" name="model" placeholder="Model (e.g., CBR)" required
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="text" name="registration_number" placeholder="Reg Number"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="number" name="year" placeholder="Year"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="number" name="mileage" placeholder="Mileage (km)"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit"
+                                        class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-lg
+                                               font-semibold text-white transition">
+                                    Save Vehicle
+                                </button>
+                            </form>
+                        </details>
+                    </div>
                 </div>
 
                 {{-- AC Units --}}
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            AC Units
-                        </h3>
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                AC Units
+                            </h3>
+                        </div>
                     </div>
 
-                    @if($customer->acUnits->isEmpty())
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            No AC units yet.
-                        </p>
-                    @else
-                        <ul class="space-y-2 text-sm">
-                            @foreach($customer->acUnits as $ac)
-                                <li class="border border-gray-200 dark:border-gray-700 rounded px-2 py-1">
-                                    <div class="font-medium text-gray-900 dark:text-gray-100">
-                                        {{ $ac->brand ?? 'AC' }} - {{ $ac->btu ? $ac->btu . ' BTU' : '' }}
+                    <div class="p-5">
+                        @if($customer->acUnits->isEmpty())
+                            <div class="text-center py-8">
+                                <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                                </svg>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No AC units registered yet</p>
+                            </div>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($customer->acUnits as $ac)
+                                    <div class="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                        <div class="font-bold text-base text-gray-900 dark:text-gray-100 mb-2">
+                                            {{ $ac->brand ?? 'AC Unit' }}
+                                            @if($ac->btu)
+                                                <span class="ml-2 px-2 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-sm font-semibold rounded">
+                                                    {{ $ac->btu }} BTU
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="space-y-1 text-sm">
+                                            @if($ac->gas_type)
+                                                <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                                                    </svg>
+                                                    <span><span class="font-medium">Gas:</span> {{ $ac->gas_type }}</span>
+                                                </div>
+                                            @endif
+                                            @if($ac->location_description)
+                                                <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    </svg>
+                                                    <span><span class="font-medium">Location:</span> {{ $ac->location_description }}</span>
+                                                </div>
+                                            @endif
+                                            @if($ac->indoor_units || $ac->outdoor_units)
+                                                <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                                    </svg>
+                                                    <span>
+                                                        {{ $ac->indoor_units ?? 0 }} Indoor / {{ $ac->outdoor_units ?? 0 }} Outdoor
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        Gas: {{ $ac->gas_type ?? 'N/A' }}
-                                        @if($ac->location_description)
-                                            • {{ $ac->location_description }}
-                                        @endif
-                                    </div>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
+                                @endforeach
+                            </div>
+                        @endif
 
-                    <form method="POST" action="{{ route('customers.ac-units.store', $customer) }}" class="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        @csrf
-                        <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
-                            Add AC Unit
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" name="brand" placeholder="Brand"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="number" name="btu" placeholder="BTU"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" name="gas_type" placeholder="Gas (R32/R410)"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="text" name="location_description" placeholder="Location (Living, BR...)"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" name="indoor_units" placeholder="Indoor units"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                            <input type="number" name="outdoor_units" placeholder="Outdoor units"
-                                   class="rounded-md border-gray-300 text-xs focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="submit"
-                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md
-                                           font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700
-                                           focus:outline-none">
-                                Save
-                            </button>
-                        </div>
-                    </form>
+                        {{-- Add AC Unit Form --}}
+                        <details class="mt-5 group">
+                            <summary class="cursor-pointer list-none">
+                                <div class="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 transition">
+                                    <svg class="w-5 h-5 group-open:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    <span>Add AC Unit</span>
+                                </div>
+                            </summary>
+                            <form method="POST" action="{{ route('customers.ac-units.store', $customer) }}" class="mt-4 space-y-3 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                                @csrf
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="text" name="brand" placeholder="Brand (e.g., Daikin)" required
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="number" name="btu" placeholder="BTU (e.g., 12000)"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="text" name="gas_type" placeholder="Gas Type (R32/R410)"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="text" name="location_description" placeholder="Location (Living Room)"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input type="number" name="indoor_units" placeholder="Indoor Units"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <input type="number" name="outdoor_units" placeholder="Outdoor Units"
+                                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit"
+                                        class="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-lg
+                                               font-semibold text-white transition">
+                                    Save AC Unit
+                                </button>
+                            </form>
+                        </details>
+                    </div>
                 </div>
             </div>
 
