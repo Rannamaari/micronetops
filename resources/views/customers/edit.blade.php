@@ -10,7 +10,7 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
                 <form method="POST" action="{{ route('customers.update', $customer) }}" class="space-y-4">
                     @csrf
-                    @method('PUT')
+                    @method('PATCH')
 
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -50,6 +50,32 @@
                 </div>
             @endif
 
+            {{-- Last Customer Notice --}}
+            @if($lastCustomer)
+                <div class="mb-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                                Last Customer Added
+                            </div>
+                            <div class="text-sm text-indigo-800 dark:text-indigo-200 mt-1">
+                                <strong>{{ $lastCustomer->name }}</strong> - {{ $lastCustomer->phone }}
+                                <span class="text-xs text-indigo-600 dark:text-indigo-400 ml-2">
+                                    ({{ $lastCustomer->created_at?->diffForHumans() }})
+                                </span>
+                            </div>
+                        </div>
+                        <a href="{{ route('customers.show', $lastCustomer) }}"
+                           class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-md text-xs font-medium text-white transition">
+                            View
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-900">
@@ -90,7 +116,8 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
-                                {{ $customer->created_at?->format('Y-m-d') }}
+                                <div>{{ $customer->created_at?->format('Y-m-d') }}</div>
+                                <div class="text-gray-400 dark:text-gray-500">{{ $customer->created_at?->format('H:i') }}</div>
                             </td>
                             <td class="px-4 py-4" onclick="event.stopPropagation()">
                                 @if(Auth::user()->canDelete())

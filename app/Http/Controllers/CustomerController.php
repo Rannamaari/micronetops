@@ -25,9 +25,12 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('name')->paginate(20)->withQueryString();
+        $customers = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
-        return view('customers.index', compact('customers', 'search'));
+        // Get the most recently created customer for the notice
+        $lastCustomer = Customer::orderBy('created_at', 'desc')->first();
+
+        return view('customers.index', compact('customers', 'search', 'lastCustomer'));
     }
 
     /**
