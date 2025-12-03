@@ -15,11 +15,24 @@
                     </h2>
                 </div>
             </div>
+
+            {{-- Desktop Quick Action in Header --}}
+            @if(Auth::user()->canCreateJobs())
+                <div class="hidden sm:block">
+                    <a href="{{ route('jobs.create', ['customer_id' => $customer->id]) }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold text-sm text-white shadow-sm transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Create New Job</span>
+                    </a>
+                </div>
+            @endif
         </div>
     </x-slot>
 
     <div class="py-4 sm:py-6">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-4">
 
             {{-- Alerts --}}
             @if (session('success'))
@@ -48,23 +61,23 @@
 
             {{-- Customer Info Card --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
-                <div class="p-5 sm:p-6">
-                    <div class="flex justify-between items-start mb-4">
+                <div class="p-5 sm:p-4">
+                    <div class="flex justify-between items-start mb-4 sm:mb-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-14 h-14 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
-                                <svg class="w-7 h-7 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-14 h-14 sm:w-12 sm:h-12 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                                <svg class="w-7 h-7 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                 </svg>
                             </div>
                             <div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Full Name</div>
-                                <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                <div class="text-lg sm:text-base font-bold text-gray-900 dark:text-gray-100">
                                     {{ $customer->name }}
                                 </div>
                             </div>
                         </div>
                         <a href="{{ route('customers.edit', $customer) }}"
-                           class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition">
+                           class="inline-flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
@@ -72,26 +85,26 @@
                         </a>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex items-start gap-3 p-3 sm:p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 sm:w-4 sm:h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                             </svg>
                             <div class="flex-1">
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Phone</div>
-                                <a href="tel:{{ $customer->phone }}" class="text-base font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                <a href="tel:{{ $customer->phone }}" class="text-base sm:text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
                                     {{ $customer->phone }}
                                 </a>
                             </div>
                         </div>
 
-                        <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex items-start gap-3 p-3 sm:p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 sm:w-4 sm:h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                             </svg>
                             <div class="flex-1">
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Category</div>
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                <span class="inline-flex items-center px-2.5 py-1 sm:px-2 sm:py-0.5 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
                                     {{ ucfirst($customer->category) }}
                                 </span>
                             </div>
@@ -99,8 +112,8 @@
                     </div>
 
                     @if($customer->address)
-                        <div class="mt-4 flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <svg class="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="mt-3 flex items-start gap-3 p-3 sm:p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <svg class="w-5 h-5 sm:w-4 sm:h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
@@ -112,9 +125,9 @@
                     @endif
 
                     @if($customer->notes)
-                        <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <div class="mt-3 p-3 sm:p-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                             <div class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 sm:w-4 sm:h-4 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                                 <div class="flex-1">
@@ -125,29 +138,16 @@
                         </div>
                     @endif
                 </div>
-
-                {{-- Desktop Quick Action --}}
-                @if(Auth::user()->canCreateJobs())
-                    <div class="hidden sm:block border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/30">
-                        <a href="{{ route('jobs.create', ['customer_id' => $customer->id]) }}"
-                           class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold text-white shadow-sm transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            <span>Create New Job for {{ $customer->name }}</span>
-                        </a>
-                    </div>
-                @endif
             </div>
 
             {{-- Vehicles & AC units --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {{-- Vehicles --}}
                 <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
-                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-4 sm:p-3 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 sm:w-9 sm:h-9 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                 </svg>
                             </div>
