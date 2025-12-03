@@ -107,13 +107,13 @@ class JobController extends Controller
             'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])
-        ->where(function($query) use ($search) {
-            $query->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('phone', 'ilike', "%{$search}%");
-        })
-        ->latest()
-        ->limit(20)
-        ->get();
+            ->where(function ($query) use ($search) {
+                $query->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('phone', 'ilike', "%{$search}%");
+            })
+            ->latest()
+            ->limit(20)
+            ->get();
 
         return response()->json([
             'results' => $customers->map(function ($customer) {

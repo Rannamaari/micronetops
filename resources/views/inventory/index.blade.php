@@ -190,7 +190,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 text-right action-buttons" onclick="event.stopPropagation()">
-                                <div class="flex gap-3 justify-end">
+                                <div class="flex gap-2 justify-end flex-wrap">
                                     <a href="{{ route('inventory.edit', $item) }}"
                                        class="px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
                                         Edit
@@ -198,10 +198,20 @@
                                     <form method="POST" action="{{ route('inventory.toggle-active', $item) }}" class="inline">
                                         @csrf
                                         <button type="submit"
-                                                class="px-3 py-1.5 text-xs font-medium {{ $item->is_active ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50' : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50' }} rounded transition-colors">
+                                                class="px-3 py-1.5 text-xs font-medium {{ $item->is_active ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50' : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50' }} rounded transition-colors">
                                             {{ $item->is_active ? 'Deactivate' : 'Activate' }}
                                         </button>
                                     </form>
+                                    @if(Auth::user()->isAdmin())
+                                        <form method="POST" action="{{ route('inventory.destroy', $item) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this item? If the item has been used in jobs, it will be deactivated instead.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
