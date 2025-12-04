@@ -13,6 +13,7 @@ use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoadWorthinessReportController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SystemController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -162,6 +163,12 @@ Route::middleware('auth')->group(function () {
     // Inventory deletion - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    });
+
+    // System Settings & Admin Tools - Admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::get('system/settings', [SystemController::class, 'settings'])->name('system.settings');
+        Route::post('system/purge', [SystemController::class, 'purgeAllData'])->name('system.purge');
     });
 });
 

@@ -91,6 +91,13 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        {{-- System Settings - Admin only --}}
+                        @if(Auth::user()->isAdmin())
+                            <x-dropdown-link :href="route('system.settings')">
+                                {{ __('System Settings') }}
+                            </x-dropdown-link>
+                        @endif
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -189,6 +196,13 @@
                 <x-responsive-nav-link :href="route('profile.show')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
+
+                {{-- System Settings - Admin only --}}
+                @if(Auth::user()->isAdmin())
+                    <x-responsive-nav-link :href="route('system.settings')">
+                        {{ __('System Settings') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
