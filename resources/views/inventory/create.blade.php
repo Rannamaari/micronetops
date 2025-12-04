@@ -7,6 +7,30 @@
 
     <div class="py-6">
         <div class="max-w-4xl mx-auto sm:px-4 lg:px-8">
+            {{-- Success message --}}
+            @if (session('success'))
+                <div class="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
+                    <p class="text-sm text-green-600 dark:text-green-400">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            {{-- Keyboard shortcuts info --}}
+            <div class="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Keyboard Shortcuts:</strong>
+                        <span class="ml-2">Ctrl+S (Save)</span>
+                        <span class="ml-2">•</span>
+                        <span class="ml-2">Ctrl+Shift+S (Save & Add Another)</span>
+                        <span class="ml-2">•</span>
+                        <span class="ml-2">Esc (Cancel)</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
                 @if ($errors->any())
                     <div class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
@@ -18,15 +42,16 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('inventory.store') }}" class="space-y-6">
+                <form method="POST" action="{{ route('inventory.store') }}" class="space-y-6" id="inventory-form">
                     @csrf
+                    <input type="hidden" name="add_another" id="add_another" value="0">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Name <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="name" value="{{ old('name') }}" required
+                            <input type="text" name="name" id="name-field" value="{{ old('name') }}" required autofocus
                                    class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             @error('name')
                                 <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -176,15 +201,27 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-end gap-3">
-                        <a href="{{ route('inventory.index') }}"
-                           class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none">
-                            Cancel
+                    <div class="flex flex-col sm:flex-row justify-between gap-3">
+                        <a href="{{ route('inventory.index') }}" id="cancel-btn"
+                           class="inline-flex items-center justify-center px-4 py-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none">
+                            Cancel <span class="ml-2 text-gray-500 dark:text-gray-400">(Esc)</span>
                         </a>
-                        <button type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
-                            Create Item
-                        </button>
+                        <div class="flex gap-3">
+                            <button type="submit" id="save-btn"
+                                    class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Save <span class="ml-2 opacity-75">(Ctrl+S)</span>
+                            </button>
+                            <button type="button" id="save-add-another-btn"
+                                    class="inline-flex items-center justify-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Save & Add Another <span class="ml-2 opacity-75">(Ctrl+Shift+S)</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -192,6 +229,38 @@
     </div>
 
     <script>
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S or Cmd+S - Save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('add_another').value = '0';
+                document.getElementById('inventory-form').submit();
+            }
+            // Ctrl+Shift+S or Cmd+Shift+S - Save & Add Another
+            else if ((e.ctrlKey || e.metaKey) && e.key === 'S' && e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('add_another').value = '1';
+                document.getElementById('inventory-form').submit();
+            }
+            // Escape - Cancel
+            else if (e.key === 'Escape') {
+                e.preventDefault();
+                window.location.href = document.getElementById('cancel-btn').href;
+            }
+        });
+
+        // Save & Add Another button click handler
+        document.getElementById('save-add-another-btn').addEventListener('click', function() {
+            document.getElementById('add_another').value = '1';
+            document.getElementById('inventory-form').submit();
+        });
+
+        // Focus on name field on page load
+        window.addEventListener('load', function() {
+            document.getElementById('name-field').focus();
+        });
+
         // Handle service checkbox
         document.getElementById('is_service').addEventListener('change', function() {
             const quantityField = document.getElementById('quantity-field');

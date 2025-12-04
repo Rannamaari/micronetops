@@ -114,6 +114,14 @@ class InventoryController extends Controller
 
         $item = InventoryItem::create($validated);
 
+        // Check if user wants to add another item
+        if ($request->has('add_another')) {
+            return redirect()
+                ->route('inventory.create')
+                ->with('success', "Inventory item '{$item->name}' created successfully. Add another item below.")
+                ->withInput($request->only(['category', 'unit', 'inventory_category_id'])); // Preserve some fields
+        }
+
         return redirect()
             ->route('inventory.index')
             ->with('success', "Inventory item '{$item->name}' created successfully.")
