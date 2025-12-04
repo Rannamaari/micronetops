@@ -23,8 +23,8 @@ class SystemController extends Controller
 
     /**
      * Purge all data from the system (admin only)
-     * This deletes all customers, jobs, inventory, and petty cash
-     * Useful for testing and starting fresh with a new company
+     * This deletes jobs, inventory, and petty cash but KEEPS customers
+     * Useful for testing and starting fresh while preserving customer data
      */
     public function purgeAllData(Request $request)
     {
@@ -37,6 +37,7 @@ class SystemController extends Controller
             DB::beginTransaction();
 
             // Delete in order to avoid foreign key constraint violations
+            // NOTE: Customers, vehicles, and AC units are preserved
 
             // 1. Delete payments (child of jobs)
             DB::table('payments')->delete();
@@ -53,26 +54,22 @@ class SystemController extends Controller
             // 5. Delete inventory_items
             DB::table('inventory_items')->delete();
 
-            // 6. Delete vehicles (child of customers)
-            DB::table('vehicles')->delete();
+            // 6. Delete petty_cash entries
+            DB::table('petty_cash')->delete();
 
-            // 7. Delete ac_units (child of customers)
-            DB::table('ac_units')->delete();
-
-            // 8. Delete road_worthiness_history
-            DB::table('road_worthiness_history')->delete();
-
-            // 9. Delete customers
-            DB::table('customers')->delete();
-
-            // 10. Delete petty_cash entries
-            DB::table('petty_cashes')->delete();
+            // NOTE: We do NOT delete:
+            // - customers
+            // - vehicles
+            // - ac_units
+            // - road_worthiness_history (tied to vehicles)
+            // - inventory_categories
+            // - users
 
             DB::commit();
 
             Log::info('System data purged by admin user: ' . auth()->user()->email);
 
-            return redirect()->back()->with('success', 'All data has been purged successfully. The system is now ready for fresh data.');
+            return redirect()->back()->with('success', 'Data purged successfully! Jobs, inventory, and petty cash have been deleted. Customers and their data have been preserved.');
         } catch (\Exception $e) {
             DB::rollBack();
 

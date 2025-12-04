@@ -31,19 +31,22 @@
                     </h3>
 
                     <div class="border-2 border-red-200 dark:border-red-800 rounded-lg p-6 bg-red-50 dark:bg-red-900/20">
-                        <h4 class="font-semibold text-red-800 dark:text-red-300 mb-2">Purge All Data</h4>
-                        <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                            This action will permanently delete ALL data from the system including:
+                        <h4 class="font-semibold text-red-800 dark:text-red-300 mb-2">Purge Business Data</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            This action will permanently delete the following:
                         </p>
-                        <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-4 space-y-1">
-                            <li>All customers and their vehicles/AC units</li>
+                        <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-3 space-y-1">
                             <li>All jobs, job items, and payments</li>
                             <li>All inventory items and inventory logs</li>
                             <li>All petty cash entries</li>
-                            <li>All road worthiness history</li>
                         </ul>
+
+                        <p class="text-sm text-green-700 dark:text-green-300 font-medium mb-3">
+                            ✓ Customers, vehicles, AC units, and road worthiness data will be preserved
+                        </p>
+
                         <p class="text-sm text-red-600 dark:text-red-400 font-semibold mb-4">
-                            ⚠️ This action cannot be undone. Only use this for testing purposes or when starting fresh with a new company.
+                            ⚠️ This action cannot be undone. Use this to reset business operations while keeping customer data.
                         </p>
 
                         <button
@@ -51,7 +54,7 @@
                             onclick="document.getElementById('purgeModal').classList.remove('hidden')"
                             class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                         >
-                            Purge All Data
+                            Purge Business Data
                         </button>
                     </div>
                 </div>
@@ -71,7 +74,7 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 text-center">Confirm Data Purge</h3>
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-                        Are you absolutely sure you want to delete ALL data? This action cannot be undone.
+                        This will delete all jobs, inventory, and petty cash. Customers will be preserved. This action cannot be undone.
                     </p>
 
                     <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">
