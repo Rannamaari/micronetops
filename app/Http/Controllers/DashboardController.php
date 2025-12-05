@@ -15,6 +15,11 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Redirect HR users to HR dashboard
+        if (auth()->user()->isHR()) {
+            return redirect()->route('hr.dashboard');
+        }
+
         $now = Carbon::now();
         $startOfWeek = $now->copy()->startOfWeek();
         $startOfMonth = $now->copy()->startOfMonth();

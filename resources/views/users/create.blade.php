@@ -73,6 +73,7 @@
                             <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager - Can do everything except delete</option>
                             <option value="mechanic" {{ old('role') === 'mechanic' ? 'selected' : '' }}>Mechanic - Can manage customers, jobs, and expenses</option>
                             <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier - Dashboard and reports only</option>
+                            <option value="hr" {{ old('role') === 'hr' ? 'selected' : '' }}>HR - Employees, payroll, and loans management only</option>
                         </select>
                         @error('role')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>

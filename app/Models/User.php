@@ -74,6 +74,7 @@ class User extends Authenticatable
     public const ROLE_MANAGER = 'manager';
     public const ROLE_MECHANIC = 'mechanic';
     public const ROLE_CASHIER = 'cashier';
+    public const ROLE_HR = 'hr';
 
     /**
      * Check if user has a specific role
@@ -121,6 +122,14 @@ class User extends Authenticatable
     public function isCashier(): bool
     {
         return $this->role === self::ROLE_CASHIER;
+    }
+
+    /**
+     * Check if user is HR
+     */
+    public function isHR(): bool
+    {
+        return $this->role === self::ROLE_HR;
     }
 
     /**
@@ -185,5 +194,21 @@ class User extends Authenticatable
     public function canViewReports(): bool
     {
         return true; // All users can view reports
+    }
+
+    /**
+     * Check if user can access HR module
+     */
+    public function canAccessHR(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_HR]);
+    }
+
+    /**
+     * Check if user can access operations (non-HR modules)
+     */
+    public function canAccessOperations(): bool
+    {
+        return !$this->isHR();
     }
 }

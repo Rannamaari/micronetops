@@ -12,22 +12,30 @@ class Employee extends Model
 
     protected $fillable = [
         'employee_number',
+        'company',
         'name',
         'email',
         'phone',
         'secondary_phone',
+        'contact_number_home',
         'emergency_contact_name',
         'emergency_contact_phone',
+        'emergency_contact_relationship',
         'type',
         'position',
         'department',
         'hire_date',
         'status',
         'address',
+        'permanent_address',
         'nationality',
         'date_of_birth',
         'id_number',
         'basic_salary',
+        'basic_salary_usd',
+        'job_description',
+        'work_site',
+        'work_status',
         'photo_path',
         'notes',
         // Compliance fields
@@ -57,6 +65,7 @@ class Employee extends Model
         'medical_checkup_expiry_date' => 'date',
         'insurance_expiry_date' => 'date',
         'basic_salary' => 'decimal:2',
+        'basic_salary_usd' => 'decimal:2',
     ];
 
     // Relationships
@@ -73,6 +82,16 @@ class Employee extends Model
     public function loans()
     {
         return $this->hasMany(EmployeeLoan::class);
+    }
+
+    public function bonuses()
+    {
+        return $this->hasMany(EmployeeBonus::class);
+    }
+
+    public function activeBonuses()
+    {
+        return $this->hasMany(EmployeeBonus::class)->active();
     }
 
     public function leaves()
@@ -191,6 +210,160 @@ class Employee extends Model
             }
         }
         return false;
+    }
+
+    // Years of Service Calculation
+    public function getYearsOfServiceAttribute()
+    {
+        if (!$this->hire_date) {
+            return 0;
+        }
+        return Carbon::parse($this->hire_date)->diffInYears(Carbon::now());
+    }
+
+    public function getMonthsOfServiceAttribute()
+    {
+        if (!$this->hire_date) {
+            return 0;
+        }
+        return Carbon::parse($this->hire_date)->diffInMonths(Carbon::now());
+    }
+
+    public function getServiceDurationAttribute()
+    {
+        if (!$this->hire_date) {
+            return 'Not set';
+        }
+
+        $years = $this->years_of_service;
+        $months = $this->months_of_service % 12;
+
+        if ($years === 0 && $months === 0) {
+            return 'Less than 1 month';
+        } elseif ($years === 0) {
+            return $months . ' month' . ($months > 1 ? 's' : '');
+        } elseif ($months === 0) {
+            return $years . ' year' . ($years > 1 ? 's' : '');
+        } else {
+            return $years . ' year' . ($years > 1 ? 's' : '') . ', ' . $months . ' month' . ($months > 1 ? 's' : '');
+        }
+    }
+
+    // Leave Accrual System
+    // 2.5 days per month worked + 10 sick days per year
+    // Annual leaves: forwarded for 1 year, voided after 2 years
+    // Sick leaves: NOT forwarded, reset each year
+
+    public function getAnnualLeaveAccruedThisYearAttribute()
+    {
+        // Calculate leave accrual based on months worked in current year
+        $startOfYear = Carbon::now()->startOfYear();
+        $hireDate = Carbon::parse($this->hire_date);
+
+        // If hired this year, calculate from hire date
+        if ($hireDate->year === Carbon::now()->year) {
+            $monthsThisYear = $hireDate->diffInMonths(Carbon::now());
+        } else {
+            // If hired before this year, full year accrual
+            $monthsThisYear = Carbon::now()->month;
+        }
+
+        return round($monthsThisYear * 2.5, 1);
+    }
+
+    public function getAnnualLeaveUsedThisYearAttribute()
+    {
+        return $this->leaves()
+            ->where('leave_type', 'annual')
+            ->where('status', 'approved')
+            ->whereYear('start_date', Carbon::now()->year)
+            ->sum('days') ?? 0;
+    }
+
+    public function getAnnualLeaveAccruedLastYearAttribute()
+    {
+        // Calculate what was accrued last year
+        $lastYear = Carbon::now()->subYear()->year;
+        $hireDate = Carbon::parse($this->hire_date);
+
+        // If hired last year, calculate from hire date to end of year
+        if ($hireDate->year === $lastYear) {
+            $monthsLastYear = $hireDate->diffInMonths(Carbon::create($lastYear, 12, 31));
+        } elseif ($hireDate->year < $lastYear) {
+            // If hired before last year, full year accrual
+            $monthsLastYear = 12;
+        } else {
+            // Hired this year, no accrual from last year
+            return 0;
+        }
+
+        return round($monthsLastYear * 2.5, 1);
+    }
+
+    public function getAnnualLeaveUsedLastYearAttribute()
+    {
+        return $this->leaves()
+            ->where('leave_type', 'annual')
+            ->where('status', 'approved')
+            ->whereYear('start_date', Carbon::now()->subYear()->year)
+            ->sum('days') ?? 0;
+    }
+
+    public function getAnnualLeaveForwardedFromLastYearAttribute()
+    {
+        // Forwarded = Accrued last year - Used last year
+        // But can only be used within 1 year (voided after 2 years)
+        return max(0, $this->annual_leave_accrued_last_year - $this->annual_leave_used_last_year);
+    }
+
+    public function getTotalAnnualLeaveAvailableAttribute()
+    {
+        // Total = This year's accrual + Forwarded from last year
+        return $this->annual_leave_accrued_this_year + $this->annual_leave_forwarded_from_last_year;
+    }
+
+    public function getRemainingAnnualLeaveAttribute()
+    {
+        // Remaining = Total available - Used this year
+        return max(0, $this->total_annual_leave_available - $this->annual_leave_used_this_year);
+    }
+
+    public function getAnnualSickLeaveAttribute()
+    {
+        // 10 sick days per year for all employees (NOT forwarded)
+        return 10;
+    }
+
+    public function getUsedSickLeaveAttribute()
+    {
+        return $this->leaves()
+            ->where('leave_type', 'sick')
+            ->where('status', 'approved')
+            ->whereYear('start_date', Carbon::now()->year)
+            ->sum('days') ?? 0;
+    }
+
+    public function getRemainingSickLeaveAttribute()
+    {
+        return max(0, $this->annual_sick_leave - $this->used_sick_leave);
+    }
+
+    public function getLeaveBalanceAttribute()
+    {
+        return [
+            'annual' => [
+                'accrued_this_year' => $this->annual_leave_accrued_this_year,
+                'forwarded_from_last_year' => $this->annual_leave_forwarded_from_last_year,
+                'total_available' => $this->total_annual_leave_available,
+                'used' => $this->annual_leave_used_this_year,
+                'remaining' => $this->remaining_annual_leave,
+            ],
+            'sick' => [
+                'total' => $this->annual_sick_leave,
+                'used' => $this->used_sick_leave,
+                'remaining' => $this->remaining_sick_leave,
+            ],
+        ];
     }
 
     // Active loans

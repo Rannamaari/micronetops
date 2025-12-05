@@ -12,61 +12,71 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    {{-- Dashboard - All users --}}
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-
-                    {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
-                    @if(Auth::user()->canViewCustomers())
-                        <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
-                            {{ __('Customers') }}
+                    {{-- HR Module - Admin and HR users --}}
+                    @if(Auth::user()->canAccessHR())
+                        <x-nav-link :href="route('hr.dashboard')" :active="request()->routeIs('hr.*') || request()->routeIs('employees.*') || request()->routeIs('loans.*') || request()->routeIs('payroll.*')">
+                            {{ __('HR') }}
                         </x-nav-link>
                     @endif
 
-                    {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
-                    @if(Auth::user()->canCreateJobs())
-                        <x-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
-                            {{ __('Jobs') }}
+                    {{-- Operations Modules - Only show to non-HR users (or admin who has access to everything) --}}
+                    @if(Auth::user()->canAccessOperations())
+                        {{-- Dashboard - All users except HR --}}
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('Dashboard') }}
                         </x-nav-link>
-                    @endif
 
-                    {{-- Reports - All users --}}
-                    <x-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
-                        {{ __('Reports') }}
-                    </x-nav-link>
+                        {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
+                        @if(Auth::user()->canViewCustomers())
+                            <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
+                                {{ __('Customers') }}
+                            </x-nav-link>
+                        @endif
 
-                    {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
-                    @if(Auth::user()->canCreateExpenses())
-                        <x-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
-                            {{ __('Petty Cash') }}
-                        </x-nav-link>
-                    @elseif(Auth::user()->isCashier())
-                        {{-- Cashiers can view expense history --}}
-                        <x-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
-                            {{ __('Expense History') }}
-                        </x-nav-link>
-                    @endif
+                        {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
+                        @if(Auth::user()->canCreateJobs())
+                            <x-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
+                                {{ __('Jobs') }}
+                            </x-nav-link>
+                        @endif
 
-                    {{-- Inventory - Admin, Manager only --}}
-                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                        <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
-                            {{ __('Inventory') }}
+                        {{-- Reports - All users --}}
+                        <x-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
+                            {{ __('Reports') }}
                         </x-nav-link>
-                    @endif
 
-                    {{-- Users - Admin, Manager --}}
-                    @if(Auth::user()->canManageUsers())
-                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                            {{ __('Users') }}
-                        </x-nav-link>
-                    @endif
+                        {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
+                        @if(Auth::user()->canCreateExpenses())
+                            <x-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
+                                {{ __('Petty Cash') }}
+                            </x-nav-link>
+                        @elseif(Auth::user()->isCashier())
+                            {{-- Cashiers can view expense history --}}
+                            <x-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
+                                {{ __('Expense History') }}
+                            </x-nav-link>
+                        @endif
 
-                    {{-- Roles - Admin only --}}
-                    @if(Auth::user()->isAdmin())
-                        <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                            {{ __('Roles') }}
-                        </x-nav-link>
+                        {{-- Inventory - Admin, Manager only --}}
+                        @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                            <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
+                                {{ __('Inventory') }}
+                            </x-nav-link>
+                        @endif
+
+                        {{-- Users - Admin, Manager --}}
+                        @if(Auth::user()->canManageUsers())
+                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                                {{ __('Users') }}
+                            </x-nav-link>
+                        @endif
+
+                        {{-- Roles - Admin only --}}
+                        @if(Auth::user()->isAdmin())
+                            <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
+                                {{ __('Roles') }}
+                            </x-nav-link>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -127,61 +137,80 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            {{-- Dashboard - All users --}}
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-
-            {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
-            @if(Auth::user()->canViewCustomers())
-                <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
-                    {{ __('Customers') }}
+            {{-- HR Module - Admin and HR users --}}
+            @if(Auth::user()->canAccessHR())
+                <x-responsive-nav-link :href="route('hr.dashboard')" :active="request()->routeIs('hr.*')">
+                    {{ __('HR Dashboard') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('employees.index')" :active="request()->routeIs('employees.*')">
+                    {{ __('All Employees') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('loans.index')" :active="request()->routeIs('loans.*')">
+                    {{ __('Loans & Advances') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('payroll.index')" :active="request()->routeIs('payroll.*')">
+                    {{ __('Payroll') }}
                 </x-responsive-nav-link>
             @endif
 
-            {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
-            @if(Auth::user()->canCreateJobs())
-                <x-responsive-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
-                    {{ __('Jobs') }}
+            {{-- Operations Modules - Only show to non-HR users (or admin who has access to everything) --}}
+            @if(Auth::user()->canAccessOperations())
+                {{-- Dashboard - All users except HR --}}
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    {{ __('Dashboard') }}
                 </x-responsive-nav-link>
-            @endif
 
-            {{-- Reports - All users --}}
-            <x-responsive-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
-                {{ __('Reports') }}
-            </x-responsive-nav-link>
+                {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
+                @if(Auth::user()->canViewCustomers())
+                    <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
+                        {{ __('Customers') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
-            @if(Auth::user()->canCreateExpenses())
-                <x-responsive-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
-                    {{ __('Petty Cash') }}
-                </x-responsive-nav-link>
-            @elseif(Auth::user()->isCashier())
-                {{-- Cashiers can view expense history --}}
-                <x-responsive-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
-                    {{ __('Expense History') }}
-                </x-responsive-nav-link>
-            @endif
+                {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
+                @if(Auth::user()->canCreateJobs())
+                    <x-responsive-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
+                        {{ __('Jobs') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            {{-- Inventory - Admin, Manager only --}}
-            @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
-                    {{ __('Inventory') }}
+                {{-- Reports - All users --}}
+                <x-responsive-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
+                    {{ __('Reports') }}
                 </x-responsive-nav-link>
-            @endif
 
-            {{-- Users - Admin, Manager --}}
-            @if(Auth::user()->canManageUsers())
-                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                    {{ __('Users') }}
-                </x-responsive-nav-link>
-            @endif
+                {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
+                @if(Auth::user()->canCreateExpenses())
+                    <x-responsive-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
+                        {{ __('Petty Cash') }}
+                    </x-responsive-nav-link>
+                @elseif(Auth::user()->isCashier())
+                    {{-- Cashiers can view expense history --}}
+                    <x-responsive-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
+                        {{ __('Expense History') }}
+                    </x-responsive-nav-link>
+                @endif
 
-            {{-- Roles - Admin only --}}
-            @if(Auth::user()->isAdmin())
-                <x-responsive-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                    {{ __('Roles') }}
-                </x-responsive-nav-link>
+                {{-- Inventory - Admin, Manager only --}}
+                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                    <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
+                        {{ __('Inventory') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                {{-- Users - Admin, Manager --}}
+                @if(Auth::user()->canManageUsers())
+                    <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                        {{ __('Users') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                {{-- Roles - Admin only --}}
+                @if(Auth::user()->isAdmin())
+                    <x-responsive-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
+                        {{ __('Roles') }}
+                    </x-responsive-nav-link>
+                @endif
             @endif
         </div>
 

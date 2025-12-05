@@ -8,17 +8,6 @@ use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
-    public function __construct()
-    {
-        // Only admins can access employee management
-        $this->middleware(function ($request, $next) {
-            if (!auth()->user()->isAdmin()) {
-                abort(403, 'Unauthorized. Only administrators can manage employees.');
-            }
-            return $next($request);
-        });
-    }
-
     /**
      * Display a listing of employees
      */
@@ -72,28 +61,36 @@ class EmployeeController extends Controller
     {
         $validated = $request->validate([
             'employee_number' => ['required', 'string', 'unique:employees,employee_number'],
+            'company' => ['required', 'in:Micro Cool,Micro Moto Garage'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'unique:employees,email'],
             'phone' => ['required', 'string'],
             'secondary_phone' => ['nullable', 'string'],
+            'contact_number_home' => ['nullable', 'string'],
             'emergency_contact_name' => ['nullable', 'string'],
             'emergency_contact_phone' => ['nullable', 'string'],
+            'emergency_contact_relationship' => ['nullable', 'string'],
             'type' => ['required', 'in:full-time,part-time,contract'],
             'position' => ['required', 'string'],
             'department' => ['nullable', 'string'],
             'hire_date' => ['required', 'date'],
             'status' => ['required', 'in:active,inactive,terminated'],
             'address' => ['nullable', 'string'],
+            'permanent_address' => ['nullable', 'string'],
             'nationality' => ['nullable', 'string'],
             'date_of_birth' => ['nullable', 'date'],
             'id_number' => ['nullable', 'string'],
             'basic_salary' => ['required', 'numeric', 'min:0'],
+            'basic_salary_usd' => ['nullable', 'numeric', 'min:0'],
+            'job_description' => ['nullable', 'string'],
+            'work_site' => ['nullable', 'string'],
+            'work_status' => ['required', 'in:permanent,contract'],
             // Compliance fields
             'work_permit_number' => ['nullable', 'string'],
             'date_of_arrival' => ['nullable', 'date'],
             'work_permit_fee_paid_until' => ['nullable', 'date'],
             'quota_slot_fee_paid_until' => ['nullable', 'date'],
-            'passport_number' => ['nullable', 'string'],
+            'passport_number' => ['required', 'string'],
             'passport_expiry_date' => ['nullable', 'date'],
             'visa_number' => ['nullable', 'string'],
             'visa_expiry_date' => ['nullable', 'date'],
@@ -104,6 +101,11 @@ class EmployeeController extends Controller
             'insurance_provider' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        // Auto-calculate MVR salary if USD is provided
+        if (!empty($validated['basic_salary_usd'])) {
+            $validated['basic_salary'] = $validated['basic_salary_usd'] * 15.42;
+        }
 
         $employee = Employee::create($validated);
 
@@ -141,28 +143,36 @@ class EmployeeController extends Controller
     {
         $validated = $request->validate([
             'employee_number' => ['required', 'string', 'unique:employees,employee_number,' . $employee->id],
+            'company' => ['required', 'in:Micro Cool,Micro Moto Garage'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'unique:employees,email,' . $employee->id],
             'phone' => ['required', 'string'],
             'secondary_phone' => ['nullable', 'string'],
+            'contact_number_home' => ['nullable', 'string'],
             'emergency_contact_name' => ['nullable', 'string'],
             'emergency_contact_phone' => ['nullable', 'string'],
+            'emergency_contact_relationship' => ['nullable', 'string'],
             'type' => ['required', 'in:full-time,part-time,contract'],
             'position' => ['required', 'string'],
             'department' => ['nullable', 'string'],
             'hire_date' => ['required', 'date'],
             'status' => ['required', 'in:active,inactive,terminated'],
             'address' => ['nullable', 'string'],
+            'permanent_address' => ['nullable', 'string'],
             'nationality' => ['nullable', 'string'],
             'date_of_birth' => ['nullable', 'date'],
             'id_number' => ['nullable', 'string'],
             'basic_salary' => ['required', 'numeric', 'min:0'],
+            'basic_salary_usd' => ['nullable', 'numeric', 'min:0'],
+            'job_description' => ['nullable', 'string'],
+            'work_site' => ['nullable', 'string'],
+            'work_status' => ['required', 'in:permanent,contract'],
             // Compliance fields
             'work_permit_number' => ['nullable', 'string'],
             'date_of_arrival' => ['nullable', 'date'],
             'work_permit_fee_paid_until' => ['nullable', 'date'],
             'quota_slot_fee_paid_until' => ['nullable', 'date'],
-            'passport_number' => ['nullable', 'string'],
+            'passport_number' => ['required', 'string'],
             'passport_expiry_date' => ['nullable', 'date'],
             'visa_number' => ['nullable', 'string'],
             'visa_expiry_date' => ['nullable', 'date'],
@@ -173,6 +183,11 @@ class EmployeeController extends Controller
             'insurance_provider' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        // Auto-calculate MVR salary if USD is provided
+        if (!empty($validated['basic_salary_usd'])) {
+            $validated['basic_salary'] = $validated['basic_salary_usd'] * 15.42;
+        }
 
         $employee->update($validated);
 
@@ -192,5 +207,13 @@ class EmployeeController extends Controller
         return redirect()
             ->route('employees.index')
             ->with('success', "Employee '{$name}' has been deleted successfully.");
+    }
+
+    /**
+     * Generate Letter of Appointment
+     */
+    public function letterOfAppointment(Employee $employee)
+    {
+        return view('employees.letter-of-appointment', compact('employee'));
     }
 }

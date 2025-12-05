@@ -45,7 +45,7 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role'     => ['required', 'in:admin,manager,mechanic,cashier'],
+            'role'     => ['required', 'in:admin,manager,mechanic,cashier,hr'],
         ]);
 
         $user = User::create([
@@ -83,7 +83,7 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role'     => ['required', 'in:admin,manager,mechanic,cashier'],
+            'role'     => ['required', 'in:admin,manager,mechanic,cashier,hr'],
         ]);
 
         $user->name = $validated['name'];

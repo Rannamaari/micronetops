@@ -4,6 +4,8 @@ use App\Http\Controllers\AcUnitController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\HRController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryCategoryController;
 use App\Http\Controllers\JobController;
@@ -20,6 +22,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (auth()->check()) {
+        // Redirect HR users to HR dashboard
+        if (auth()->user()->isHR()) {
+            return redirect()->route('hr.dashboard');
+        }
         return redirect()->route('dashboard');
     }
     return view('home');
@@ -31,6 +37,10 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 // Operations system route - redirects to login or dashboard
 Route::get('/ops', function () {
     if (auth()->check()) {
+        // Redirect HR users to HR dashboard
+        if (auth()->user()->isHR()) {
+            return redirect()->route('hr.dashboard');
+        }
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
@@ -39,6 +49,11 @@ Route::get('/ops', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// HR Dashboard - Admin and HR users only
+Route::get('/hr', [HRController::class, 'dashboard'])
+    ->middleware(['auth', 'hr'])
+    ->name('hr.dashboard');
 
 Route::middleware('auth')->group(function () {
     // Profile - All authenticated users
@@ -163,6 +178,58 @@ Route::middleware('auth')->group(function () {
     // Inventory deletion - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    });
+
+    // Employee Management - Admin and HR
+    Route::middleware('role:admin,hr')->group(function () {
+        Route::resource('employees', EmployeeController::class);
+
+        // Letter of Appointment
+        Route::get('employees/{employee}/letter-of-appointment', [EmployeeController::class, 'letterOfAppointment'])
+            ->name('employees.letter-of-appointment');
+
+        // Employee Leaves
+        Route::get('employees/{employee}/leaves', [App\Http\Controllers\EmployeeLeaveController::class, 'index'])->name('employees.leaves.index');
+        Route::get('employees/{employee}/leaves/create', [App\Http\Controllers\EmployeeLeaveController::class, 'create'])->name('employees.leaves.create');
+        Route::post('employees/{employee}/leaves', [App\Http\Controllers\EmployeeLeaveController::class, 'store'])->name('employees.leaves.store');
+        Route::get('employees/{employee}/leaves/{leave}/edit', [App\Http\Controllers\EmployeeLeaveController::class, 'edit'])->name('employees.leaves.edit');
+        Route::patch('employees/{employee}/leaves/{leave}', [App\Http\Controllers\EmployeeLeaveController::class, 'update'])->name('employees.leaves.update');
+        Route::delete('employees/{employee}/leaves/{leave}', [App\Http\Controllers\EmployeeLeaveController::class, 'destroy'])->name('employees.leaves.destroy');
+
+        // Global Loans & Advances Management
+        Route::get('loans', [App\Http\Controllers\EmployeeLoanController::class, 'allLoans'])->name('loans.index');
+
+        // Employee Allowances
+        Route::get('employees/{employee}/allowances', [App\Http\Controllers\EmployeeAllowanceController::class, 'index'])->name('employees.allowances.index');
+        Route::get('employees/{employee}/allowances/create', [App\Http\Controllers\EmployeeAllowanceController::class, 'create'])->name('employees.allowances.create');
+        Route::post('employees/{employee}/allowances', [App\Http\Controllers\EmployeeAllowanceController::class, 'store'])->name('employees.allowances.store');
+        Route::get('employees/{employee}/allowances/{allowance}/edit', [App\Http\Controllers\EmployeeAllowanceController::class, 'edit'])->name('employees.allowances.edit');
+        Route::patch('employees/{employee}/allowances/{allowance}', [App\Http\Controllers\EmployeeAllowanceController::class, 'update'])->name('employees.allowances.update');
+        Route::delete('employees/{employee}/allowances/{allowance}', [App\Http\Controllers\EmployeeAllowanceController::class, 'destroy'])->name('employees.allowances.destroy');
+
+        // Employee Bonuses
+        Route::get('employees/{employee}/bonuses', [App\Http\Controllers\EmployeeBonusController::class, 'index'])->name('employees.bonuses.index');
+        Route::get('employees/{employee}/bonuses/create', [App\Http\Controllers\EmployeeBonusController::class, 'create'])->name('employees.bonuses.create');
+        Route::post('employees/{employee}/bonuses', [App\Http\Controllers\EmployeeBonusController::class, 'store'])->name('employees.bonuses.store');
+        Route::get('employees/{employee}/bonuses/{bonus}/edit', [App\Http\Controllers\EmployeeBonusController::class, 'edit'])->name('employees.bonuses.edit');
+        Route::patch('employees/{employee}/bonuses/{bonus}', [App\Http\Controllers\EmployeeBonusController::class, 'update'])->name('employees.bonuses.update');
+        Route::delete('employees/{employee}/bonuses/{bonus}', [App\Http\Controllers\EmployeeBonusController::class, 'destroy'])->name('employees.bonuses.destroy');
+
+        // Employee Loans
+        Route::get('employees/{employee}/loans', [App\Http\Controllers\EmployeeLoanController::class, 'index'])->name('employees.loans.index');
+        Route::get('employees/{employee}/loans/create', [App\Http\Controllers\EmployeeLoanController::class, 'create'])->name('employees.loans.create');
+        Route::post('employees/{employee}/loans', [App\Http\Controllers\EmployeeLoanController::class, 'store'])->name('employees.loans.store');
+        Route::get('employees/{employee}/loans/{loan}/edit', [App\Http\Controllers\EmployeeLoanController::class, 'edit'])->name('employees.loans.edit');
+        Route::patch('employees/{employee}/loans/{loan}', [App\Http\Controllers\EmployeeLoanController::class, 'update'])->name('employees.loans.update');
+        Route::post('employees/{employee}/loans/{loan}/mark-paid', [App\Http\Controllers\EmployeeLoanController::class, 'markAsPaid'])->name('employees.loans.mark-paid');
+        Route::delete('employees/{employee}/loans/{loan}', [App\Http\Controllers\EmployeeLoanController::class, 'destroy'])->name('employees.loans.destroy');
+
+        // Payroll Management
+        Route::get('payroll', [App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
+        Route::get('payroll/create', [App\Http\Controllers\PayrollController::class, 'create'])->name('payroll.create');
+        Route::post('payroll', [App\Http\Controllers\PayrollController::class, 'store'])->name('payroll.store');
+        Route::get('payroll/{payroll}', [App\Http\Controllers\PayrollController::class, 'show'])->name('payroll.show');
+        Route::delete('payroll/{payroll}', [App\Http\Controllers\PayrollController::class, 'destroy'])->name('payroll.destroy');
     });
 
     // System Settings & Admin Tools - Admin only
