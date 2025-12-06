@@ -14,8 +14,25 @@ class PayrollController extends Controller
      */
     public function index(Request $request)
     {
-        $year = $request->get('year', Carbon::now()->year);
-        $month = $request->get('month', Carbon::now()->month);
+        // If no year/month specified, default to the most recently processed payroll
+        if (!$request->has('year') || !$request->has('month')) {
+            $latestPayroll = EmployeeSalary::orderByDesc('year')
+                ->orderByDesc('month')
+                ->orderByDesc('created_at')
+                ->first();
+
+            if ($latestPayroll) {
+                $year = $latestPayroll->year;
+                $month = $latestPayroll->month;
+            } else {
+                // No payroll exists, default to current month
+                $year = Carbon::now()->year;
+                $month = Carbon::now()->month;
+            }
+        } else {
+            $year = $request->get('year');
+            $month = $request->get('month');
+        }
 
         // Get all payroll records for selected month
         $payrolls = EmployeeSalary::with('employee')
@@ -24,7 +41,10 @@ class PayrollController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('payroll.index', compact('payrolls', 'year', 'month'));
+        // Get info about the last processed payroll for display
+        $lastProcessedPayroll = EmployeeSalary::orderByDesc('created_at')->first();
+
+        return view('payroll.index', compact('payrolls', 'year', 'month', 'lastProcessedPayroll'));
     }
 
     /**

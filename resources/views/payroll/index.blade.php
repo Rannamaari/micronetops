@@ -22,6 +22,36 @@
                 </div>
             @endif
 
+            {{-- Last Processed Payroll Badge --}}
+            @if($lastProcessedPayroll)
+            <div class="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500 rounded-lg p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-green-500 rounded-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Last Processed Payroll</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">
+                            {{ date('F Y', mktime(0, 0, 0, $lastProcessedPayroll->month, 1, $lastProcessedPayroll->year)) }}
+                            • Processed on {{ $lastProcessedPayroll->created_at->format('M d, Y \a\t h:i A') }}
+                        </div>
+                    </div>
+                    @if($year != $lastProcessedPayroll->year || $month != $lastProcessedPayroll->month)
+                    <a href="{{ route('payroll.index', ['year' => $lastProcessedPayroll->year, 'month' => $lastProcessedPayroll->month]) }}"
+                       class="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium">
+                        View
+                    </a>
+                    @else
+                    <span class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md font-medium">
+                        Currently Viewing
+                    </span>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             {{-- Month/Year Selector --}}
             <div class="mb-4 bg-white dark:bg-gray-800 shadow-sm rounded-lg p-4">
                 <form method="GET" action="{{ route('payroll.index') }}" class="flex flex-wrap gap-4 items-end">
