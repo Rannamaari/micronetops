@@ -246,16 +246,18 @@ class JobController extends Controller
             $brand = [
                 'name' => 'Micro Cool',
                 'tagline' => 'We Fix, You Chill',
-                'address' => 'Janavaree Hingun, Malé, Maldives',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
                 'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
                 'website' => 'cool.micronet.mv',
             ];
         } else {
             $brand = [
                 'name' => 'Micro Moto Garage',
                 'tagline' => 'Affordable & Reliable Motorbike Care',
-                'address' => 'Janavaree Hingun, Malé, Maldives',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
                 'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
                 'website' => 'garage.micronet.mv',
             ];
         }
@@ -301,16 +303,18 @@ class JobController extends Controller
             $brand = [
                 'name' => 'Micro Cool',
                 'tagline' => 'Air Conditioning Service',
-                'address' => 'Hulhumale Phase 2, Maldives',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
                 'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
                 'website' => 'cool.micronet.mv',
             ];
         } else {
             $brand = [
                 'name' => 'Micro Moto Garage',
                 'tagline' => 'Motorcycle Service & Repair',
-                'address' => 'Hulhumale Phase 2, Maldives',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
                 'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
                 'website' => 'garage.micronet.mv',
             ];
         }

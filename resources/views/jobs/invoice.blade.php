@@ -47,6 +47,9 @@
             <div class="text-xs">{{ $brand['tagline'] }}</div>
             <div class="text-xs mt-2">{{ $brand['address'] }}</div>
             <div class="text-xs">Phone: {{ $brand['phone'] }}</div>
+            @if(isset($brand['email']))
+            <div class="text-xs">Email: {{ $brand['email'] }}</div>
+            @endif
             <div class="text-xs">Website: {{ $brand['website'] }}</div>
         </div>
         <div style="text-align:right;">

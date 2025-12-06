@@ -132,7 +132,7 @@
                 </h3>
                 <form method="POST" action="{{ route('jobs.update', $job) }}" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
                     @csrf
-                    @method('PUT')
+                    @method('PATCH')
 
                     <div>
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
