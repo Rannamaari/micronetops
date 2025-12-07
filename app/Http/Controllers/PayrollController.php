@@ -217,11 +217,17 @@ class PayrollController extends Controller
         // Calculate payable basic salary ONLY for days actually worked
         $payableBasicSalary = $dailyBasicRate * $actualWorkedDays;
 
-        // Allowances are paid in full (fixed amount, not prorated)
-        $payableAllowances = $allowances;
+        // Calculate daily allowance rate
+        $dailyAllowanceRate = $allowances / $expectedWorkingDays;
 
-        // Bonuses are paid in full (fixed amount, not prorated)
-        $payableBonuses = $automaticBonuses;
+        // Calculate payable allowances ONLY for days actually worked
+        $payableAllowances = $dailyAllowanceRate * $actualWorkedDays;
+
+        // Calculate daily bonus rate
+        $dailyBonusRate = $automaticBonuses / $expectedWorkingDays;
+
+        // Calculate payable bonuses ONLY for days actually worked
+        $payableBonuses = $dailyBonusRate * $actualWorkedDays;
 
         // Get total loan deductions for this month
         $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
