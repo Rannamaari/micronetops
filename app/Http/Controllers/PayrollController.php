@@ -241,9 +241,9 @@ class PayrollController extends Controller
             'employee_id' => $employee->id,
             'year' => $year,
             'month' => $month,
-            'basic_salary' => $basicSalary, // Store original for reference
-            'allowances' => $payableAllowances, // Store actual payable amount
-            'bonuses' => $payableBonuses, // Store actual payable amount
+            'basic_salary' => $payableBasicSalary, // Store PAYABLE amount (prorated for worked days)
+            'allowances' => $payableAllowances, // Store PAYABLE amount (prorated for worked days)
+            'bonuses' => $payableBonuses, // Store PAYABLE amount (prorated for worked days)
             'overtime' => 0, // Can be added later
             'loan_deduction' => $loanDeduction,
             'absent_deduction' => 0, // Not used - we pay only for worked days instead
