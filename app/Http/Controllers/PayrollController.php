@@ -180,19 +180,26 @@ class PayrollController extends Controller
             }
         }
 
-        // Calculate working days in month
-        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+        // Calculate actual working period for this employee
+        $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
+        $monthEnd = Carbon::create($year, $month, 1)->endOfMonth();
 
-        // Get approved leaves for this month (sick + annual)
-        $approvedLeaveDays = $employee->leaves()
-            ->where('status', 'approved')
-            ->whereIn('leave_type', ['sick', 'annual', 'emergency', 'maternity', 'paternity'])
-            ->whereYear('start_date', $year)
-            ->whereMonth('start_date', $month)
-            ->sum('days');
+        // Determine actual start date (hire date if hired mid-month)
+        $actualStartDate = $monthStart->copy();
+        if ($employee->hire_date) {
+            $hireDate = Carbon::parse($employee->hire_date);
+            if ($hireDate->gt($monthStart) && $hireDate->lte($monthEnd)) {
+                $actualStartDate = $hireDate;
+            }
+        }
 
-        // Assume working days = days in month (can be adjusted for weekends if needed)
-        $workingDays = $daysInMonth;
+        // Calculate working days (excluding Fridays) for the actual working period
+        $workingDays = EmployeeAttendance::getWorkingDaysBetween($actualStartDate, $monthEnd);
+
+        // If no working days (hired after month end), return zero salary
+        if ($workingDays <= 0) {
+            $workingDays = 1; // Prevent division by zero
+        }
 
         // Get absent days from attendance records (takes priority over manual input)
         $attendanceAbsentDays = EmployeeAttendance::getAbsentDays($employee->id, $year, $month);
@@ -200,7 +207,7 @@ class PayrollController extends Controller
         // Use attendance data if available, otherwise use manual input, otherwise 0
         $absentDays = $attendanceAbsentDays > 0 ? $attendanceAbsentDays : ($manualAbsentDays ?? 0);
 
-        // Calculate absent day deduction (daily rate * absent days)
+        // Calculate daily rate based on actual working days in the period
         $dailyRate = $basicSalary / $workingDays;
         $absentDeduction = $absentDays * $dailyRate;
 

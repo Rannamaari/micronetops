@@ -115,9 +115,28 @@ class EmployeeAttendance extends Model
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
+        // Get employee to check hire date
+        $employee = \App\Models\Employee::find($employeeId);
+        if (!$employee) {
+            return 0;
+        }
+
+        // Calculate actual working start date (later of month start or hire date)
+        $actualStartDate = $startDate;
+        if ($employee->hire_date) {
+            $hireDate = Carbon::parse($employee->hire_date);
+            if ($hireDate->gt($startDate) && $hireDate->lte($endDate)) {
+                $actualStartDate = $hireDate;
+            } elseif ($hireDate->gt($endDate)) {
+                // Employee not hired yet in this month
+                return 0;
+            }
+        }
+
         // Count UNPAID absent days only (exclude sick leave which is paid)
+        // Only count from actual start date onwards
         return self::where('employee_id', $employeeId)
-            ->whereBetween('date', [$startDate, $endDate])
+            ->whereBetween('date', [$actualStartDate, $endDate])
             ->where('status', 'absent')
             ->where(function($query) {
                 $query->whereNull('absence_reason')

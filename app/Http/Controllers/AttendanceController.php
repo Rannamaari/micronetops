@@ -90,7 +90,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'year' => ['required', 'integer'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
-            'attendance' => ['required', 'array'],
+            'attendance' => ['nullable', 'array'],
             'attendance.*' => ['array'],
             'absence_reason' => ['nullable', 'array'],
             'absence_reason.*' => ['array'],
@@ -98,11 +98,20 @@ class AttendanceController extends Controller
 
         $year = $validated['year'];
         $month = $validated['month'];
-        $attendanceData = $validated['attendance'];
+        $attendanceData = $validated['attendance'] ?? [];
         $absenceReasons = $validated['absence_reason'] ?? [];
 
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+
+        // Get all active employees for this month
+        $monthEnd = Carbon::create($year, $month, 1)->endOfMonth();
+        $employees = Employee::where('status', 'active')
+            ->where(function($q) use ($monthEnd) {
+                $q->whereNull('hire_date')
+                  ->orWhere('hire_date', '<=', $monthEnd);
+            })
+            ->get();
 
         // Get approved leaves for this month
         $approvedLeaves = EmployeeLeave::where('status', 'approved')
@@ -114,9 +123,9 @@ class AttendanceController extends Controller
 
         $processedCount = 0;
 
-        foreach ($attendanceData as $employeeId => $dates) {
-            $employee = Employee::find($employeeId);
-            if (!$employee) continue;
+        foreach ($employees as $employee) {
+            $employeeId = $employee->id;
+            $dates = $attendanceData[$employeeId] ?? [];
 
             // Skip dates before employee hire date
             $hireDate = $employee->hire_date ? Carbon::parse($employee->hire_date) : null;
