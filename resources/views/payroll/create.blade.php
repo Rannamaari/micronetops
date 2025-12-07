@@ -27,6 +27,28 @@
                 </div>
             @endif
 
+            @if(!empty($attendanceNotMarked))
+                <div class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
+                    <div class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div class="text-sm text-red-800 dark:text-red-200">
+                            <p class="font-medium">⚠️ Attendance not marked for some employees</p>
+                            <p class="mt-1">Please mark attendance before processing payroll.</p>
+                            <p class="mt-2">
+                                <a href="{{ route('attendance.index', ['year' => $year, 'month' => $month]) }}" class="font-medium underline hover:no-underline">
+                                    Go to Attendance →
+                                </a>
+                            </p>
+                            <div class="mt-2 text-xs">
+                                <p>Missing for: {{ implode(', ', array_slice($attendanceNotMarked, 0, 5)) }}{{ count($attendanceNotMarked) > 5 ? ' and ' . (count($attendanceNotMarked) - 5) . ' more' : '' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             @if($existingPayroll)
                 <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4">
                     <div class="flex items-start gap-2">
@@ -98,6 +120,7 @@
                                     $basicSalary = $employee->basic_salary;
                                     $allowances = $employee->allowances()->where('is_active', true)->where('frequency', 'monthly')->sum('amount');
                                     $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
+                                    $daysInMonth = \Carbon\Carbon::create($year, $month)->daysInMonth;
 
                                     // Calculate automatic bonuses for this month
                                     $automaticBonuses = 0;
@@ -108,7 +131,7 @@
                                         }
                                     }
                                 @endphp
-                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50" x-data="{ selected: false, bonus: 0, otherDeduction: 0, autoBonuses: {{ $automaticBonuses }} }">
+                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50" x-data="{ selected: false, bonus: 0, absentDays: 0, otherDeduction: 0, autoBonuses: {{ $automaticBonuses }}, dailyRate: {{ $basicSalary }} / {{ $daysInMonth }} }">
                                     <div class="flex items-start gap-4">
                                         {{-- Checkbox --}}
                                         <div class="flex items-center h-10">
@@ -159,7 +182,21 @@
                                             </div>
 
                                             {{-- Additional Fields --}}
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Absent Days</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="{{ $daysInMonth }}"
+                                                        name="absent_days[{{ $employee->id }}]"
+                                                        x-model="absentDays"
+                                                        :disabled="!selected"
+                                                        placeholder="0"
+                                                        class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                                                    >
+                                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400" x-show="absentDays > 0" x-text="'-' + (absentDays * dailyRate).toFixed(2) + ' MVR'"></p>
+                                                </div>
                                                 <div>
                                                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bonus (MVR)</label>
                                                     <input
@@ -229,9 +266,11 @@
                             },
                             calculateNet(basic, allowances, autoBonuses, loans) {
                                 const bonus = parseFloat(this.bonus || 0);
+                                const absentDays = parseInt(this.absentDays || 0);
                                 const otherDeduction = parseFloat(this.otherDeduction || 0);
+                                const absentDeduction = absentDays * this.dailyRate;
                                 const gross = basic + allowances + autoBonuses + bonus;
-                                const totalDeductions = loans + otherDeduction;
+                                const totalDeductions = loans + absentDeduction + otherDeduction;
                                 const net = gross - totalDeductions;
                                 return net.toFixed(2) + ' MVR';
                             }

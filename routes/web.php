@@ -224,6 +224,11 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/{employee}/loans/{loan}/mark-paid', [App\Http\Controllers\EmployeeLoanController::class, 'markAsPaid'])->name('employees.loans.mark-paid');
         Route::delete('employees/{employee}/loans/{loan}', [App\Http\Controllers\EmployeeLoanController::class, 'destroy'])->name('employees.loans.destroy');
 
+        // Attendance Management
+        Route::get('attendance', [App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('attendance', [App\Http\Controllers\AttendanceController::class, 'store'])->name('attendance.store');
+        Route::post('attendance/mark-all-present', [App\Http\Controllers\AttendanceController::class, 'markAllPresent'])->name('attendance.mark-all-present');
+
         // Payroll Management
         Route::get('payroll', [App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
         Route::get('payroll/create', [App\Http\Controllers\PayrollController::class, 'create'])->name('payroll.create');

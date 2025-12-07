@@ -14,7 +14,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <!-- Quick Action Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- Employees Card -->
                 <a href="{{ route('employees.index') }}" class="block group">
                     <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform transition hover:scale-105">
@@ -28,6 +28,22 @@
                         </div>
                         <h3 class="text-2xl font-bold mb-1">Employees</h3>
                         <p class="text-blue-100 text-sm">View and manage employee records</p>
+                    </div>
+                </a>
+
+                <!-- Attendance Card -->
+                <a href="{{ route('attendance.index') }}" class="block group">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white transform transition hover:scale-105">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 bg-white/20 rounded-lg">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                </svg>
+                            </div>
+                            <span class="text-sm font-medium opacity-90">Mark</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-1">Attendance</h3>
+                        <p class="text-orange-100 text-sm">Mark employee attendance</p>
                     </div>
                 </a>
 
@@ -137,7 +153,7 @@
                         </div>
                     </div>
                     <div class="mt-4 text-xs">
-                        <span class="text-red-600 dark:text-red-400 font-medium">{{ number_format($totalRemainingBalance, 0) }} MVR</span>
+                        <span class="text-red-600 dark:text-red-400 font-medium">${{ number_format($totalRemainingBalance, 0) }}</span>
                         <span class="text-gray-600 dark:text-gray-400"> remaining</span>
                     </div>
                 </div>

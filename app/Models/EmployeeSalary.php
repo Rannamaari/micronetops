@@ -15,6 +15,8 @@ class EmployeeSalary extends Model
         'bonuses',
         'overtime',
         'loan_deduction',
+        'absent_days',
+        'absent_deduction',
         'other_deductions',
         'gross_salary',
         'total_deductions',
@@ -32,6 +34,8 @@ class EmployeeSalary extends Model
         'bonuses' => 'decimal:2',
         'overtime' => 'decimal:2',
         'loan_deduction' => 'decimal:2',
+        'absent_days' => 'integer',
+        'absent_deduction' => 'decimal:2',
         'other_deductions' => 'decimal:2',
         'gross_salary' => 'decimal:2',
         'total_deductions' => 'decimal:2',
@@ -48,7 +52,7 @@ class EmployeeSalary extends Model
     public function calculateTotals()
     {
         $this->gross_salary = $this->basic_salary + $this->allowances + $this->bonuses + $this->overtime;
-        $this->total_deductions = $this->loan_deduction + $this->other_deductions;
+        $this->total_deductions = $this->loan_deduction + $this->absent_deduction + $this->other_deductions;
         $this->net_salary = $this->gross_salary - $this->total_deductions;
         return $this;
     }

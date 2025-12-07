@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\EmployeeAttendance;
 use App\Models\EmployeeSalary;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -55,15 +56,30 @@ class PayrollController extends Controller
         $year = $request->get('year', Carbon::now()->year);
         $month = $request->get('month', Carbon::now()->month);
 
-        // Get active employees
-        $employees = Employee::where('status', 'active')->orderBy('name')->get();
+        // Get active employees who were hired before or during this month
+        $monthEnd = Carbon::create($year, $month, 1)->endOfMonth();
+        $employees = Employee::where('status', 'active')
+            ->where(function($q) use ($monthEnd) {
+                $q->whereNull('hire_date')
+                  ->orWhere('hire_date', '<=', $monthEnd);
+            })
+            ->orderBy('name')
+            ->get();
 
         // Check if payroll already run for this month
         $existingPayroll = EmployeeSalary::where('year', $year)
             ->where('month', $month)
             ->exists();
 
-        return view('payroll.create', compact('employees', 'year', 'month', 'existingPayroll'));
+        // Check if attendance is marked for all employees
+        $attendanceNotMarked = [];
+        foreach ($employees as $employee) {
+            if (!EmployeeAttendance::isMarkedForMonth($employee->id, $year, $month)) {
+                $attendanceNotMarked[] = $employee->name;
+            }
+        }
+
+        return view('payroll.create', compact('employees', 'year', 'month', 'existingPayroll', 'attendanceNotMarked'));
     }
 
     /**
@@ -78,6 +94,8 @@ class PayrollController extends Controller
             'employee_ids.*' => ['exists:employees,id'],
             'bonuses' => ['nullable', 'array'],
             'bonuses.*' => ['nullable', 'numeric', 'min:0'],
+            'absent_days' => ['nullable', 'array'],
+            'absent_days.*' => ['nullable', 'integer', 'min:0', 'max:31'],
             'other_deductions' => ['nullable', 'array'],
             'other_deductions.*' => ['nullable', 'numeric', 'min:0'],
         ]);
@@ -85,6 +103,7 @@ class PayrollController extends Controller
         $year = $validated['year'];
         $month = $validated['month'];
         $bonuses = $validated['bonuses'] ?? [];
+        $absentDays = $validated['absent_days'] ?? [];
         $otherDeductions = $validated['other_deductions'] ?? [];
 
         $createdCount = 0;
@@ -102,8 +121,11 @@ class PayrollController extends Controller
 
             $employee = Employee::find($employeeId);
 
+            // Get absent days from form (override default calculation)
+            $manualAbsentDays = $absentDays[$employeeId] ?? null;
+
             // Calculate payroll
-            $payrollData = $this->calculatePayroll($employee, $year, $month);
+            $payrollData = $this->calculatePayroll($employee, $year, $month, $manualAbsentDays);
 
             // Add manual bonus and other deductions from form (add to automatic bonuses, don't replace)
             $payrollData['bonuses'] += $bonuses[$employeeId] ?? 0;
@@ -138,7 +160,7 @@ class PayrollController extends Controller
     /**
      * Calculate payroll for an employee for a specific month
      */
-    private function calculatePayroll(Employee $employee, int $year, int $month)
+    private function calculatePayroll(Employee $employee, int $year, int $month, ?int $manualAbsentDays = null)
     {
         $basicSalary = $employee->basic_salary;
 
@@ -172,10 +194,11 @@ class PayrollController extends Controller
         // Assume working days = days in month (can be adjusted for weekends if needed)
         $workingDays = $daysInMonth;
 
-        // Absent days = working days - approved leave days
-        // Note: We assume employee worked all days except approved leave
-        // If you want to track actual attendance, you'll need an attendance system
-        $absentDays = 0; // Default to 0 (no deduction unless specified)
+        // Get absent days from attendance records (takes priority over manual input)
+        $attendanceAbsentDays = EmployeeAttendance::getAbsentDays($employee->id, $year, $month);
+
+        // Use attendance data if available, otherwise use manual input, otherwise 0
+        $absentDays = $attendanceAbsentDays > 0 ? $attendanceAbsentDays : ($manualAbsentDays ?? 0);
 
         // Calculate absent day deduction (daily rate * absent days)
         $dailyRate = $basicSalary / $workingDays;
