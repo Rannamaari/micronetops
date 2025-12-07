@@ -196,9 +196,22 @@ class PayrollController extends Controller
         // Calculate working days (excluding Fridays) for the actual working period
         $workingDays = EmployeeAttendance::getWorkingDaysBetween($actualStartDate, $monthEnd);
 
+        // Calculate total working days in full month (for proration calculation)
+        $fullMonthWorkingDays = EmployeeAttendance::getWorkingDaysInMonth($year, $month);
+
         // If no working days (hired after month end), return zero salary
-        if ($workingDays <= 0) {
+        if ($workingDays <= 0 || $fullMonthWorkingDays <= 0) {
             $workingDays = 1; // Prevent division by zero
+            $fullMonthWorkingDays = 1;
+        }
+
+        // Calculate prorated salary if hired mid-month
+        $proratedDeduction = 0;
+        if ($workingDays < $fullMonthWorkingDays) {
+            // Employee worked partial month - deduct for non-working days
+            $missedDays = $fullMonthWorkingDays - $workingDays;
+            $dailyRate = $basicSalary / $fullMonthWorkingDays;
+            $proratedDeduction = $missedDays * $dailyRate;
         }
 
         // Get absent days from attendance records (takes priority over manual input)
@@ -207,28 +220,38 @@ class PayrollController extends Controller
         // Use attendance data if available, otherwise use manual input, otherwise 0
         $absentDays = $attendanceAbsentDays > 0 ? $attendanceAbsentDays : ($manualAbsentDays ?? 0);
 
-        // Calculate daily rate based on actual working days in the period
-        $dailyRate = $basicSalary / $workingDays;
+        // Calculate absent deduction based on full month daily rate
+        $dailyRate = $basicSalary / $fullMonthWorkingDays;
         $absentDeduction = $absentDays * $dailyRate;
 
         // Get total loan deductions for this month
         $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
+
+        // Calculate prorated allowances and bonuses
+        $proratedAllowances = $allowances;
+        $proratedBonuses = $automaticBonuses;
+        if ($workingDays < $fullMonthWorkingDays) {
+            $proratedAllowances = ($allowances / $fullMonthWorkingDays) * $workingDays;
+            $proratedBonuses = ($automaticBonuses / $fullMonthWorkingDays) * $workingDays;
+        }
 
         return [
             'employee_id' => $employee->id,
             'year' => $year,
             'month' => $month,
             'basic_salary' => $basicSalary,
-            'allowances' => $allowances,
-            'bonuses' => $automaticBonuses, // Automatically calculated from employee bonuses
+            'allowances' => $proratedAllowances,
+            'bonuses' => $proratedBonuses,
             'overtime' => 0, // Can be added later
             'loan_deduction' => $loanDeduction,
             'absent_deduction' => $absentDeduction,
             'absent_days' => $absentDays,
+            'working_days' => $workingDays,
+            'prorated_deduction' => $proratedDeduction,
             'other_deductions' => 0, // Will be added from form
-            'gross_salary' => $basicSalary + $allowances + $automaticBonuses,
-            'total_deductions' => $loanDeduction + $absentDeduction,
-            'net_salary' => ($basicSalary + $allowances + $automaticBonuses) - ($loanDeduction + $absentDeduction),
+            'gross_salary' => $basicSalary + $proratedAllowances + $proratedBonuses,
+            'total_deductions' => $loanDeduction + $absentDeduction + $proratedDeduction,
+            'net_salary' => ($basicSalary + $proratedAllowances + $proratedBonuses) - ($loanDeduction + $absentDeduction + $proratedDeduction),
         ];
     }
 

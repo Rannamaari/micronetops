@@ -106,6 +106,12 @@
                                         <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ number_format($payroll->absent_deduction, 2) }}</span>
                                     </div>
                                 @endif
+                                @if(($payroll->prorated_deduction ?? 0) > 0)
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">Prorated Deduction (Mid-month hire)</span>
+                                        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ number_format($payroll->prorated_deduction, 2) }}</span>
+                                    </div>
+                                @endif
                                 @if($payroll->other_deductions > 0)
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm text-gray-600 dark:text-gray-400">Other Deductions</span>
@@ -140,11 +146,17 @@
                     </div>
 
                     {{-- Payment Details --}}
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                             <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pay Period</div>
                             <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">
                                 {{ date('F Y', mktime(0, 0, 0, $payroll->month, 1, $payroll->year)) }}
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Working Days</div>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                                {{ $payroll->working_days ?? 'N/A' }} days
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
