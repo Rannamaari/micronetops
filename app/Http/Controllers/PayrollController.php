@@ -193,10 +193,16 @@ class PayrollController extends Controller
             }
         }
 
+        // Calculate full month working days (for daily rate calculation)
+        $fullMonthWorkingDays = EmployeeAttendance::getWorkingDaysInMonth($year, $month);
+
         // Calculate working days (excluding Fridays) from hire date to month end
         $expectedWorkingDays = EmployeeAttendance::getWorkingDaysBetween($actualStartDate, $monthEnd);
 
         // Prevent division by zero
+        if ($fullMonthWorkingDays <= 0) {
+            $fullMonthWorkingDays = 1;
+        }
         if ($expectedWorkingDays <= 0) {
             $expectedWorkingDays = 1;
         }
@@ -211,23 +217,19 @@ class PayrollController extends Controller
             $actualWorkedDays = 0;
         }
 
-        // Calculate daily rate based on expected working days (from hire date)
-        $dailyBasicRate = $basicSalary / $expectedWorkingDays;
+        // Calculate daily rates based on FULL MONTH working days
+        $dailyBasicRate = $basicSalary / $fullMonthWorkingDays;
+        $dailyAllowanceRate = $allowances / $fullMonthWorkingDays;
+        $dailyBonusRate = $automaticBonuses / $fullMonthWorkingDays;
 
-        // Calculate payable basic salary ONLY for days actually worked
+        // Basic salary: Pay ONLY for days actually worked
         $payableBasicSalary = $dailyBasicRate * $actualWorkedDays;
 
-        // Calculate daily allowance rate
-        $dailyAllowanceRate = $allowances / $expectedWorkingDays;
+        // Allowances: Pay for EXPECTED days from hire date (NOT reduced for absences)
+        $payableAllowances = $dailyAllowanceRate * $expectedWorkingDays;
 
-        // Calculate payable allowances ONLY for days actually worked
-        $payableAllowances = $dailyAllowanceRate * $actualWorkedDays;
-
-        // Calculate daily bonus rate
-        $dailyBonusRate = $automaticBonuses / $expectedWorkingDays;
-
-        // Calculate payable bonuses ONLY for days actually worked
-        $payableBonuses = $dailyBonusRate * $actualWorkedDays;
+        // Bonuses: Pay for EXPECTED days from hire date (NOT reduced for absences)
+        $payableBonuses = $dailyBonusRate * $expectedWorkingDays;
 
         // Get total loan deductions for this month
         $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
