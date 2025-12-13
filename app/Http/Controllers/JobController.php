@@ -33,20 +33,21 @@ class JobController extends Controller
             $now = now();
             switch ($dateFilter) {
                 case 'today':
-                    $query->whereDate('created_at', $now->toDateString());
+                    $query->whereDate('created_at', '=', $now->format('Y-m-d'));
                     break;
                 case 'yesterday':
                     $yesterday = $now->copy()->subDay();
-                    $query->whereDate('created_at', $yesterday->toDateString());
+                    $query->whereDate('created_at', '=', $yesterday->format('Y-m-d'));
                     break;
                 case 'previous_month':
                     $firstDayPreviousMonth = $now->copy()->subMonth()->startOfMonth();
                     $lastDayPreviousMonth = $now->copy()->subMonth()->endOfMonth();
-                    $query->whereBetween('created_at', [$firstDayPreviousMonth, $lastDayPreviousMonth]);
+                    $query->whereDate('created_at', '>=', $firstDayPreviousMonth->format('Y-m-d'))
+                          ->whereDate('created_at', '<=', $lastDayPreviousMonth->format('Y-m-d'));
                     break;
                 case 'current_month':
                     $firstDayCurrentMonth = $now->copy()->startOfMonth();
-                    $query->where('created_at', '>=', $firstDayCurrentMonth);
+                    $query->whereDate('created_at', '>=', $firstDayCurrentMonth->format('Y-m-d'));
                     break;
             }
         }
