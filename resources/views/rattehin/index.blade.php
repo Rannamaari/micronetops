@@ -59,12 +59,16 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3">Rattehin - Bill Sharing Made Easy</h3>
-                        <p class="text-gray-600 mb-3">Split restaurant bills easily with friends and family</p>
-                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
-                            <p class="text-sm text-gray-700">
-                                <strong>About this app:</strong> Rattehin started as a school project and is now helping friends and colleagues split bills fairly.
-                                Simply add diners, assign items to people, and let the app calculate who owes what—including service charges and GST!
+                        <h3 class="text-2xl font-bold mb-4 text-gray-900">Split smarter. Settle faster. Stay fair.</h3>
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                            <p class="text-gray-800 mb-3 leading-relaxed">
+                                Rattehin is a simple and smart bill-splitting app designed to take the stress out of shared expenses. Whether you're dining out, shopping together, or managing group costs, Rattehin helps you split bills fairly and clearly.
+                            </p>
+                            <p class="text-gray-800 mb-3 leading-relaxed">
+                                Users can upload bills, automatically sort items, and share expenses with friends in just a few taps—no more confusion or manual calculations. Everything stays transparent, organized, and easy to track.
+                            </p>
+                            <p class="text-gray-700 text-sm">
+                                <strong class="text-blue-700">Rattehin Premium:</strong> Unlock advanced features with a small subscription of 15 RF, making group spending even smoother.
                             </p>
                         </div>
                     </div>

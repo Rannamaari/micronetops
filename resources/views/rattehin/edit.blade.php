@@ -115,7 +115,7 @@
                                         <div class="text-sm text-gray-600">
                                             <span class="font-semibold text-blue-600 hover:text-blue-700">Click to upload</span> or take a photo
                                         </div>
-                                        <p class="text-xs text-gray-500">PNG, JPG up to 1MB</p>
+                                        <p class="text-xs text-gray-500">PNG, JPG • Auto-compressed for faster upload</p>
                                     </div>
                                 </label>
                             </div>
@@ -394,6 +394,48 @@
                     this.sharedItems.splice(index, 1);
                 },
 
+                async compressImage(base64Image, maxSizeKB = 800) {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+
+                            // Resize if image is too large (max 1600px on longest side)
+                            const maxDimension = 1600;
+                            if (width > maxDimension || height > maxDimension) {
+                                if (width > height) {
+                                    height = (height / width) * maxDimension;
+                                    width = maxDimension;
+                                } else {
+                                    width = (width / height) * maxDimension;
+                                    height = maxDimension;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // Start with quality 0.8 and reduce if needed
+                            let quality = 0.8;
+                            let compressedImage = canvas.toDataURL('image/jpeg', quality);
+
+                            // Keep reducing quality until under maxSizeKB
+                            while (compressedImage.length > maxSizeKB * 1024 && quality > 0.1) {
+                                quality -= 0.1;
+                                compressedImage = canvas.toDataURL('image/jpeg', quality);
+                            }
+
+                            resolve(compressedImage);
+                        };
+                        img.src = base64Image;
+                    });
+                },
+
                 async handleImageUpload(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -404,6 +446,12 @@
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         try {
+                            // Compress the image before uploading
+                            const compressedImage = await this.compressImage(e.target.result);
+
+                            console.log('Original size:', (e.target.result.length / 1024).toFixed(2), 'KB');
+                            console.log('Compressed size:', (compressedImage.length / 1024).toFixed(2), 'KB');
+
                             const response = await fetch('{{ route("rattehin.scan") }}', {
                                 method: 'POST',
                                 headers: {
@@ -411,7 +459,7 @@
                                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                 },
                                 body: JSON.stringify({
-                                    image: e.target.result
+                                    image: compressedImage
                                 })
                             });
 
