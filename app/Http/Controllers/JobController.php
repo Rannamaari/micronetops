@@ -28,26 +28,30 @@ class JobController extends Controller
             $query->where('status', $status);
         }
 
-        // Apply date filter
+        // Apply date filter (PostgreSQL compatible - using timestamp ranges)
         if ($dateFilter) {
             $now = now();
             switch ($dateFilter) {
                 case 'today':
-                    $query->whereDate('created_at', '=', $now->format('Y-m-d'));
+                    $startOfDay = $now->copy()->startOfDay();
+                    $endOfDay = $now->copy()->endOfDay();
+                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
                     break;
                 case 'yesterday':
                     $yesterday = $now->copy()->subDay();
-                    $query->whereDate('created_at', '=', $yesterday->format('Y-m-d'));
+                    $startOfDay = $yesterday->startOfDay();
+                    $endOfDay = $yesterday->endOfDay();
+                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
                     break;
                 case 'previous_month':
-                    $firstDayPreviousMonth = $now->copy()->subMonth()->startOfMonth();
-                    $lastDayPreviousMonth = $now->copy()->subMonth()->endOfMonth();
-                    $query->whereDate('created_at', '>=', $firstDayPreviousMonth->format('Y-m-d'))
-                          ->whereDate('created_at', '<=', $lastDayPreviousMonth->format('Y-m-d'));
+                    $startOfMonth = $now->copy()->subMonth()->startOfMonth();
+                    $endOfMonth = $now->copy()->subMonth()->endOfMonth();
+                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
                     break;
                 case 'current_month':
-                    $firstDayCurrentMonth = $now->copy()->startOfMonth();
-                    $query->whereDate('created_at', '>=', $firstDayCurrentMonth->format('Y-m-d'));
+                    $startOfMonth = $now->copy()->startOfMonth();
+                    $endOfMonth = $now->copy()->endOfMonth();
+                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
                     break;
             }
         }
