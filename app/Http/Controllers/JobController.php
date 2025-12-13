@@ -28,30 +28,30 @@ class JobController extends Controller
             $query->where('status', $status);
         }
 
-        // Apply date filter (PHP 8.4 + PostgreSQL workaround - using quoted raw SQL)
+        // Apply date filter (created_at is INTEGER storing Unix timestamps)
         if ($dateFilter) {
             $now = now();
             switch ($dateFilter) {
                 case 'today':
-                    $startOfDay = $now->copy()->startOfDay()->toDateTimeString();
-                    $endOfDay = $now->copy()->endOfDay()->toDateTimeString();
-                    $query->whereRaw("created_at >= '{$startOfDay}' AND created_at <= '{$endOfDay}'");
+                    $startOfDay = $now->copy()->startOfDay()->timestamp;
+                    $endOfDay = $now->copy()->endOfDay()->timestamp;
+                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
                     break;
                 case 'yesterday':
                     $yesterday = $now->copy()->subDay();
-                    $startOfDay = $yesterday->copy()->startOfDay()->toDateTimeString();
-                    $endOfDay = $yesterday->copy()->endOfDay()->toDateTimeString();
-                    $query->whereRaw("created_at >= '{$startOfDay}' AND created_at <= '{$endOfDay}'");
+                    $startOfDay = $yesterday->copy()->startOfDay()->timestamp;
+                    $endOfDay = $yesterday->copy()->endOfDay()->timestamp;
+                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
                     break;
                 case 'previous_month':
-                    $startOfMonth = $now->copy()->subMonth()->startOfMonth()->toDateTimeString();
-                    $endOfMonth = $now->copy()->subMonth()->endOfMonth()->toDateTimeString();
-                    $query->whereRaw("created_at >= '{$startOfMonth}' AND created_at <= '{$endOfMonth}'");
+                    $startOfMonth = $now->copy()->subMonth()->startOfMonth()->timestamp;
+                    $endOfMonth = $now->copy()->subMonth()->endOfMonth()->timestamp;
+                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
                     break;
                 case 'current_month':
-                    $startOfMonth = $now->copy()->startOfMonth()->toDateTimeString();
-                    $endOfMonth = $now->copy()->endOfMonth()->toDateTimeString();
-                    $query->whereRaw("created_at >= '{$startOfMonth}' AND created_at <= '{$endOfMonth}'");
+                    $startOfMonth = $now->copy()->startOfMonth()->timestamp;
+                    $endOfMonth = $now->copy()->endOfMonth()->timestamp;
+                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
                     break;
             }
         }
