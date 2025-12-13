@@ -25,6 +25,45 @@
                 </div>
             @endif
 
+            {{-- Role Filter Tabs --}}
+            <div class="mb-4 bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
+                <div class="border-b border-gray-200 dark:border-gray-700">
+                    <nav class="flex flex-wrap -mb-px overflow-x-auto">
+                        @php
+                            $roles = [
+                                'all' => 'All Users',
+                                'customer' => 'Customers',
+                                'admin' => 'Admins',
+                                'manager' => 'Managers',
+                                'mechanic' => 'Mechanics',
+                                'cashier' => 'Cashiers',
+                                'hr' => 'HR',
+                            ];
+                        @endphp
+
+                        @foreach($roles as $roleKey => $roleName)
+                            <a href="{{ route('users.index', ['role' => $roleKey]) }}"
+                               class="py-3 px-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
+                                   @if($roleFilter === $roleKey)
+                                       border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400
+                                   @else
+                                       border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300
+                                   @endif">
+                                {{ $roleName }}
+                                <span class="ml-2 px-2 py-0.5 rounded-full text-xs
+                                    @if($roleFilter === $roleKey)
+                                        bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                                    @else
+                                        bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400
+                                    @endif">
+                                    {{ $roleCounts[$roleKey] ?? 0 }}
+                                </span>
+                            </a>
+                        @endforeach
+                    </nav>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-50 dark:bg-gray-900">
@@ -34,6 +73,9 @@
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Email
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Phone
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Roles
@@ -69,6 +111,9 @@
                                 </td>
                                 <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
                                     {{ $user->email }}
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                    {{ $user->phone ?? '-' }}
                                 </td>
                                 <td class="px-4 py-4">
                                     @if($user->role)
@@ -106,7 +151,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="6" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                     No users found. <a href="{{ route('users.create') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Create one</a>
                                 </td>
                             </tr>

@@ -13,13 +13,35 @@ class UserManagementController extends Controller
     /**
      * List all users
      */
-    public function index()
+    public function index(Request $request)
     {
         if (!Gate::allows('manage-users')) {
             abort(403, 'Unauthorized. You do not have permission to manage users.');
         }
-        $users = User::orderBy('name')->paginate(20);
-        return view('users.index', compact('users'));
+
+        $roleFilter = $request->query('role', 'all'); // all | customer | admin | manager | mechanic | cashier | hr
+
+        $query = User::query()->orderBy('name');
+
+        // Apply role filter
+        if ($roleFilter !== 'all') {
+            $query->where('role', $roleFilter);
+        }
+
+        $users = $query->paginate(20)->withQueryString();
+
+        // Role counts for filter tabs
+        $roleCounts = [
+            'all' => User::count(),
+            'customer' => User::where('role', 'customer')->count(),
+            'admin' => User::where('role', 'admin')->count(),
+            'manager' => User::where('role', 'manager')->count(),
+            'mechanic' => User::where('role', 'mechanic')->count(),
+            'cashier' => User::where('role', 'cashier')->count(),
+            'hr' => User::where('role', 'hr')->count(),
+        ];
+
+        return view('users.index', compact('users', 'roleFilter', 'roleCounts'));
     }
 
     /**
