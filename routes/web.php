@@ -13,6 +13,7 @@ use App\Http\Controllers\JobItemController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RattehinController;
 use App\Http\Controllers\RoadWorthinessReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemController;
@@ -25,6 +26,10 @@ Route::get('/', function () {
         // Redirect HR users to HR dashboard
         if (auth()->user()->isHR()) {
             return redirect()->route('hr.dashboard');
+        }
+        // Redirect customers to Rattehin
+        if (auth()->user()->isCustomer()) {
+            return redirect()->route('rattehin.index');
         }
         return redirect()->route('dashboard');
     }
@@ -41,13 +46,17 @@ Route::get('/ops', function () {
         if (auth()->user()->isHR()) {
             return redirect()->route('hr.dashboard');
         }
+        // Redirect customers to Rattehin (they can't access operations)
+        if (auth()->user()->isCustomer()) {
+            return redirect()->route('rattehin.index');
+        }
         return redirect()->route('dashboard');
     }
     return redirect()->route('login');
 })->name('ops');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'operations'])
     ->name('dashboard');
 
 // HR Dashboard - Admin and HR users only
@@ -62,9 +71,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Reports - All users can view
-    Route::get('reports/road-worthiness', [RoadWorthinessReportController::class, 'index'])
-        ->name('reports.road-worthiness');
+    // Reports - Operations users only
+    Route::middleware('operations')->group(function () {
+        Route::get('reports/road-worthiness', [RoadWorthinessReportController::class, 'index'])
+            ->name('reports.road-worthiness');
+    });
 
     // Jobs - Admin, Manager, Mechanic (not Cashier)
     Route::middleware('role:admin,manager,mechanic')->group(function () {
@@ -127,8 +138,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
     });
 
-    // Petty Cash History - All users can view
-    Route::get('petty-cash/history', [PettyCashController::class, 'history'])->name('petty-cash.history');
+    // Petty Cash History - Operations users only
+    Route::middleware('operations')->group(function () {
+        Route::get('petty-cash/history', [PettyCashController::class, 'history'])->name('petty-cash.history');
+    });
 
     // Petty Cash - Admin, Manager, Mechanic can view and create
     Route::middleware('role:admin,manager,mechanic')->group(function () {
@@ -242,6 +255,21 @@ Route::middleware('auth')->group(function () {
         Route::get('system/settings', [SystemController::class, 'settings'])->name('system.settings');
         Route::post('system/purge', [SystemController::class, 'purgeAllData'])->name('system.purge');
     });
+
+});
+
+// Rattehin - Bill Splitting App (Redirects to register if not authenticated)
+Route::prefix('rattehin')->name('rattehin.')->middleware('auth.register')->group(function () {
+    Route::get('/', [RattehinController::class, 'index'])->name('index');
+    Route::get('/create', [RattehinController::class, 'create'])->name('create');
+    Route::post('/', [RattehinController::class, 'store'])->name('store');
+    Route::get('/{bill}', [RattehinController::class, 'show'])->name('show');
+    Route::get('/{bill}/edit', [RattehinController::class, 'edit'])->name('edit');
+    Route::patch('/{bill}', [RattehinController::class, 'update'])->name('update');
+    Route::delete('/{bill}', [RattehinController::class, 'destroy'])->name('destroy');
+
+    // OCR bill scanning endpoint
+    Route::post('/scan', [RattehinController::class, 'scanBill'])->name('scan');
 });
 
 require __DIR__.'/auth.php';

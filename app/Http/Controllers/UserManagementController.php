@@ -83,7 +83,10 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role'     => ['required', 'in:admin,manager,mechanic,cashier,hr'],
+            'role'     => ['required', 'in:admin,manager,mechanic,cashier,hr,customer'],
+            'is_premium' => ['nullable', 'boolean'],
+            'premium_features' => ['nullable', 'array'],
+            'premium_features.*' => ['in:bill_upload,bill_sharing,expense_tracking,advanced_reports'],
         ]);
 
         $user->name = $validated['name'];
@@ -92,6 +95,19 @@ class UserManagementController extends Controller
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
+        }
+
+        // Handle premium subscription
+        $user->is_premium = $request->has('is_premium');
+        if ($user->is_premium) {
+            // Set premium to expire in 30 days if newly enabled
+            if (!$user->wasChanged('is_premium') || !$user->premium_expires_at) {
+                $user->premium_expires_at = now()->addDays(30);
+            }
+            $user->premium_features = $request->input('premium_features', []);
+        } else {
+            $user->premium_expires_at = null;
+            $user->premium_features = null;
         }
 
         $user->save();

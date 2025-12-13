@@ -8,7 +8,13 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="theme-color" content="#4f46e5">
 
-        <title>{{ config('app.name', 'MicroNET Sales') }}</title>
+        @if(request()->is('rattehin*'))
+            <title>Rattehin - Free Bill Splitter App | Split Restaurant Bills with Friends</title>
+            <meta name="description" content="Rattehin is a free bill splitting app for Maldives. Easily split restaurant bills, calculate GST, divide costs among friends and colleagues. Split bills fairly every time.">
+            <meta name="keywords" content="bill splitter Maldives, split restaurant bill, bill sharing app, divide bill with friends, GST calculator, Rattehin, free bill split calculator">
+        @else
+            <title>{{ config('app.name', 'MicroNET Sales') }}</title>
+        @endif
 
         <!-- Favicon -->
         <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
@@ -24,8 +30,13 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+        <!-- Alpine.js -->
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
         <!-- Mobile App CSS -->
         <link rel="stylesheet" href="{{ asset('css/mobile-app.css') }}">
+
+        @stack('styles')
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -91,5 +102,7 @@
                 </nav>
             @endauth
         </div>
+
+        @stack('scripts')
     </body>
 </html>

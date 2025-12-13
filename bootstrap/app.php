@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'hr' => \App\Http\Middleware\EnsureUserCanAccessHR::class,
+            'operations' => \App\Http\Middleware\EnsureUserCanAccessOperations::class,
+            'auth.register' => \App\Http\Middleware\RedirectToRegister::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

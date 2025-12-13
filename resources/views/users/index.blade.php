@@ -60,6 +60,11 @@
                                                 You
                                             </span>
                                         @endif
+                                        @if($user->isPremium())
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                                                PREMIUM
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">

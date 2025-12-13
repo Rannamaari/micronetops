@@ -7,6 +7,41 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- Welcome Offer Banner --}}
+            @if(session('offer_claimed'))
+                <div class="mb-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-6 text-white shadow-xl">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-3">
+                                <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <h3 class="text-2xl font-bold">Welcome to MicroNET!</h3>
+                            </div>
+                            <p class="text-lg mb-2">
+                                <strong>Congratulations!</strong> Your FREE OIL CHANGE (worth MVR 300) has been activated!
+                            </p>
+                            <p class="text-sm opacity-90 mb-3">
+                                ⏰ Valid until: <strong>{{ session('offer_expires') }}</strong> (3 days from today)
+                            </p>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-3 mt-3">
+                                <p class="text-sm font-semibold mb-1">📸 How to claim:</p>
+                                <ol class="text-sm space-y-1 ml-4 list-decimal">
+                                    <li>Take a screenshot of this message</li>
+                                    <li>Visit MicroNET Micro Moto Garage</li>
+                                    <li>Show this screenshot to claim your free oil change!</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
             {{-- Key Metrics Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 {{-- Total Customers --}}

@@ -5,7 +5,7 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ Auth::user()->canAccessOperations() ? route('dashboard') : route('rattehin.index') }}">
                         <x-application-logo class="block h-9 w-auto" />
                     </a>
                 </div>
@@ -78,6 +78,11 @@
                             </x-nav-link>
                         @endif
                     @endif
+
+                    {{-- Rattehin - All authenticated users --}}
+                    <x-nav-link :href="route('rattehin.index')" :active="request()->routeIs('rattehin.*')">
+                        {{ __('Rattehin') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -212,6 +217,11 @@
                     </x-responsive-nav-link>
                 @endif
             @endif
+
+            {{-- Rattehin - All authenticated users --}}
+            <x-responsive-nav-link :href="route('rattehin.index')" :active="request()->routeIs('rattehin.*')">
+                {{ __('Rattehin') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->

@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Micronet - IT, Security, Garage & AC Solutions in Maldives</title>
+    <title>Micronet - IT, Security, Garage & AC Solutions in Maldives | Rattehin Bill Splitter</title>
+    <meta name="description" content="Micronet offers IT solutions, security systems, motorcycle garage services, and AC maintenance in Maldives. Try Rattehin - our free bill splitting app to easily split restaurant bills with friends and colleagues.">
+    <meta name="keywords" content="bill splitter, split bills, restaurant bill calculator, bill sharing app, divide bills, Maldives bill split, Rattehin, motorcycle garage Maldives, AC services Maldives, IT solutions Maldives">
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
@@ -43,6 +45,14 @@
 
                 <!-- Dark Mode Toggle & Staff Login -->
                 <div class="flex items-center space-x-3">
+                    <!-- Rattehin Button -->
+                    <a href="/rattehin" class="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Rattehin</span>
+                    </a>
+
                     <!-- Staff Login Button (Blue, Iconic, Visible on all devices) -->
                     <a href="/ops" class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +60,7 @@
                         </svg>
                         <span class="text-sm font-medium">Staff</span>
                     </a>
-                    
+
                     <!-- Dark Mode Toggle -->
                     <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                         <svg id="sunIcon" class="w-5 h-5 text-gray-800 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,6 +224,11 @@
                         <li>
                             <a href="https://cool.micronet.mv" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">
                                 Micro Cool AC Services
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/rattehin" class="text-gray-400 hover:text-white transition-colors" title="Free bill splitting app - Split restaurant bills with friends">
+                                Rattehin - Bill Splitter App
                             </a>
                         </li>
                         <li>
