@@ -106,7 +106,7 @@
                         @else
                             <div class="space-y-4">
                             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                <input type="file" id="billImage" @change="handleImageUpload" accept="image/*" capture="environment" class="hidden">
+                                <input type="file" id="billImage" @change="handleImageUpload" accept="image/*" class="hidden">
                                 <label for="billImage" class="cursor-pointer">
                                     <div class="space-y-2">
                                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
