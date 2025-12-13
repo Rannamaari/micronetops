@@ -28,30 +28,30 @@ class JobController extends Controller
             $query->where('status', $status);
         }
 
-        // Apply date filter (PostgreSQL compatible - explicit string conversion)
+        // Apply date filter (PHP 8.4 + PostgreSQL workaround - using quoted raw SQL)
         if ($dateFilter) {
             $now = now();
             switch ($dateFilter) {
                 case 'today':
                     $startOfDay = $now->copy()->startOfDay()->toDateTimeString();
                     $endOfDay = $now->copy()->endOfDay()->toDateTimeString();
-                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
+                    $query->whereRaw("created_at >= '{$startOfDay}' AND created_at <= '{$endOfDay}'");
                     break;
                 case 'yesterday':
                     $yesterday = $now->copy()->subDay();
                     $startOfDay = $yesterday->copy()->startOfDay()->toDateTimeString();
                     $endOfDay = $yesterday->copy()->endOfDay()->toDateTimeString();
-                    $query->whereBetween('created_at', [$startOfDay, $endOfDay]);
+                    $query->whereRaw("created_at >= '{$startOfDay}' AND created_at <= '{$endOfDay}'");
                     break;
                 case 'previous_month':
                     $startOfMonth = $now->copy()->subMonth()->startOfMonth()->toDateTimeString();
                     $endOfMonth = $now->copy()->subMonth()->endOfMonth()->toDateTimeString();
-                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+                    $query->whereRaw("created_at >= '{$startOfMonth}' AND created_at <= '{$endOfMonth}'");
                     break;
                 case 'current_month':
                     $startOfMonth = $now->copy()->startOfMonth()->toDateTimeString();
                     $endOfMonth = $now->copy()->endOfMonth()->toDateTimeString();
-                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+                    $query->whereRaw("created_at >= '{$startOfMonth}' AND created_at <= '{$endOfMonth}'");
                     break;
             }
         }
