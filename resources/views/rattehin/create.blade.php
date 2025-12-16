@@ -145,13 +145,52 @@
 
                             <div x-show="scannedItems.length > 0" class="space-y-2">
                                 <h4 class="font-semibold text-sm text-gray-700">Scanned Items (<span x-text="scannedItems.length"></span>):</h4>
-                                <template x-for="item in scannedItems" :key="item.id">
-                                    <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
-                                        <div class="flex-1">
-                                            <span class="text-sm font-medium" x-text="item.name"></span>
-                                            <span class="text-xs text-gray-600 ml-2" x-show="item.quantity > 1" x-text="'(Qty: ' + item.quantity + ')'"></span>
+                                <p class="text-xs text-gray-500 mb-2">Click on any item to edit before adding</p>
+                                <template x-for="(item, index) in scannedItems" :key="item.id || index">
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <div x-show="!item.editing" class="flex items-center justify-between">
+                                            <div class="flex-1">
+                                                <span class="text-sm font-medium" x-text="item.name"></span>
+                                                <span class="text-xs text-gray-600 ml-2" x-text="'(Qty: ' + (item.quantity || 1) + ')'"></span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-semibold text-green-700" x-text="'MVR ' + parseFloat(item.price || 0).toFixed(2)"></span>
+                                                <button @click="editScannedItem(index)" class="text-blue-600 hover:text-blue-800" title="Edit">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button @click="removeScannedItem(index)" class="text-red-600 hover:text-red-800" title="Remove">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <span class="text-sm font-semibold text-green-700" x-text="'MVR ' + item.price.toFixed(2)"></span>
+                                        <div x-show="item.editing" class="space-y-2">
+                                            <div>
+                                                <label class="text-xs text-gray-600">Item Name</label>
+                                                <input type="text" x-model="item.name" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="Item name">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="text-xs text-gray-600">Quantity</label>
+                                                    <input type="number" x-model="item.quantity" min="1" step="1" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="Qty">
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs text-gray-600">Price (MVR)</label>
+                                                    <input type="number" x-model="item.price" min="0" step="0.01" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="Price">
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button @click="saveScannedItem(index)" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded text-sm font-medium">
+                                                    Save
+                                                </button>
+                                                <button @click="cancelEditScannedItem(index)" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-1 px-3 rounded text-sm font-medium">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                                 <button @click="addAllScannedItems" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium">
@@ -283,17 +322,37 @@
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4">Charges & Taxes</h3>
                         <div class="space-y-4">
+                            <!-- Service Charge Toggle -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" x-model="billData.service_charge_enabled" id="serviceChargeEnabled" @change="toggleServiceCharge" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                        <label for="serviceChargeEnabled" class="ml-2 text-sm font-medium text-gray-700">Apply Service Charge</label>
+                                    </div>
+                                    <span x-show="billData.service_charge_enabled" class="text-xs text-gray-500">Enabled</span>
+                                    <span x-show="!billData.service_charge_enabled" class="text-xs text-gray-400">Disabled</span>
+                                </div>
+                                <div x-show="billData.service_charge_enabled" class="mt-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Service Charge Percentage (%)</label>
+                                    <input type="number" x-model="billData.service_charge_percentage" step="0.01" min="0" max="100" class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g., 10">
+                                    <p class="text-xs text-gray-500 mt-1">Set to 0% if no service charge applies</p>
+                                </div>
+                            </div>
+
+                            <!-- GST Toggle -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Service Charge (%)</label>
-                                <input type="number" x-model="billData.service_charge_percentage" step="0.01" min="0" max="100" class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div class="flex items-center">
-                                <input type="checkbox" x-model="billData.gst_enabled" id="gstEnabled" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <label for="gstEnabled" class="ml-2 text-sm font-medium text-gray-700">Enable GST (8%)</label>
-                            </div>
-                            <div x-show="billData.gst_enabled" class="flex items-center ml-6">
-                                <input type="checkbox" x-model="billData.gst_on_service" id="gstOnService" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <label for="gstOnService" class="ml-2 text-sm font-medium text-gray-700">Apply GST on Service Charge</label>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" x-model="billData.gst_enabled" id="gstEnabled" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                        <label for="gstEnabled" class="ml-2 text-sm font-medium text-gray-700">Apply GST (8%)</label>
+                                    </div>
+                                    <span x-show="billData.gst_enabled" class="text-xs text-gray-500">Enabled</span>
+                                    <span x-show="!billData.gst_enabled" class="text-xs text-gray-400">Disabled</span>
+                                </div>
+                                <div x-show="billData.gst_enabled" class="flex items-center ml-6 mt-2">
+                                    <input type="checkbox" x-model="billData.gst_on_service" id="gstOnService" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <label for="gstOnService" class="ml-2 text-sm font-medium text-gray-700">Apply GST on Service Charge</label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -319,6 +378,7 @@
                 billData: {
                     title: '',
                     restaurant_name: '',
+                    service_charge_enabled: true,
                     service_charge_percentage: 10,
                     gst_enabled: false,
                     gst_on_service: false,
@@ -335,6 +395,22 @@
 
                 init() {
                     // Initialization
+                    // Set service_charge_enabled based on percentage
+                    if (this.billData.service_charge_percentage === 0) {
+                        this.billData.service_charge_enabled = false;
+                    }
+                },
+
+                toggleServiceCharge() {
+                    if (!this.billData.service_charge_enabled) {
+                        // When disabling, set percentage to 0
+                        this.billData.service_charge_percentage = 0;
+                    } else {
+                        // When enabling, set default to 10% if currently 0
+                        if (this.billData.service_charge_percentage === 0) {
+                            this.billData.service_charge_percentage = 10;
+                        }
+                    }
                 },
 
                 addParticipant() {
@@ -504,7 +580,16 @@
                             const data = await response.json();
 
                             if (data.success) {
-                                this.scannedItems = data.items || [];
+                                // Initialize scanned items with editing state and ensure quantity exists
+                                this.scannedItems = (data.items || []).map((item, idx) => ({
+                                    ...item,
+                                    id: item.id || `scanned_${Date.now()}_${idx}`,
+                                    quantity: item.quantity || 1,
+                                    editing: false,
+                                    originalName: item.name,
+                                    originalPrice: parseFloat(item.price || 0),
+                                    originalQuantity: item.quantity || 1
+                                }));
 
                                 // Debug: Log OCR results to console
                                 console.log('=== OCR SCAN RESULTS ===');
@@ -536,13 +621,61 @@
                     reader.readAsDataURL(file);
                 },
 
+                editScannedItem(index) {
+                    const item = this.scannedItems[index];
+                    // Store original values for cancel
+                    item.originalName = item.name;
+                    item.originalPrice = parseFloat(item.price || 0);
+                    item.originalQuantity = parseInt(item.quantity || 1);
+                    item.editing = true;
+                },
+
+                saveScannedItem(index) {
+                    const item = this.scannedItems[index];
+                    // Validate inputs
+                    if (!item.name || item.name.trim() === '') {
+                        alert('Item name cannot be empty');
+                        return;
+                    }
+                    if (!item.price || parseFloat(item.price) <= 0) {
+                        alert('Price must be greater than 0');
+                        return;
+                    }
+                    if (!item.quantity || parseInt(item.quantity) < 1) {
+                        alert('Quantity must be at least 1');
+                        return;
+                    }
+                    // Update values
+                    item.name = item.name.trim();
+                    item.price = parseFloat(item.price);
+                    item.quantity = parseInt(item.quantity);
+                    item.editing = false;
+                },
+
+                cancelEditScannedItem(index) {
+                    const item = this.scannedItems[index];
+                    // Restore original values
+                    item.name = item.originalName;
+                    item.price = item.originalPrice;
+                    item.quantity = item.originalQuantity;
+                    item.editing = false;
+                },
+
+                removeScannedItem(index) {
+                    if (confirm('Remove this item from scanned items?')) {
+                        this.scannedItems.splice(index, 1);
+                    }
+                },
+
                 addAllScannedItems() {
                     const count = this.scannedItems.length;
                     this.scannedItems.forEach(item => {
+                        // Calculate total price based on quantity
+                        const totalPrice = parseFloat(item.price || 0) * (parseInt(item.quantity || 1));
                         // Add to personal items (not shared) with empty assigned_to array
                         this.items.push({
                             name: item.name,
-                            price: parseFloat(item.price),
+                            price: totalPrice,
                             assigned_to: []
                         });
                     });
