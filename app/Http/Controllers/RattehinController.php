@@ -277,19 +277,33 @@ class RattehinController extends Controller
     public function scanBill(Request $request)
     {
         $request->validate([
-            'image' => 'required|string', // base64 image data
+            'image' => 'required|string', // base64 image data in format: data:image/jpeg;base64,<data>
         ]);
 
         try {
             // Call OCR API (using OCR.Space API)
             $apiKey = config('services.ocr_space.api_key');
 
+            if (!$apiKey) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'OCR service is not configured. Please contact administrator.'
+                ], 500);
+            }
+
+            // OCR.Space API expects the full data URL format: data:image/jpeg;base64,<base64_data>
+            // Send the full data URL as-is (don't strip the prefix)
+            $imageData = $request->image;
+            
+            // Ensure we have the proper format - if it doesn't start with 'data:', add it
+            if (strpos($imageData, 'data:') !== 0) {
+                // If it's just base64, wrap it in data URL format
+                $imageData = 'data:image/jpeg;base64,' . $imageData;
+            }
+
             // Enhanced OCR parameters for better receipt recognition
+            // OCR.Space API expects full data URL format when using base64Image
             $response = Http::asMultipart()->post('https://api.ocr.space/parse/image', [
-                [
-                    'name' => 'base64Image',
-                    'contents' => $request->image
-                ],
                 [
                     'name' => 'apikey',
                     'contents' => $apiKey
@@ -297,6 +311,14 @@ class RattehinController extends Controller
                 [
                     'name' => 'language',
                     'contents' => 'eng'
+                ],
+                [
+                    'name' => 'isOverlayRequired',
+                    'contents' => 'false'
+                ],
+                [
+                    'name' => 'base64Image',
+                    'contents' => $imageData  // Send full data URL format
                 ],
                 [
                     'name' => 'OCREngine',
@@ -330,6 +352,15 @@ class RattehinController extends Controller
                 return response()->json([
                     'success' => false,
                     'error' => $result['ErrorMessage'] ?? 'Failed to process image',
+                    'debug' => $result
+                ], 422);
+            }
+
+            // Check if ParsedResults exists and has data
+            if (!isset($result['ParsedResults']) || empty($result['ParsedResults'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No text could be extracted from the image. Please ensure the image is clear and contains readable text.',
                     'debug' => $result
                 ], 422);
             }

@@ -101,19 +101,36 @@
                             </div>
                         @else
                             <div class="space-y-4">
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                <input type="file" id="billImage" @change="handleImageUpload" accept="image/*" class="hidden">
-                                <label for="billImage" class="cursor-pointer">
-                                    <div class="space-y-2">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                        </svg>
-                                        <div class="text-sm text-gray-600">
-                                            <span class="font-semibold text-blue-600 hover:text-blue-700">Click to upload</span> or take a photo
+                            <!-- Upload Options -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <!-- Camera Option -->
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                                    <input type="file" id="billImageCamera" @change="handleImageUpload" accept="image/*" capture="environment" class="hidden">
+                                    <label for="billImageCamera" class="cursor-pointer block">
+                                        <div class="space-y-2">
+                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                            <div class="text-sm font-semibold text-blue-600">Take Photo</div>
+                                            <p class="text-xs text-gray-500">Use camera</p>
                                         </div>
-                                        <p class="text-xs text-gray-500">PNG, JPG • Auto-compressed for faster upload</p>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
+
+                                <!-- File Upload Option -->
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                                    <input type="file" id="billImageFile" @change="handleImageUpload" accept="image/*" class="hidden">
+                                    <label for="billImageFile" class="cursor-pointer block">
+                                        <div class="space-y-2">
+                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
+                                            <div class="text-sm font-semibold text-blue-600">Upload File</div>
+                                            <p class="text-xs text-gray-500">PNG, JPG • Auto-compressed</p>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
 
                             <div x-show="scanning" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -433,7 +450,26 @@
 
                 async handleImageUpload(event) {
                     const file = event.target.files[0];
-                    if (!file) return;
+                    if (!file) {
+                        // Reset file inputs
+                        document.getElementById('billImageCamera').value = '';
+                        document.getElementById('billImageFile').value = '';
+                        return;
+                    }
+
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file (PNG, JPG, etc.)');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    // Validate file size (max 10MB before compression)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('Image is too large. Please select an image smaller than 10MB.');
+                        event.target.value = '';
+                        return;
+                    }
 
                     this.scanning = true;
                     this.scannedItems = [];
@@ -447,16 +483,23 @@
                             console.log('Original size:', (e.target.result.length / 1024).toFixed(2), 'KB');
                             console.log('Compressed size:', (compressedImage.length / 1024).toFixed(2), 'KB');
 
+                            // Send full data URL format as OCR.Space API requires: data:image/jpeg;base64,<data>
                             const response = await fetch('{{ route("rattehin.scan") }}', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json'
                                 },
                                 body: JSON.stringify({
                                     image: compressedImage
                                 })
                             });
+
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                throw new Error(`Server error: ${response.status} - ${errorText}`);
+                            }
 
                             const data = await response.json();
 
@@ -471,7 +514,10 @@
 
                                 // Show extracted text if no items found
                                 if (!data.items || data.items.length === 0) {
-                                    alert('No items detected. Raw OCR text:\n\n' + data.extractedText + '\n\nPlease check browser console for details.');
+                                    alert('No items detected. Raw OCR text:\n\n' + (data.extractedText || 'No text extracted') + '\n\nPlease check browser console for details.');
+                                } else {
+                                    // Show success message
+                                    console.log(`Successfully extracted ${data.items.length} items`);
                                 }
                             } else {
                                 alert('Failed to scan bill: ' + (data.error || 'Unknown error'));
@@ -482,12 +528,16 @@
                             console.error('Scan Error:', error);
                         } finally {
                             this.scanning = false;
+                            // Reset file inputs after processing
+                            document.getElementById('billImageCamera').value = '';
+                            document.getElementById('billImageFile').value = '';
                         }
                     };
                     reader.readAsDataURL(file);
                 },
 
                 addAllScannedItems() {
+                    const count = this.scannedItems.length;
                     this.scannedItems.forEach(item => {
                         // Add to personal items (not shared) with empty assigned_to array
                         this.items.push({
@@ -497,7 +547,7 @@
                         });
                     });
                     this.scannedItems = [];
-                    alert(`${this.scannedItems.length || 'All'} items added to Personal Items. Don't forget to assign them to participants!`);
+                    alert(`${count} item${count !== 1 ? 's' : ''} added to Personal Items. Don't forget to assign them to participants!`);
                 },
 
                 async submitBill() {
