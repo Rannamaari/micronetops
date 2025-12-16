@@ -291,8 +291,8 @@ class RattehinController extends Controller
                 ], 500);
             }
 
-            // OCR.Space API expects the full data URL format: data:image/jpeg;base64,<base64_data>
-            // Send the full data URL as-is (don't strip the prefix)
+            // OCR.Space API expects full data URL format: data:image/jpeg;base64,<base64_data>
+            // The 1024 KB limit applies to the base64 content, not the full data URL
             $imageData = $request->image;
             
             // Ensure we have the proper format - if it doesn't start with 'data:', add it
@@ -302,7 +302,7 @@ class RattehinController extends Controller
             }
 
             // Enhanced OCR parameters for better receipt recognition
-            // OCR.Space API expects full data URL format when using base64Image
+            // OCR.Space API expects full data URL format: data:<content_type>;base64,<base64_data>
             $response = Http::asMultipart()->post('https://api.ocr.space/parse/image', [
                 [
                     'name' => 'apikey',
@@ -318,7 +318,7 @@ class RattehinController extends Controller
                 ],
                 [
                     'name' => 'base64Image',
-                    'contents' => $imageData  // Send full data URL format
+                    'contents' => $imageData  // Send full data URL format: data:image/jpeg;base64,<data>
                 ],
                 [
                     'name' => 'OCREngine',
@@ -487,6 +487,8 @@ class RattehinController extends Controller
             '/^subtotal/i',
             '/^sub[\s\-]?total/i',
             '/^service[\s\-]?charge/i',
+            '/^sc\s+\d+%/i',  // SC 5%, SC 10%, etc.
+            '/^sc\s*\d+%/i',  // SC5%, SC10%, etc.
             '/^tax/i',
             '/^gst/i',
             '/^vat/i',
@@ -494,6 +496,7 @@ class RattehinController extends Controller
             '/^net[\s\-]?total/i',
             '/^bill[\s\-]?total/i',
             '/^total[\s\-]?amount/i',
+            '/^total\s*\(/i',  // Total (MVR)
             '/^amount[\s\-]?payable/i',
             '/^bill[\s\-]?no/i',
             '/^invoice/i',
@@ -509,6 +512,9 @@ class RattehinController extends Controller
             '/^balance/i',
             '/^tender/i',
             '/^discount/i',
+            '/^unsettled/i',
+            '/^account\s*no/i',
+            '/^account\s*name/i',
         ];
 
         foreach ($lines as $line) {
@@ -537,7 +543,41 @@ class RattehinController extends Controller
 
             $matched = false;
 
-            // Pattern 1: "Item Name Qty * Amount" or "Item Name Qty # Amount"
+            // Pattern 1: "Item Name: Qty pcs, Price T" (common restaurant format)
+            // Example: "Nuta: 1 pcs, 10.19 T" or "Chicken Fried Rice: 1 pcs, 64.81 T"
+            if (!$matched && preg_match('/^(.+?):\s*(\d+)\s*(?:pcs|pc|pcs\.|pc\.)?,?\s*(\d+(?:\.\d{1,2})?)\s*T?$/i', $line, $matches)) {
+                $name = trim($matches[1]);
+                $quantity = (int) $matches[2];
+                $amount = (float) $matches[3];
+
+                if ($amount > 0 && $quantity > 0 && $quantity < 100) {
+                    $items[] = [
+                        'name' => $this->cleanItemName($name),
+                        'price' => $amount,
+                        'quantity' => $quantity,
+                    ];
+                    $matched = true;
+                }
+            }
+
+            // Pattern 2: "Item Name Qty pcs Price" (without colon/comma)
+            // Example: "Nuta 1 pcs 10.19" or "Chicken Fried Rice 1 pcs 64.81"
+            if (!$matched && preg_match('/^(.+?)\s+(\d+)\s+(?:pcs|pc|pcs\.|pc\.)\s+(\d+(?:\.\d{1,2})?)\s*T?$/i', $line, $matches)) {
+                $name = trim($matches[1]);
+                $quantity = (int) $matches[2];
+                $amount = (float) $matches[3];
+
+                if ($amount > 0 && $quantity > 0 && $quantity < 100) {
+                    $items[] = [
+                        'name' => $this->cleanItemName($name),
+                        'price' => $amount,
+                        'quantity' => $quantity,
+                    ];
+                    $matched = true;
+                }
+            }
+
+            // Pattern 3: "Item Name Qty * Amount" or "Item Name Qty # Amount"
             // Example: "Papad 5 * 75.00" or "Beer Bottle 5 # 300.00"
             if (!$matched && preg_match('/^(.+?)\s+(\d+)\s*[*#@×]\s*(\d+(?:\.\d{1,2})?)$/i', $line, $matches)) {
                 $name = trim($matches[1]);
@@ -554,7 +594,7 @@ class RattehinController extends Controller
                 }
             }
 
-            // Pattern 2: "Qty x Item Name Amount" (quantity first)
+            // Pattern 4: "Qty x Item Name Amount" (quantity first)
             // Example: "2 x Fried Rice 180.00"
             if (!$matched && preg_match('/^(\d+)\s*[x×]\s*(.+?)\s+(\d+(?:\.\d{1,2})?)$/i', $line, $matches)) {
                 $quantity = (int) $matches[1];
@@ -571,7 +611,7 @@ class RattehinController extends Controller
                 }
             }
 
-            // Pattern 3: "Item Name Qty Amount" (space-separated, 3 parts)
+            // Pattern 5: "Item Name Qty Amount" (space-separated, 3 parts)
             // Example: "Chicken Curry 2 180.00"
             if (!$matched && preg_match('/^(.+?)\s+(\d{1,2})\s+(\d+(?:\.\d{1,2})?)$/i', $line, $matches)) {
                 $name = trim($matches[1]);
@@ -589,7 +629,24 @@ class RattehinController extends Controller
                 }
             }
 
-            // Pattern 4: "Item Name Amount" (just item and price, assume qty = 1)
+            // Pattern 5b: "Item Name Qty Amount" with currency (more flexible)
+            // Example: "Chicken Curry 2 MVR 180.00" or "Item 3 45.50"
+            if (!$matched && preg_match('/^(.+?)\s+(\d{1,2})\s+(?:MVR|MRF|Rf|Rs|RF)?\s*(\d+(?:\.\d{1,2})?)$/i', $line, $matches)) {
+                $name = trim($matches[1]);
+                $quantity = (int) $matches[2];
+                $amount = (float) $matches[3];
+
+                if ($amount >= 1 && $quantity > 0 && $quantity <= 50 && !preg_match('/^\d+$/', $name)) {
+                    $items[] = [
+                        'name' => $this->cleanItemName($name),
+                        'price' => $amount,
+                        'quantity' => $quantity,
+                    ];
+                    $matched = true;
+                }
+            }
+
+            // Pattern 6: "Item Name Amount" (just item and price, assume qty = 1)
             // Example: "Naan 45.00" or "Coffee MVR 35.00"
             if (!$matched && preg_match('/^(.+?)\s+(?:MVR|MRF|Rf|Rs|RF)?\s*(\d+(?:\.\d{1,2})?)$/i', $line, $matches)) {
                 $name = trim($matches[1]);

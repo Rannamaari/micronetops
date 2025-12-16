@@ -131,7 +131,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                             </svg>
                                             <div class="text-sm font-semibold text-blue-600">Upload File</div>
-                                            <p class="text-xs text-gray-500">PNG, JPG • Auto-compressed</p>
+                                            <p class="text-xs text-gray-500">PNG, JPG • Max 15MB</p>
                                         </div>
                                     </label>
                                 </div>
@@ -240,9 +240,10 @@
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4">Personal Items</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <input type="text" x-model="newItem.name" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Item name">
-                            <input type="number" x-model="newItem.price" step="0.01" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Price">
+                            <input type="number" x-model="newItem.quantity" min="1" step="1" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Qty">
+                            <input type="number" x-model="newItem.price" step="0.01" min="0" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Price per item">
                             <button @click="addItem" :disabled="participants.length === 0" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium disabled:bg-gray-400">
                                 Add Item
                             </button>
@@ -254,7 +255,8 @@
                                     <div class="flex justify-between items-start mb-2">
                                         <div>
                                             <span class="font-medium" x-text="item.name"></span>
-                                            <span class="text-gray-600 ml-2" x-text="'MVR ' + parseFloat(item.price).toFixed(2)"></span>
+                                            <span class="text-gray-600 ml-2" x-show="item.quantity && item.quantity > 1" x-text="'(Qty: ' + (item.quantity || 1) + ')'"></span>
+                                            <span class="text-gray-600 ml-2" x-text="'MVR ' + parseFloat(item.price || 0).toFixed(2)"></span>
                                         </div>
                                         <div class="flex gap-2">
                                             <button @click="moveToShared(index)" class="text-purple-600 hover:text-purple-800" title="Move to Shared Items">
@@ -392,7 +394,7 @@
                 participants: existingBill && existingBill.participants ? existingBill.participants.map(p => p.name) : [],
                 newParticipantName: '',
                 items: existingBill && existingBill.items ? existingBill.items : [],
-                newItem: { name: '', price: '', assigned_to: [] },
+                newItem: { name: '', quantity: 1, price: '', assigned_to: [] },
                 sharedItems: existingBill && existingBill.shared_items ? existingBill.shared_items : [],
                 newSharedItem: { name: '', price: '' },
                 scanning: false,
@@ -431,12 +433,18 @@
 
                 addItem() {
                     if (this.newItem.name && this.newItem.price) {
+                        const quantity = parseInt(this.newItem.quantity) || 1;
+                        const pricePerItem = parseFloat(this.newItem.price) || 0;
+                        // Total price = price per item × quantity
+                        const totalPrice = pricePerItem * quantity;
+                        
                         this.items.push({
                             name: this.newItem.name,
-                            price: parseFloat(this.newItem.price),
+                            price: totalPrice,
+                            quantity: quantity,
                             assigned_to: []
                         });
-                        this.newItem = { name: '', price: '', assigned_to: [] };
+                        this.newItem = { name: '', quantity: 1, price: '', assigned_to: [] };
                     }
                 },
 
@@ -487,7 +495,9 @@
                     this.sharedItems.splice(index, 1);
                 },
 
-                async compressImage(base64Image, maxSizeKB = 800) {
+                async compressImageForOCR(base64Image, maxBase64SizeKB = 1000) {
+                    // OCR.Space API limit is 1024 KB for the BASE64 CONTENT (not the full data URL)
+                    // The limit applies to the part after "data:image/jpeg;base64,"
                     return new Promise((resolve) => {
                         const img = new Image();
                         img.onload = () => {
@@ -495,32 +505,39 @@
                             let width = img.width;
                             let height = img.height;
 
-                            // Resize if image is too large (max 1600px on longest side)
-                            const maxDimension = 1600;
-                            if (width > maxDimension || height > maxDimension) {
-                                if (width > height) {
-                                    height = (height / width) * maxDimension;
-                                    width = maxDimension;
-                                } else {
-                                    width = (width / height) * maxDimension;
-                                    height = maxDimension;
-                                }
-                            }
-
+                            // Keep original dimensions - don't resize to preserve OCR quality
                             canvas.width = width;
                             canvas.height = height;
 
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
 
-                            // Start with quality 0.8 and reduce if needed
-                            let quality = 0.8;
+                            // Start with high quality (0.95) and reduce gradually
+                            let quality = 0.95;
                             let compressedImage = canvas.toDataURL('image/jpeg', quality);
+                            
+                            // Extract base64 content size (part after the comma)
+                            const getBase64Size = (dataUrl) => {
+                                const base64Part = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+                                return base64Part.length;
+                            };
 
-                            // Keep reducing quality until under maxSizeKB
-                            while (compressedImage.length > maxSizeKB * 1024 && quality > 0.1) {
-                                quality -= 0.1;
+                            // Keep reducing quality until base64 content is under maxSizeKB
+                            while (getBase64Size(compressedImage) > maxBase64SizeKB * 1024 && quality > 0.3) {
+                                quality -= 0.05;
                                 compressedImage = canvas.toDataURL('image/jpeg', quality);
+                            }
+
+                            // If still too large, resize as last resort (but keep aspect ratio)
+                            if (getBase64Size(compressedImage) > maxBase64SizeKB * 1024) {
+                                const currentBase64Size = getBase64Size(compressedImage);
+                                const scale = Math.sqrt((maxBase64SizeKB * 1024) / currentBase64Size);
+                                width = Math.floor(width * scale);
+                                height = Math.floor(height * scale);
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(img, 0, 0, width, height);
+                                compressedImage = canvas.toDataURL('image/jpeg', 0.85);
                             }
 
                             resolve(compressedImage);
@@ -545,9 +562,9 @@
                         return;
                     }
 
-                    // Validate file size (max 10MB before compression)
-                    if (file.size > 10 * 1024 * 1024) {
-                        alert('Image is too large. Please select an image smaller than 10MB.');
+                    // Validate file size (max 15MB - no compression for better OCR accuracy)
+                    if (file.size > 15 * 1024 * 1024) {
+                        alert('Image is too large. Please select an image smaller than 15MB.');
                         event.target.value = '';
                         return;
                     }
@@ -558,11 +575,20 @@
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         try {
-                            // Compress the image before uploading
-                            const compressedImage = await this.compressImage(e.target.result);
-
-                            console.log('Original size:', (e.target.result.length / 1024).toFixed(2), 'KB');
-                            console.log('Compressed size:', (compressedImage.length / 1024).toFixed(2), 'KB');
+                            // Compress image to meet OCR.Space API limit (1024 KB for base64 content)
+                            // Compress intelligently to preserve OCR quality while meeting size limit
+                            const originalDataUrl = e.target.result;
+                            const originalBase64Size = originalDataUrl.includes(',') 
+                                ? originalDataUrl.split(',')[1].length / 1024 
+                                : originalDataUrl.length / 1024;
+                            console.log('Original base64 content size:', originalBase64Size.toFixed(2), 'KB');
+                            
+                            const compressedImage = await this.compressImageForOCR(originalDataUrl, 1000);
+                            const compressedBase64Size = compressedImage.includes(',') 
+                                ? compressedImage.split(',')[1].length / 1024 
+                                : compressedImage.length / 1024;
+                            console.log('Compressed base64 content size:', compressedBase64Size.toFixed(2), 'KB');
+                            console.log('Compression ratio:', ((1 - compressedBase64Size/originalBase64Size) * 100).toFixed(1) + '%');
 
                             // Send full data URL format as OCR.Space API requires: data:image/jpeg;base64,<data>
                             const response = await fetch('{{ route("rattehin.scan") }}', {
