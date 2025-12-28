@@ -308,12 +308,15 @@
                 const customerId = $option.val();
                 if (customerId) {
                     try {
+                        const vehiclesAttr = $option.attr('data-vehicles');
+                        const acUnitsAttr = $option.attr('data-ac-units');
                         customerAssetsCache[customerId] = {
-                            vehicles: JSON.parse($option.data('vehicles') || '[]'),
-                            ac_units: JSON.parse($option.data('ac-units') || '[]')
+                            vehicles: vehiclesAttr ? JSON.parse(vehiclesAttr) : [],
+                            ac_units: acUnitsAttr ? JSON.parse(acUnitsAttr) : []
                         };
-                        customerAddressCache[customerId] = $option.data('address') || '';
+                        customerAddressCache[customerId] = $option.attr('data-address') || '';
                     } catch (e) {
+                        console.error('Error parsing customer data:', e);
                         customerAssetsCache[customerId] = { vehicles: [], ac_units: [] };
                         customerAddressCache[customerId] = '';
                     }
