@@ -10,7 +10,7 @@ class InventoryItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'category', // moto / ac / both (kept for backward compatibility)
+        'category', // moto / ac
         'inventory_category_id', // FK to inventory_categories
         'name',
         'sku',
@@ -71,13 +71,10 @@ class InventoryItem extends Model
     }
 
     /**
-     * Scope for filtering by category type (moto/ac/both)
+     * Scope for filtering by category type (moto/ac)
      */
     public function scopeOfCategory($query, $category)
     {
-        if ($category === 'both') {
-            return $query->whereIn('category', ['moto', 'ac', 'both']);
-        }
         return $query->where('category', $category);
     }
 

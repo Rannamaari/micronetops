@@ -14,6 +14,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RattehinController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RoadWorthinessReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemController;
@@ -73,8 +74,14 @@ Route::middleware('auth')->group(function () {
 
     // Reports - Operations users only
     Route::middleware('operations')->group(function () {
+        Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
         Route::get('reports/road-worthiness', [RoadWorthinessReportController::class, 'index'])
             ->name('reports.road-worthiness');
+        Route::get('reports/daily-sales', [ReportsController::class, 'dailySales'])->name('reports.daily-sales');
+        Route::get('reports/best-sellers', [ReportsController::class, 'bestSellers'])->name('reports.best-sellers');
+        Route::get('reports/low-inventory', [ReportsController::class, 'lowInventory'])->name('reports.low-inventory');
+        Route::get('reports/sales-trends', [ReportsController::class, 'salesTrends'])->name('reports.sales-trends');
+        Route::get('reports/inventory-overview', [ReportsController::class, 'inventoryOverview'])->name('reports.inventory-overview');
     });
 
     // Jobs - Admin, Manager, Mechanic (not Cashier)

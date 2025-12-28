@@ -1,273 +1,238 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
+<nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ Auth::user()->canAccessOperations() ? route('dashboard') : route('rattehin.index') }}">
-                        <x-application-logo class="block h-9 w-auto" />
-                    </a>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    {{-- HR Module - Admin and HR users --}}
-                    @if(Auth::user()->canAccessHR())
-                        <x-nav-link :href="route('hr.dashboard')" :active="request()->routeIs('hr.*') || request()->routeIs('employees.*') || request()->routeIs('loans.*') || request()->routeIs('payroll.*')">
-                            {{ __('HR') }}
-                        </x-nav-link>
-                    @endif
-
-                    {{-- Operations Modules - Only show to non-HR users (or admin who has access to everything) --}}
-                    @if(Auth::user()->canAccessOperations())
-                        {{-- Dashboard - All users except HR --}}
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
-
-                        {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
-                        @if(Auth::user()->canViewCustomers())
-                            <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
-                                {{ __('Customers') }}
-                            </x-nav-link>
-                        @endif
-
-                        {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
-                        @if(Auth::user()->canCreateJobs())
-                            <x-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
-                                {{ __('Jobs') }}
-                            </x-nav-link>
-                        @endif
-
-                        {{-- Reports - All users --}}
-                        <x-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
-                            {{ __('Reports') }}
-                        </x-nav-link>
-
-                        {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
-                        @if(Auth::user()->canCreateExpenses())
-                            <x-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
-                                {{ __('Petty Cash') }}
-                            </x-nav-link>
-                        @elseif(Auth::user()->isCashier())
-                            {{-- Cashiers can view expense history --}}
-                            <x-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
-                                {{ __('Expense History') }}
-                            </x-nav-link>
-                        @endif
-
-                        {{-- Inventory - Admin, Manager only --}}
-                        @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                            <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
-                                {{ __('Inventory') }}
-                            </x-nav-link>
-                        @endif
-
-                        {{-- Users - Admin, Manager --}}
-                        @if(Auth::user()->canManageUsers())
-                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                                {{ __('Users') }}
-                            </x-nav-link>
-                        @endif
-
-                        {{-- Roles - Admin only --}}
-                        @if(Auth::user()->isAdmin())
-                            <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                                {{ __('Roles') }}
-                            </x-nav-link>
-                        @endif
-                    @endif
-
-                    {{-- Rattehin - All authenticated users --}}
-                    <x-nav-link :href="route('rattehin.index')" :active="request()->routeIs('rattehin.*')">
-                        {{ __('Rattehin') }}
-                    </x-nav-link>
-                </div>
+        <div class="flex justify-between items-center h-16">
+            <!-- Logo -->
+            <div class="flex-shrink-0">
+                <a href="{{ Auth::user()->canAccessOperations() ? route('dashboard') : route('rattehin.index') }}" class="flex items-center hover:opacity-80 transition-opacity">
+                    <x-application-logo class="h-8 w-auto" />
+                </a>
             </div>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div class="flex items-center gap-2">
-                                <span>{{ Auth::user()->name }}</span>
-                                @if(Auth::user()->isPremium())
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                                        PREMIUM
-                                    </span>
-                                @endif
-                            </div>
+            <!-- Desktop & Tablet Navigation -->
+            <div class="hidden md:flex items-center gap-1">
+                @if(Auth::user()->canAccessHR())
+                    <a href="{{ route('hr.dashboard') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('hr.*') || request()->routeIs('employees.*') || request()->routeIs('loans.*') || request()->routeIs('payroll.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                        HR
+                    </a>
+                @endif
 
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
+                @if(Auth::user()->canAccessOperations())
+                    <a href="{{ route('dashboard') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                        Dashboard
+                    </a>
 
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.show')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
+                    @if(Auth::user()->canViewCustomers())
+                        <a href="{{ route('customers.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Customers
+                        </a>
+                    @endif
 
-                        {{-- System Settings - Admin only --}}
-                        @if(Auth::user()->isAdmin())
-                            <x-dropdown-link :href="route('system.settings')">
-                                {{ __('System Settings') }}
-                            </x-dropdown-link>
+                    @if(Auth::user()->canCreateJobs())
+                        <a href="{{ route('jobs.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Jobs
+                        </a>
+                    @endif
+
+                    <a href="{{ route('reports.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                        Reports
+                    </a>
+
+                    @if(Auth::user()->canCreateExpenses())
+                        <a href="{{ route('petty-cash.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Petty Cash
+                        </a>
+                    @elseif(Auth::user()->isCashier())
+                        <a href="{{ route('petty-cash.history') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.history') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Expenses
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('inventory.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Inventory
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->canManageUsers())
+                        <a href="{{ route('users.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('users.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Users
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->isAdmin())
+                        <a href="{{ route('roles.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('roles.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Roles
+                        </a>
+                    @endif
+                @endif
+
+                <a href="{{ route('rattehin.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('rattehin.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                    Rattehin
+                </a>
+            </div>
+
+            <!-- Right Side -->
+            <div class="flex items-center gap-3">
+                <!-- User Menu -->
+                <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                    <button @click="open = !open" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                        <span class="hidden sm:inline">{{ Auth::user()->name }}</span>
+                        <span class="sm:hidden">{{ Str::limit(Auth::user()->name, 10, '') }}</span>
+                        @if(Auth::user()->isPremium())
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-sm">
+                                {{ Auth::user()->isPremium() ? 'PRO' : 'PREMIUM' }}
+                            </span>
                         @endif
-
-                        <!-- Authentication -->
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="open"
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 overflow-hidden">
+                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">Profile</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
+                            <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                Log Out
+                            </button>
                         </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
+                    </div>
+                </div>
 
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <!-- Mobile Menu Button -->
+                <button @click="open = !open" class="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200 active:scale-95">
+                    <svg class="w-6 h-6" :class="{'hidden': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <svg class="w-6 h-6" :class="{'hidden': !open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            {{-- HR Module - Admin and HR users --}}
+    <!-- Mobile Menu -->
+    <div x-show="open"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="md:hidden border-t border-gray-200 bg-white">
+        <div class="px-4 py-4 space-y-1 max-h-[calc(100vh-5rem)] overflow-y-auto">
             @if(Auth::user()->canAccessHR())
-                <x-responsive-nav-link :href="route('hr.dashboard')" :active="request()->routeIs('hr.*')">
-                    {{ __('HR Dashboard') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('employees.index')" :active="request()->routeIs('employees.*')">
-                    {{ __('All Employees') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('loans.index')" :active="request()->routeIs('loans.*')">
-                    {{ __('Loans & Advances') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('payroll.index')" :active="request()->routeIs('payroll.*')">
-                    {{ __('Payroll') }}
-                </x-responsive-nav-link>
+                <a href="{{ route('hr.dashboard') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('hr.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">HR Dashboard</a>
             @endif
 
-            {{-- Operations Modules - Only show to non-HR users (or admin who has access to everything) --}}
             @if(Auth::user()->canAccessOperations())
-                {{-- Dashboard - All users except HR --}}
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
+                <a href="{{ route('dashboard') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Dashboard</a>
 
-                {{-- Customers - Admin, Manager, Mechanic (not Cashier) --}}
                 @if(Auth::user()->canViewCustomers())
-                    <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">
-                        {{ __('Customers') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('customers.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Customers</a>
                 @endif
 
-                {{-- Jobs - Admin, Manager, Mechanic (not Cashier) --}}
                 @if(Auth::user()->canCreateJobs())
-                    <x-responsive-nav-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*')">
-                        {{ __('Jobs') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('jobs.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Jobs</a>
                 @endif
 
-                {{-- Reports - All users --}}
-                <x-responsive-nav-link :href="route('reports.road-worthiness')" :active="request()->routeIs('reports.*')">
-                    {{ __('Reports') }}
-                </x-responsive-nav-link>
+                <!-- Reports Accordion -->
+                <div x-data="{ reportsOpen: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                    <button @click="reportsOpen = !reportsOpen" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">
+                        <span>Reports</span>
+                        <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': reportsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="reportsOpen"
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-1"
+                         class="mt-2 ml-3 space-y-1 pl-3 border-l-2 border-gray-200">
+                        <a href="{{ route('reports.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.index') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Overview</a>
+                        <a href="{{ route('reports.road-worthiness') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.road-worthiness') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Road Worthiness</a>
+                        <a href="{{ route('reports.daily-sales') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.daily-sales') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Daily Sales</a>
+                        <a href="{{ route('reports.best-sellers') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.best-sellers') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Best Sellers</a>
+                        <a href="{{ route('reports.low-inventory') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.low-inventory') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Low Inventory</a>
+                        <a href="{{ route('reports.sales-trends') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.sales-trends') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Sales Trends</a>
+                        <a href="{{ route('reports.inventory-overview') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.inventory-overview') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory Overview</a>
+                    </div>
+                </div>
 
-                {{-- Petty Cash - Admin, Manager, Mechanic (not Cashier) --}}
                 @if(Auth::user()->canCreateExpenses())
-                    <x-responsive-nav-link :href="route('petty-cash.index')" :active="request()->routeIs('petty-cash.*')">
-                        {{ __('Petty Cash') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('petty-cash.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Petty Cash</a>
                 @elseif(Auth::user()->isCashier())
-                    {{-- Cashiers can view expense history --}}
-                    <x-responsive-nav-link :href="route('petty-cash.history')" :active="request()->routeIs('petty-cash.history')">
-                        {{ __('Expense History') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('petty-cash.history') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.history') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Expenses</a>
                 @endif
 
-                {{-- Inventory - Admin, Manager only --}}
                 @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                    <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*')">
-                        {{ __('Inventory') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('inventory.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Inventory</a>
                 @endif
 
-                {{-- Users - Admin, Manager --}}
                 @if(Auth::user()->canManageUsers())
-                    <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
-                        {{ __('Users') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('users.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Users</a>
                 @endif
 
-                {{-- Roles - Admin only --}}
                 @if(Auth::user()->isAdmin())
-                    <x-responsive-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
-                        {{ __('Roles') }}
-                    </x-responsive-nav-link>
+                    <a href="{{ route('roles.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('roles.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Roles</a>
                 @endif
             @endif
 
-            {{-- Rattehin - All authenticated users --}}
-            <x-responsive-nav-link :href="route('rattehin.index')" :active="request()->routeIs('rattehin.*')">
-                {{ __('Rattehin') }}
-            </x-responsive-nav-link>
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="flex items-center gap-2">
-                    <span class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</span>
-                    @if(Auth::user()->isPremium())
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                            PREMIUM
-                        </span>
-                    @endif
-                </div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.show')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                {{-- System Settings - Admin only --}}
-                @if(Auth::user()->isAdmin())
-                    <x-responsive-nav-link :href="route('system.settings')">
-                        {{ __('System Settings') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
+            <a href="{{ route('rattehin.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('rattehin.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Rattehin</a>
         </div>
     </div>
+
+    <!-- Reports Sub Navigation (Desktop/Tablet Only) -->
+    @if(request()->routeIs('reports.*'))
+        <div class="hidden md:block border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex gap-6 lg:gap-8 overflow-x-auto py-3 scrollbar-hide">
+                    <a href="{{ route('reports.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.index') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Overview
+                    </a>
+                    <a href="{{ route('reports.road-worthiness') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.road-worthiness') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Road Worthiness
+                    </a>
+                    <a href="{{ route('reports.daily-sales') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.daily-sales') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Daily Sales
+                    </a>
+                    <a href="{{ route('reports.best-sellers') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.best-sellers') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Best Sellers
+                    </a>
+                    <a href="{{ route('reports.low-inventory') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.low-inventory') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Low Inventory
+                    </a>
+                    <a href="{{ route('reports.sales-trends') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.sales-trends') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Sales Trends
+                    </a>
+                    <a href="{{ route('reports.inventory-overview') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.inventory-overview') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Inventory Overview
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 </nav>
+
+<style>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

@@ -92,9 +92,8 @@
                             </label>
                             <select name="category" required
                                     class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Moto</option>
-                                <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC</option>
-                                <option value="both" {{ old('category') === 'both' ? 'selected' : '' }}>Both</option>
+                                <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
+                                <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC Service</option>
                             </select>
                         </div>
 

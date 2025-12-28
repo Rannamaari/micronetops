@@ -7,6 +7,7 @@ use App\Models\JobItem;
 use App\Models\InventoryItem;
 use App\Models\InventoryLog;
 use App\Models\RoadWorthinessHistory;
+use App\Models\InsuranceHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,12 +27,7 @@ class JobItemController extends Controller
         $inventoryItem = InventoryItem::findOrFail($validated['inventory_item_id']);
         $qty = (int) $validated['quantity'];
 
-        if ($inventoryItem->quantity < $qty && !$inventoryItem->is_service) {
-            // For services we usually don't track stock; this check is only for parts.
-            return back()
-                ->withErrors(['inventory_item_id' => 'Not enough stock for ' . $inventoryItem->name])
-                ->withInput();
-        }
+        // Stock check removed - allow negative inventory for backorders and easy invoice creation
 
         $unitPrice = $validated['unit_price'] !== null
             ? $validated['unit_price']
@@ -64,13 +60,13 @@ class JobItemController extends Controller
         }
 
         // Handle road worthiness service - update vehicle if job has a vehicle
-        if ($inventoryItem->is_service && 
-            str_contains(strtolower($inventoryItem->name), 'road worthiness') && 
+        if ($inventoryItem->is_service &&
+            str_contains(strtolower($inventoryItem->name), 'road worthiness') &&
             $job->vehicle_id) {
-            
+
             $job->load('vehicle');
             $vehicle = $job->vehicle;
-            
+
             if ($vehicle) {
                 $issuedAt = now();
                 $expiresAt = $issuedAt->copy()->addYear();
@@ -82,6 +78,33 @@ class JobItemController extends Controller
 
                 // Create history record
                 RoadWorthinessHistory::create([
+                    'vehicle_id' => $vehicle->id,
+                    'job_id'     => $job->id,
+                    'issued_at'  => $issuedAt,
+                    'expires_at' => $expiresAt,
+                ]);
+            }
+        }
+
+        // Handle insurance service - update vehicle if job has a vehicle
+        if ($inventoryItem->is_service &&
+            str_contains(strtolower($inventoryItem->name), 'insurance') &&
+            $job->vehicle_id) {
+
+            $job->load('vehicle');
+            $vehicle = $job->vehicle;
+
+            if ($vehicle) {
+                $issuedAt = now();
+                $expiresAt = $issuedAt->copy()->addYear();
+
+                // Update vehicle's current insurance
+                $vehicle->insurance_created_at = $issuedAt;
+                $vehicle->insurance_expires_at = $expiresAt;
+                $vehicle->save();
+
+                // Create history record
+                InsuranceHistory::create([
                     'vehicle_id' => $vehicle->id,
                     'job_id'     => $job->id,
                     'issued_at'  => $issuedAt,

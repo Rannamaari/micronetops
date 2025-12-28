@@ -53,9 +53,8 @@
                         </label>
                         <select name="type" required
                                 class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="moto" {{ old('type') === 'moto' ? 'selected' : '' }}>Moto</option>
-                            <option value="ac" {{ old('type') === 'ac' ? 'selected' : '' }}>AC</option>
-                            <option value="both" {{ old('type') === 'both' ? 'selected' : '' }}>Both</option>
+                            <option value="moto" {{ old('type') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
+                            <option value="ac" {{ old('type') === 'ac' ? 'selected' : '' }}>AC Service</option>
                             <option value="general" {{ old('type') === 'general' ? 'selected' : '' }}>General</option>
                         </select>
                     </div>

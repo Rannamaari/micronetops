@@ -124,6 +124,7 @@ class JobController extends Controller
                 return [
                     'id' => $customer->id,
                     'text' => $customer->name . ' (' . $customer->phone . ')',
+                    'address' => $customer->address ?? '',
                     'vehicles' => $customer->vehicles->map(function ($v) {
                         return [
                             'id' => $v->id,
@@ -208,7 +209,9 @@ class JobController extends Controller
     {
         $job->load(['customer', 'vehicle', 'acUnit', 'assignedUser', 'items.inventoryItem', 'payments']);
 
+        // Filter inventory items based on job type
         $inventoryItems = InventoryItem::where('is_active', true)
+            ->where('category', $job->job_type)
             ->orderBy('name')
             ->get();
 

@@ -102,11 +102,11 @@
                                 class="block w-full rounded-md border-gray-300 shadow-sm text-sm
                                        focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">Select category</option>
-                            <option value="walkin" {{ old('job_category') === 'walkin' ? 'selected' : '' }}>Moto - Walk-in</option>
-                            <option value="pickup" {{ old('job_category') === 'pickup' ? 'selected' : '' }}>Moto - Pickup</option>
-                            <option value="ac_service" {{ old('job_category') === 'ac_service' ? 'selected' : '' }}>AC - Service</option>
-                            <option value="ac_install" {{ old('job_category') === 'ac_install' ? 'selected' : '' }}>AC - Install/Relocate</option>
-                            <option value="ac_repair" {{ old('job_category') === 'ac_repair' ? 'selected' : '' }}>AC - Repair</option>
+                            <option value="walkin" data-job-type="moto" {{ old('job_category') === 'walkin' ? 'selected' : '' }}>Walk-in</option>
+                            <option value="pickup" data-job-type="moto" {{ old('job_category') === 'pickup' ? 'selected' : '' }}>Pickup</option>
+                            <option value="ac_service" data-job-type="ac" {{ old('job_category') === 'ac_service' ? 'selected' : '' }}>Service</option>
+                            <option value="ac_install" data-job-type="ac" {{ old('job_category') === 'ac_install' ? 'selected' : '' }}>Install/Relocate</option>
+                            <option value="ac_repair" data-job-type="ac" {{ old('job_category') === 'ac_repair' ? 'selected' : '' }}>Repair</option>
                         </select>
                         @error('job_category')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -126,7 +126,8 @@
                                 <option value="{{ $customer->id }}"
                                     {{ (int)old('customer_id', $preselectedCustomer?->id) === $customer->id ? 'selected' : '' }}
                                     data-vehicles="{{ json_encode($customer->vehicles->map(fn($v) => ['id' => $v->id, 'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))])) }}"
-                                    data-ac-units="{{ json_encode($customer->acUnits->map(fn($a) => ['id' => $a->id, 'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))])) }}">
+                                    data-ac-units="{{ json_encode($customer->acUnits->map(fn($a) => ['id' => $a->id, 'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))])) }}"
+                                    data-address="{{ $customer->address ?? '' }}">
                                     {{ $customer->name }} ({{ $customer->phone }})
                                 </option>
                             @endforeach
@@ -188,25 +189,28 @@
                         </p>
                     </div>
 
-                    {{-- Address / Location --}}
+                    {{-- Address / Location (pre-filled from customer) --}}
                     <div>
                         <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Address / Location
+                            Address / Location <span id="address-required-indicator" class="text-orange-500 hidden">(Recommended for AC jobs)</span>
                         </label>
                         <input type="text" id="address" name="address"
                                value="{{ old('address') }}"
-                               class="block w-full rounded-md border-gray-300 shadow-sm text-sm
+                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm
                                       focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="Hulhumale Phase 2, Vinares Bxx, Flat xxx">
+                               placeholder="Address will be auto-filled from customer profile...">
                         @error('address')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Automatically filled from customer's profile. You can edit it if needed.
+                        </p>
                     </div>
 
-                    {{-- Pickup Location --}}
-                    <div>
+                    {{-- Pickup Location (only for Moto pickup jobs) --}}
+                    <div id="pickup-location-wrapper" class="hidden">
                         <label for="pickup_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Pickup Location (for Moto pickups)
+                            Pickup Location
                         </label>
                         <input type="text" id="pickup_location" name="pickup_location"
                                value="{{ old('pickup_location') }}"
@@ -255,8 +259,9 @@
 
     <script>
         $(document).ready(function() {
-            // Store for customer assets (vehicles and AC units)
+            // Store for customer assets (vehicles and AC units) and addresses
             let customerAssetsCache = {};
+            let customerAddressCache = {};
 
             // Initialize Select2 with AJAX search
             $('#customer_id').select2({
@@ -270,12 +275,13 @@
                         };
                     },
                     processResults: function (data) {
-                        // Cache the customer assets for later use
+                        // Cache the customer assets and address for later use
                         data.results.forEach(function(customer) {
                             customerAssetsCache[customer.id] = {
                                 vehicles: customer.vehicles,
                                 ac_units: customer.ac_units
                             };
+                            customerAddressCache[customer.id] = customer.address || '';
                         });
                         return {
                             results: data.results
@@ -306,8 +312,10 @@
                             vehicles: JSON.parse($option.data('vehicles') || '[]'),
                             ac_units: JSON.parse($option.data('ac-units') || '[]')
                         };
+                        customerAddressCache[customerId] = $option.data('address') || '';
                     } catch (e) {
                         customerAssetsCache[customerId] = { vehicles: [], ac_units: [] };
+                        customerAddressCache[customerId] = '';
                     }
                 }
             });
@@ -319,10 +327,56 @@
             const acSelect = document.getElementById('ac_unit_id');
             const customerVehicleLink = document.getElementById('customer-vehicle-link');
             const customerAcLink = document.getElementById('customer-ac-link');
+            const jobCategorySelect = document.getElementById('job_category');
+            const pickupLocationWrapper = document.getElementById('pickup-location-wrapper');
+            const addressInput = document.getElementById('address');
+            const addressRequiredIndicator = document.getElementById('address-required-indicator');
 
             function getSelectedJobType() {
                 const checked = Array.from(jobTypeRadios).find(r => r.checked);
                 return checked ? checked.value : 'moto';
+            }
+
+            function filterJobCategories() {
+                const type = getSelectedJobType();
+                const options = jobCategorySelect.querySelectorAll('option');
+                let firstValidOption = null;
+
+                options.forEach(opt => {
+                    if (opt.value === '') {
+                        opt.style.display = '';
+                        return;
+                    }
+
+                    const optType = opt.getAttribute('data-job-type');
+                    if (optType === type) {
+                        opt.style.display = '';
+                        if (!firstValidOption) firstValidOption = opt;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+
+                // Reset selection if current selection doesn't match job type
+                const currentSelected = jobCategorySelect.value;
+                const currentOption = jobCategorySelect.querySelector(`option[value="${currentSelected}"]`);
+                if (currentOption && currentOption.getAttribute('data-job-type') !== type) {
+                    jobCategorySelect.value = '';
+                }
+
+                updatePickupLocationVisibility();
+            }
+
+            function updatePickupLocationVisibility() {
+                const type = getSelectedJobType();
+                const category = jobCategorySelect.value;
+
+                // Show pickup location only for motorcycle pickup jobs
+                if (type === 'moto' && category === 'pickup') {
+                    pickupLocationWrapper.classList.remove('hidden');
+                } else {
+                    pickupLocationWrapper.classList.add('hidden');
+                }
             }
 
             function updateTypeVisibility() {
@@ -330,10 +384,13 @@
                 if (type === 'moto') {
                     vehicleWrapper.classList.remove('hidden');
                     acWrapper.classList.add('hidden');
+                    addressRequiredIndicator.classList.add('hidden');
                 } else {
                     acWrapper.classList.remove('hidden');
                     vehicleWrapper.classList.add('hidden');
+                    addressRequiredIndicator.classList.remove('hidden');
                 }
+                filterJobCategories();
             }
 
             function updateCustomerLinks() {
@@ -351,6 +408,7 @@
             function populateAssets() {
                 const customerId = $('#customer_id').val();
                 const assets = customerAssetsCache[customerId] || { vehicles: [], ac_units: [] };
+                const address = customerAddressCache[customerId] || '';
 
                 // Clear existing options (except first)
                 vehicleSelect.innerHTML = '<option value="">Select vehicle (optional)</option>';
@@ -370,16 +428,21 @@
                     acSelect.appendChild(opt);
                 });
 
+                // Update address from customer data
+                addressInput.value = address;
+
                 updateCustomerLinks();
             }
 
             // Events
             $('#customer_id').on('change', populateAssets);
             jobTypeRadios.forEach(r => r.addEventListener('change', updateTypeVisibility));
+            jobCategorySelect.addEventListener('change', updatePickupLocationVisibility);
 
             // Init on load
             updateTypeVisibility();
             populateAssets();
+            filterJobCategories();
         });
     </script>
 </x-app-layout>

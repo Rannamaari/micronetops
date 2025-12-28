@@ -172,6 +172,10 @@
                                         $rwStatus = $vehicle->roadWorthinessStatus();
                                         $rwExpired = $vehicle->isRoadWorthinessExpired();
                                         $rwExpiringSoon = $rwStatus === 'expiring_soon';
+
+                                        $insStatus = $vehicle->insuranceStatus();
+                                        $insExpired = $vehicle->isInsuranceExpired();
+                                        $insExpiringSoon = $insStatus === 'expiring_soon';
                                     @endphp
                                     <div class="p-4 rounded-lg border-2 {{ $rwExpired ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : ($rwExpiringSoon ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30') }}">
                                         <div class="flex justify-between items-start gap-3">
@@ -212,6 +216,28 @@
                                                 @else
                                                     <div class="mt-2 text-sm text-gray-400 dark:text-gray-500 italic">
                                                         No road worthiness
+                                                    </div>
+                                                @endif
+
+                                                @if($vehicle->insurance_expires_at)
+                                                    <div class="mt-2 text-sm">
+                                                        <div class="flex items-center gap-2">
+                                                            <svg class="w-4 h-4 {{ $insExpired ? 'text-red-500' : ($insExpiringSoon ? 'text-yellow-500' : 'text-green-500') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                                            </svg>
+                                                            <span class="{{ $insExpired ? 'text-red-700 dark:text-red-300' : ($insExpiringSoon ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-700 dark:text-gray-300') }}">
+                                                                <span class="font-medium">Insurance:</span> {{ $vehicle->insurance_expires_at->format('M d, Y') }}
+                                                                @if($insExpired)
+                                                                    <span class="font-bold">(EXPIRED)</span>
+                                                                @elseif($insExpiringSoon)
+                                                                    <span>({{ $vehicle->daysUntilInsuranceExpiry() }} days)</span>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="mt-2 text-sm text-gray-400 dark:text-gray-500 italic">
+                                                        No insurance
                                                     </div>
                                                 @endif
                                             </div>

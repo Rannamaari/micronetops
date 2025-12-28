@@ -61,22 +61,6 @@
                     </div>
 
                     <div>
-                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Category
-                        </label>
-                        <select id="category" name="category"
-                                class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                       focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
-                            <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC Service</option>
-                            <option value="both" {{ old('category') === 'both' ? 'selected' : '' }}>Both</option>
-                        </select>
-                        @error('category')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
                         <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Notes
                         </label>

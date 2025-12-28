@@ -66,9 +66,8 @@
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category Type</label>
                         <select name="category_type" class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="all" {{ $categoryType === 'all' ? 'selected' : '' }}>All Types</option>
-                            <option value="moto" {{ $categoryType === 'moto' ? 'selected' : '' }}>Moto</option>
-                            <option value="ac" {{ $categoryType === 'ac' ? 'selected' : '' }}>AC</option>
-                            <option value="both" {{ $categoryType === 'both' ? 'selected' : '' }}>Both</option>
+                            <option value="moto" {{ $categoryType === 'moto' ? 'selected' : '' }}>Motorcycle</option>
+                            <option value="ac" {{ $categoryType === 'ac' ? 'selected' : '' }}>AC Service</option>
                         </select>
                     </div>
 

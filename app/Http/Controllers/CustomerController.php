@@ -51,7 +51,6 @@ class CustomerController extends Controller
             'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone'],
             'email'    => ['nullable', 'email', 'max:255'],
             'address'  => ['nullable', 'string', 'max:500'],
-            'category' => ['required', 'string', 'max:20'], // moto, ac, both
             'notes'    => ['nullable', 'string'],
         ]);
 
@@ -90,7 +89,6 @@ class CustomerController extends Controller
             'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone,' . $customer->id],
             'email'    => ['nullable', 'email', 'max:255'],
             'address'  => ['nullable', 'string', 'max:500'],
-            'category' => ['required', 'string', 'max:20'],
             'notes'    => ['nullable', 'string'],
         ]);
 
