@@ -198,7 +198,10 @@
                         @forelse($job->items->where('is_service', true) as $item)
                             <tr>
                                 <td class="px-2 py-1">
-                                    {{ $item->inventoryItem?->name ?? 'Service #' . $item->inventory_item_id }}
+                                    <div>{{ $item->item_name ?? $item->inventoryItem?->name ?? 'Service #' . $item->inventory_item_id }}</div>
+                                    @if($item->item_description)
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $item->item_description }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-2 py-1 text-right">{{ $item->quantity }}</td>
                                 <td class="px-2 py-1 text-right">{{ number_format($item->unit_price, 2) }}</td>
@@ -301,7 +304,10 @@
                         @forelse($job->items->where('is_service', false) as $item)
                             <tr>
                                 <td class="px-2 py-1">
-                                    {{ $item->inventoryItem?->name ?? 'Item #' . $item->inventory_item_id }}
+                                    <div>{{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item #' . $item->inventory_item_id }}</div>
+                                    @if($item->item_description)
+                                        <div class="text-gray-500 dark:text-gray-400">{{ $item->item_description }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-2 py-1 text-right">{{ $item->quantity }}</td>
                                 <td class="px-2 py-1 text-right">{{ number_format($item->unit_price, 2) }}</td>

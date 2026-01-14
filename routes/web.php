@@ -10,6 +10,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryCategoryController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobItemController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileController;
@@ -143,6 +144,33 @@ Route::middleware('auth')->group(function () {
     // Customer deletion - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    });
+
+    // Leads - Admin, Manager, Mechanic (not Cashier)
+    Route::middleware('role:admin,manager,mechanic')->group(function () {
+        Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+        Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+        Route::patch('leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+
+        // Lead conversion to customer
+        Route::post('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])->name('leads.convert');
+
+        // Lead interactions
+        Route::post('leads/{lead}/interactions', [LeadController::class, 'recordInteraction'])->name('leads.interactions.store');
+
+        // Mark lead as lost
+        Route::post('leads/{lead}/mark-as-lost', [LeadController::class, 'markAsLost'])->name('leads.mark-as-lost');
+
+        // Quick status update
+        Route::patch('leads/{lead}/update-status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
+    });
+
+    // Lead deletion - Admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     });
 
     // Petty Cash History - Operations users only

@@ -192,6 +192,72 @@
                 </div>
             </div>
 
+            {{-- Overdue Leads Alert --}}
+            @if($overdueLeads->count() > 0)
+                <div class="mb-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-red-100 dark:bg-red-900 rounded-full">
+                                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-red-900 dark:text-red-100">Overdue Follow-ups</h3>
+                                    <p class="text-sm text-red-700 dark:text-red-300">{{ $overdueLeads->count() }} lead{{ $overdueLeads->count() > 1 ? 's' : '' }} need{{ $overdueLeads->count() == 1 ? 's' : '' }} immediate attention</p>
+                                </div>
+                            </div>
+                            <a href="{{ route('leads.index', ['status' => 'all']) }}" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition">
+                                View All Leads
+                            </a>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach($overdueLeads as $lead)
+                                <a href="{{ route('leads.show', $lead) }}" class="block bg-white dark:bg-gray-800 rounded-lg p-4 hover:shadow-md transition border-l-4 border-red-500">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $lead->name }}</span>
+                                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
+                                                    {{ $lead->priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                                       ($lead->priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                                       'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}">
+                                                    {{ ucfirst($lead->priority) }}
+                                                </span>
+                                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                    {{ ucfirst($lead->status) }}
+                                                </span>
+                                            </div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-400">
+                                                {{ $lead->phone }} • Interested in: {{ ucfirst($lead->interested_in) }}
+                                            </div>
+                                            <div class="flex items-center gap-1 mt-2 text-xs text-red-600 dark:text-red-400 font-semibold">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Overdue since {{ $lead->follow_up_date->format('M d, Y') }} ({{ $lead->follow_up_date->diffForHumans() }})
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            @if($lead->call_attempts > 0)
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                    {{ $lead->call_attempts }} call{{ $lead->call_attempts > 1 ? 's' : '' }}
+                                                </div>
+                                            @endif
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Sales Breakdown Row --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {{-- AC Sales This Month --}}

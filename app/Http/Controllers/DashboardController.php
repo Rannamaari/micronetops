@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\InventoryItem;
 use App\Models\Job;
 use App\Models\JobItem;
+use App\Models\Lead;
 use App\Models\Payment;
 use App\Models\PettyCash;
 use Carbon\Carbon;
@@ -84,6 +85,14 @@ class DashboardController extends Controller
         // === BEST SELLING ITEMS & SERVICES ===
         $bestSellingData = $this->getBestSellingData();
 
+        // === OVERDUE LEADS ===
+        $overdueLeads = Lead::where('follow_up_date', '<', $now)
+            ->whereIn('status', ['new', 'contacted', 'interested', 'qualified'])
+            ->where('do_not_contact', false)
+            ->orderBy('follow_up_date', 'asc')
+            ->limit(5)
+            ->get();
+
         return view('dashboard', compact(
             'totalCustomers',
             'jobsThisWeek',
@@ -97,7 +106,8 @@ class DashboardController extends Controller
             'pettyCashBalance',
             'dailySalesData',
             'monthlyTrendsData',
-            'bestSellingData'
+            'bestSellingData',
+            'overdueLeads'
         ));
     }
 

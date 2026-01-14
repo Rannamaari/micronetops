@@ -35,9 +35,19 @@ class JobItemController extends Controller
 
         $subtotal = $unitPrice * $qty;
 
+        // Create item description from brand and SKU
+        $itemDescription = trim(
+            ($inventoryItem->brand ?? '') .
+            ($inventoryItem->brand && $inventoryItem->sku ? ' - ' : '') .
+            ($inventoryItem->sku ?? '')
+        );
+
         $jobItem = JobItem::create([
             'job_id'            => $job->id,
             'inventory_item_id' => $inventoryItem->id,
+            // Snapshot item data at time of adding to job
+            'item_name'         => $inventoryItem->name,
+            'item_description'  => $itemDescription ?: null,
             'is_service'        => $inventoryItem->is_service,
             'quantity'          => $qty,
             'unit_price'        => $unitPrice,

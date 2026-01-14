@@ -70,11 +70,11 @@
     <div class="flex justify-between items-start border rounded" style="padding:10px;">
         <div>
             <div class="text-sm font-bold mb-1">Bill To</div>
-            <div class="text-sm">{{ $job->customer?->name }}</div>
-            @if($job->customer?->address)
-                <div class="text-xs">{{ $job->customer->address }}</div>
+            <div class="text-sm">{{ $job->customer_name ?? $job->customer?->name }}</div>
+            @if($job->address)
+                <div class="text-xs">{{ $job->address }}</div>
             @endif
-            <div class="text-xs">Phone: {{ $job->customer?->phone }}</div>
+            <div class="text-xs">Phone: {{ $job->customer_phone ?? $job->customer?->phone }}</div>
         </div>
         <div style="text-align:right;">
             <div class="text-xs mb-1"><strong>Job Type:</strong> {{ strtoupper($job->job_type) }}</div>
@@ -117,7 +117,12 @@
             <tbody>
             @forelse($job->items->where('is_service', true) as $item)
                 <tr>
-                    <td>{{ $item->inventoryItem?->name ?? 'Service' }}</td>
+                    <td>
+                        {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Service' }}
+                        @if($item->item_description)
+                            <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
+                        @endif
+                    </td>
                     <td class="text-right">{{ $item->quantity }}</td>
                     <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
                     <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>
@@ -146,7 +151,12 @@
             <tbody>
             @forelse($job->items->where('is_service', false) as $item)
                 <tr>
-                    <td>{{ $item->inventoryItem?->name ?? 'Item' }}</td>
+                    <td>
+                        {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item' }}
+                        @if($item->item_description)
+                            <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
+                        @endif
+                    </td>
                     <td class="text-right">{{ $item->quantity }}</td>
                     <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
                     <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>

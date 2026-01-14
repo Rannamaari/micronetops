@@ -179,14 +179,21 @@ class JobController extends Controller
             }
         }
 
+        // Get customer to snapshot their data
+        $customer = Customer::findOrFail($validated['customer_id']);
+
         $job = Job::create([
             'job_date' => $validated['job_date'],
             'job_type' => $validated['job_type'],
             'job_category' => $validated['job_category'],
             'customer_id' => $validated['customer_id'],
+            // Snapshot customer data at time of job creation
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'customer_email' => $customer->email,
             'vehicle_id' => $validated['vehicle_id'] ?? null,
             'ac_unit_id' => $validated['ac_unit_id'] ?? null,
-            'address' => $validated['address'] ?? null,
+            'address' => $validated['address'] ?? $customer->address,
             'pickup_location' => $validated['pickup_location'] ?? null,
             'problem_description' => $validated['problem_description'] ?? null,
             'status' => 'pending',

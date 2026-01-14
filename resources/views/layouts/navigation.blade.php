@@ -25,6 +25,10 @@
                         <a href="{{ route('customers.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                             Customers
                         </a>
+
+                        <a href="{{ route('leads.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Leads
+                        </a>
                     @endif
 
                     @if(Auth::user()->canCreateJobs())
@@ -139,6 +143,7 @@
 
                 @if(Auth::user()->canViewCustomers())
                     <a href="{{ route('customers.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Customers</a>
+                    <a href="{{ route('leads.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Leads</a>
                 @endif
 
                 @if(Auth::user()->canCreateJobs())

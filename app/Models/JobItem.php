@@ -12,6 +12,8 @@ class JobItem extends Model
     protected $fillable = [
         'job_id',
         'inventory_item_id',
+        'item_name',
+        'item_description',
         'is_service',
         'quantity',
         'unit_price',
