@@ -193,10 +193,17 @@ Route::middleware('auth')->group(function () {
             ->name('petty-cash.reject');
     });
 
-    // Top-ups/Add Money - Admin only (these routes will be created later)
-    // Route::middleware('role:admin')->group(function () {
-    //     Route for top-ups and add money functionality
-    // });
+    // Petty Cash Admin Dashboard - Admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::get('petty-cash/admin', [PettyCashController::class, 'adminDashboard'])
+            ->name('petty-cash.admin-dashboard');
+        Route::get('petty-cash/admin/users/{user}/top-up', [PettyCashController::class, 'showTopUpForm'])
+            ->name('petty-cash.show-top-up-form');
+        Route::post('petty-cash/admin/users/{user}/top-up', [PettyCashController::class, 'topUpUser'])
+            ->name('petty-cash.top-up-user');
+        Route::get('petty-cash/admin/users/{user}/history', [PettyCashController::class, 'userHistory'])
+            ->name('petty-cash.user-history');
+    });
 
     // User Management - Admin and Manager
     Route::middleware('role:admin,manager')->group(function () {

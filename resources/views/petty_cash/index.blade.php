@@ -1,8 +1,19 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            Petty Cash
-        </h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Petty Cash
+            </h2>
+            @if(Auth::user()->isAdmin())
+                <a href="{{ route('petty-cash.admin-dashboard') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    Manage Staff Balances
+                </a>
+            @endif
+        </div>
     </x-slot>
 
     <div class="py-6">
@@ -11,15 +22,21 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Balance</h3>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            My Petty Cash Balance
+                            @if(Auth::user()->isAdmin())
+                                <span class="text-xs text-indigo-600 dark:text-indigo-400">(Personal)</span>
+                            @endif
+                        </h3>
                         <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                             {{ number_format($balance, 2) }} MVR
                         </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Auth::user()->name }}</p>
                     </div>
                     <div class="text-right">
                         <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium
                             {{ $balance >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
-                            {{ $balance >= 0 ? 'Positive' : 'Negative' }}
+                            {{ $balance >= 0 ? 'Available' : 'Overdrawn' }}
                         </span>
                     </div>
                 </div>

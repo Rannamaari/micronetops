@@ -17,15 +17,18 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 mb-6">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Balance</h3>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            My Petty Cash Balance
+                        </h3>
                         <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                             {{ number_format($balance, 2) }} MVR
                         </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Auth::user()->name }}</p>
                     </div>
                     <div class="text-right">
                         <span class="inline-flex px-3 py-1 rounded-full text-xs font-medium
                             {{ $balance >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
-                            {{ $balance >= 0 ? 'Positive' : 'Negative' }}
+                            {{ $balance >= 0 ? 'Available' : 'Overdrawn' }}
                         </span>
                     </div>
                 </div>

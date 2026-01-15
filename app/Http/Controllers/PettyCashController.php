@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PettyCash;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -15,8 +16,15 @@ class PettyCashController extends Controller
         $status = $request->query('status', 'all'); // all / pending / approved / rejected
         $type   = $request->query('type', 'all');   // all / topup / expense
 
+        $currentUser = Auth::user();
+
         $query = PettyCash::with(['user', 'approver'])
             ->orderByDesc('created_at');
+
+        // Non-admin users only see their own transactions
+        if (!$currentUser->isAdmin()) {
+            $query->where('assigned_to', $currentUser->id);
+        }
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -28,12 +36,19 @@ class PettyCashController extends Controller
 
         $entries = $query->paginate(25)->withQueryString();
 
-        $balance = PettyCash::currentBalance();
+        // Show user's individual balance instead of central balance
+        $balance = PettyCash::userBalance($currentUser);
 
-        // Get all approved entries for ledger history (ordered chronologically from oldest to newest)
-        $ledgerEntries = PettyCash::with(['user', 'approver'])
-            ->where('status', 'approved')
-            ->orderBy('paid_at', 'asc')
+        // Get approved entries for ledger history (filtered by user if not admin)
+        $ledgerQuery = PettyCash::with(['user', 'approver'])
+            ->where('status', 'approved');
+
+        // Non-admin users only see their own ledger
+        if (!$currentUser->isAdmin()) {
+            $ledgerQuery->where('assigned_to', $currentUser->id);
+        }
+
+        $ledgerEntries = $ledgerQuery->orderBy('paid_at', 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -67,14 +82,21 @@ class PettyCashController extends Controller
     /** Show full transaction history with pagination */
     public function history(Request $request)
     {
-        $balance = PettyCash::currentBalance();
+        $currentUser = Auth::user();
+        $balance = PettyCash::userBalance($currentUser);
         $perPage = 50; // Show 50 transactions per page
         $currentPage = $request->get('page', 1);
 
-        // Get all approved entries for calculating running balances
-        $allLedgerEntries = PettyCash::with(['user', 'approver'])
-            ->where('status', 'approved')
-            ->orderBy('paid_at', 'asc')
+        // Get approved entries for calculating running balances (filtered by user if not admin)
+        $ledgerQuery = PettyCash::with(['user', 'approver'])
+            ->where('status', 'approved');
+
+        // Non-admin users only see their own history
+        if (!$currentUser->isAdmin()) {
+            $ledgerQuery->where('assigned_to', $currentUser->id);
+        }
+
+        $allLedgerEntries = $ledgerQuery->orderBy('paid_at', 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -118,6 +140,78 @@ class PettyCashController extends Controller
         return view('petty_cash.history', compact('balance', 'pagination'));
     }
 
+    /** Admin dashboard to view all user balances */
+    public function adminDashboard(Request $request)
+    {
+        if (!Gate::allows('approve-petty-cash')) {
+            abort(403, 'Unauthorized. Only admin can access this page.');
+        }
+
+        $userBalances = PettyCash::allUserBalances();
+        $totalAllocated = $userBalances->sum('balance');
+
+        return view('petty_cash.admin-dashboard', compact('userBalances', 'totalAllocated'));
+    }
+
+    /** Show form to top up a specific user */
+    public function showTopUpForm(User $user)
+    {
+        if (!Gate::allows('approve-petty-cash')) {
+            abort(403, 'Unauthorized. Only admin can top up users.');
+        }
+
+        $currentBalance = PettyCash::userBalance($user);
+
+        return view('petty_cash.top-up-user', compact('user', 'currentBalance'));
+    }
+
+    /** Process top-up for a specific user */
+    public function topUpUser(Request $request, User $user)
+    {
+        if (!Gate::allows('approve-petty-cash')) {
+            abort(403, 'Unauthorized. Only admin can top up users.');
+        }
+
+        $validated = $request->validate([
+            'amount'  => ['required', 'numeric', 'min:0.01'],
+            'purpose' => ['required', 'string', 'max:255'],
+        ]);
+
+        PettyCash::create([
+            'user_id'     => Auth::id(),
+            'assigned_to' => $user->id,
+            'type'        => 'topup',
+            'amount'      => $validated['amount'],
+            'purpose'     => $validated['purpose'],
+            'status'      => 'approved',
+            'approved_by' => Auth::id(),
+            'paid_at'     => now(),
+        ]);
+
+        return redirect()
+            ->route('petty-cash.admin-dashboard')
+            ->with('success', "Successfully topped up {$user->name} with " . number_format($validated['amount'], 2) . " MVR.");
+    }
+
+    /** View transaction history for a specific user */
+    public function userHistory(User $user)
+    {
+        if (!Gate::allows('approve-petty-cash')) {
+            abort(403, 'Unauthorized. Only admin can view user history.');
+        }
+
+        $transactions = PettyCash::with(['user', 'approver'])
+            ->where('assigned_to', $user->id)
+            ->where('status', 'approved')
+            ->orderBy('paid_at', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $balance = PettyCash::userBalance($user);
+
+        return view('petty_cash.user-history', compact('user', 'transactions', 'balance'));
+    }
+
     /** Show form to create topup / expense (we'll use inline forms on index later if you prefer) */
     public function create()
     {
@@ -135,14 +229,15 @@ class PettyCashController extends Controller
         ]);
 
         $entry = PettyCash::create([
-            'user_id'  => Auth::id(),
-            'type'     => $validated['type'],
-            'amount'   => $validated['amount'],
-            'category' => $validated['category'] ?? null,
-            'purpose'  => $validated['purpose'],
-            'status'   => $validated['type'] === 'topup' ? 'approved' : 'pending',
+            'user_id'     => Auth::id(),
+            'assigned_to' => Auth::id(), // Assign to current user
+            'type'        => $validated['type'],
+            'amount'      => $validated['amount'],
+            'category'    => $validated['category'] ?? null,
+            'purpose'     => $validated['purpose'],
+            'status'      => $validated['type'] === 'topup' ? 'approved' : 'pending',
             'approved_by' => $validated['type'] === 'topup' ? Auth::id() : null,
-            'paid_at'  => $validated['type'] === 'topup' ? now() : null,
+            'paid_at'     => $validated['type'] === 'topup' ? now() : null,
         ]);
 
         return redirect()
@@ -161,9 +256,15 @@ class PettyCashController extends Controller
             return back()->with('error', 'Only pending entries can be approved.');
         }
 
-        // For expenses, you might want to check there is enough balance
-        if ($pettyCash->type === 'expense' && PettyCash::currentBalance() < $pettyCash->amount) {
-            return back()->with('error', 'Not enough petty cash balance to approve this expense.');
+        // For expenses, check if the user has enough balance
+        if ($pettyCash->type === 'expense' && $pettyCash->assigned_to) {
+            $assignedUser = User::find($pettyCash->assigned_to);
+            if ($assignedUser) {
+                $userBalance = PettyCash::userBalance($assignedUser);
+                if ($userBalance < $pettyCash->amount) {
+                    return back()->with('error', "Not enough balance for {$assignedUser->name}. Current balance: " . number_format($userBalance, 2) . " MVR");
+                }
+            }
         }
 
         $pettyCash->status = 'approved';
