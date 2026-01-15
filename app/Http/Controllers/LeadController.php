@@ -196,6 +196,7 @@ class LeadController extends Controller
         $validated = $request->validate([
             'type'  => ['required', 'string', 'in:call,email,sms,whatsapp,meeting,other'],
             'notes' => ['required', 'string'],
+            'next_follow_up' => ['nullable', 'date'],
         ]);
 
         $lead->interactions()->create([
@@ -211,6 +212,13 @@ class LeadController extends Controller
             $updateData['call_attempts'] = $lead->call_attempts + 1;
         }
 
+        // Update follow-up date if provided, otherwise set to tomorrow
+        if (!empty($validated['next_follow_up'])) {
+            $updateData['follow_up_date'] = $validated['next_follow_up'];
+        } else {
+            $updateData['follow_up_date'] = now()->addDay()->format('Y-m-d');
+        }
+
         $lead->update($updateData);
 
         // Warn if call attempts are high
@@ -218,7 +226,7 @@ class LeadController extends Controller
             return back()->with('warning', 'This lead has been called 3+ times. Consider marking as lost if not interested.');
         }
 
-        return back()->with('success', 'Interaction recorded successfully.');
+        return back()->with('success', 'Interaction recorded and follow-up scheduled for ' . $lead->fresh()->follow_up_date->format('M d, Y'));
     }
 
     /**

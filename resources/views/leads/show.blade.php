@@ -346,6 +346,15 @@
                                       class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                       placeholder="What was discussed?"></textarea>
                         </div>
+                        <div>
+                            <label for="next_follow_up" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Next Follow-up Date <span class="text-xs text-gray-500">(Default: Tomorrow)</span>
+                            </label>
+                            <input type="date" id="next_follow_up" name="next_follow_up"
+                                   value="{{ now()->addDay()->format('Y-m-d') }}"
+                                   class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave as is to schedule follow-up for tomorrow, or change to your preferred date</p>
+                        </div>
                         <div class="flex justify-end gap-2">
                             <button type="button" onclick="document.getElementById('interaction-form').classList.add('hidden')"
                                     class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
