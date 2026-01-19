@@ -126,6 +126,10 @@ Route::middleware('auth')->group(function () {
             ->name('jobs.update-assignees');
         Route::patch('jobs/{job}/reschedule', [JobController::class, 'reschedule'])
             ->name('jobs.reschedule');
+        Route::patch('jobs/{job}/restore', [JobController::class, 'restore'])
+            ->name('jobs.restore');
+        Route::post('jobs/{job}/cancel', [JobController::class, 'cancel'])
+            ->name('jobs.cancel');
     });
 
     // Job deletion - Admin only

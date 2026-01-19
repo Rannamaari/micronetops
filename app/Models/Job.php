@@ -83,6 +83,32 @@ class Job extends Model
     public const TYPE_AC = 'ac';
     public const TYPE_BIKE = 'moto';
 
+    // Cancellation reason constants
+    public const CANCEL_CUSTOMER_REQUEST = 'customer_request';
+    public const CANCEL_CUSTOMER_UNREACHABLE = 'customer_unreachable';
+    public const CANCEL_CUSTOMER_NO_SHOW = 'customer_no_show';
+    public const CANCEL_PARTS_UNAVAILABLE = 'parts_unavailable';
+    public const CANCEL_DUPLICATE = 'duplicate';
+    public const CANCEL_PRICE_ISSUE = 'price_issue';
+    public const CANCEL_RESCHEDULED_ELSEWHERE = 'rescheduled_elsewhere';
+    public const CANCEL_EQUIPMENT_ISSUE = 'equipment_issue';
+    public const CANCEL_OTHER = 'other';
+
+    public static function getCancellationReasons(): array
+    {
+        return [
+            self::CANCEL_CUSTOMER_REQUEST => 'Customer requested cancellation',
+            self::CANCEL_CUSTOMER_UNREACHABLE => 'Customer unreachable',
+            self::CANCEL_CUSTOMER_NO_SHOW => 'Customer no-show',
+            self::CANCEL_PARTS_UNAVAILABLE => 'Parts not available',
+            self::CANCEL_DUPLICATE => 'Duplicate job',
+            self::CANCEL_PRICE_ISSUE => 'Price/payment issue',
+            self::CANCEL_RESCHEDULED_ELSEWHERE => 'Customer went elsewhere',
+            self::CANCEL_EQUIPMENT_ISSUE => 'Equipment/vehicle sold or disposed',
+            self::CANCEL_OTHER => 'Other reason',
+        ];
+    }
+
     public static function getStatuses(): array
     {
         return [
@@ -145,6 +171,9 @@ class Job extends Model
         'started_at',
         'completed_at',
         'closed_at',
+        'cancellation_reason',
+        'cancellation_notes',
+        'cancelled_at',
     ];
 
     protected $casts = [
@@ -160,6 +189,7 @@ class Job extends Model
         'started_at'        => 'datetime',
         'completed_at'      => 'datetime',
         'closed_at'         => 'datetime',
+        'cancelled_at'      => 'datetime',
     ];
 
     /**
@@ -402,6 +432,15 @@ class Job extends Model
             $this->started_at = now();
         } elseif ($newStatus === self::STATUS_COMPLETED && !$this->completed_at) {
             $this->completed_at = now();
+        } elseif ($newStatus === self::STATUS_CANCELLED) {
+            $this->cancelled_at = now();
+        }
+
+        // Clear cancellation data if restoring from cancelled
+        if ($oldStatus === self::STATUS_CANCELLED && $newStatus !== self::STATUS_CANCELLED) {
+            $this->cancellation_reason = null;
+            $this->cancellation_notes = null;
+            $this->cancelled_at = null;
         }
 
         $this->save();
@@ -413,6 +452,50 @@ class Job extends Model
             'content' => $notes ?: "Status changed from {$oldStatus} to {$newStatus}",
             'metadata' => ['from' => $oldStatus, 'to' => $newStatus],
         ]);
+    }
+
+    /**
+     * Cancel job with reason.
+     */
+    public function cancel(string $reason, ?string $notes = null, ?User $user = null): void
+    {
+        $oldStatus = $this->status;
+
+        $this->status = self::STATUS_CANCELLED;
+        $this->cancellation_reason = $reason;
+        $this->cancellation_notes = $notes;
+        $this->cancelled_at = now();
+        $this->save();
+
+        // Build note content
+        $reasonLabel = self::getCancellationReasons()[$reason] ?? $reason;
+        $noteContent = "Job cancelled: {$reasonLabel}";
+        if ($notes) {
+            $noteContent .= " - {$notes}";
+        }
+
+        // Log the cancellation
+        $this->notes()->create([
+            'user_id' => $user?->id,
+            'type' => 'status_change',
+            'content' => $noteContent,
+            'metadata' => [
+                'from' => $oldStatus,
+                'to' => self::STATUS_CANCELLED,
+                'cancellation_reason' => $reason,
+            ],
+        ]);
+    }
+
+    /**
+     * Get the cancellation reason label.
+     */
+    public function getCancellationReasonLabelAttribute(): ?string
+    {
+        if (!$this->cancellation_reason) {
+            return null;
+        }
+        return self::getCancellationReasons()[$this->cancellation_reason] ?? $this->cancellation_reason;
     }
 
     /**

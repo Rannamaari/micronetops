@@ -41,6 +41,11 @@
             'my_jobs' => ['label' => 'Mine', 'count' => $statusCounts['my_jobs'] ?? 0],
             'completed' => ['label' => 'Done', 'count' => $statusCounts['completed'] ?? 0],
         ];
+        // Secondary tabs for overdue and cancelled
+        $secondaryTabs = [
+            'overdue' => ['label' => 'Overdue', 'count' => $statusCounts['overdue'] ?? 0, 'color' => 'red'],
+            'cancelled' => ['label' => 'Cancelled', 'count' => $statusCounts['cancelled'] ?? 0, 'color' => 'gray'],
+        ];
         $whenLabels = [
             null => 'All dates',
             'today' => 'Today',
@@ -73,24 +78,63 @@
 
             {{-- Status tabs - Compact segmented control --}}
             <div class="px-4 py-3 bg-white dark:bg-gray-800 sm:bg-transparent">
-                <div class="inline-flex p-1 bg-gray-100 dark:bg-gray-700 rounded-lg w-full sm:w-auto">
-                    @foreach($viewTabs as $key => $data)
-                        <a href="{{ route('jobs.index', ['view' => $key]) }}"
-                           class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors
-                                  {{ $currentView === $key
-                                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
-                            {{ $data['label'] }}
-                            @if($data['count'] > 0)
-                                <span class="text-xs {{ $currentView === $key ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400' }}">{{ $data['count'] }}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                    {{-- Main tabs --}}
+                    <div class="inline-flex p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        @foreach($viewTabs as $key => $data)
+                            <a href="{{ route('jobs.index', ['view' => $key]) }}"
+                               class="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors
+                                      {{ $currentView === $key
+                                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
+                                {{ $data['label'] }}
+                                @if($data['count'] > 0)
+                                    <span class="text-xs {{ $currentView === $key ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400' }}">{{ $data['count'] }}</span>
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+
+                    {{-- Secondary tabs (Overdue & Cancelled) --}}
+                    @if(($statusCounts['overdue'] ?? 0) > 0 || ($statusCounts['cancelled'] ?? 0) > 0 || $currentView === 'overdue' || $currentView === 'cancelled')
+                        <div class="flex items-center gap-1.5">
+                            @if(($statusCounts['overdue'] ?? 0) > 0 || $currentView === 'overdue')
+                                <a href="{{ route('jobs.index', ['view' => 'overdue']) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                                          {{ $currentView === 'overdue'
+                                              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 ring-1 ring-red-300 dark:ring-red-700'
+                                              : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Overdue
+                                    @if(($statusCounts['overdue'] ?? 0) > 0)
+                                        <span class="text-xs">{{ $statusCounts['overdue'] }}</span>
+                                    @endif
+                                </a>
                             @endif
-                        </a>
-                    @endforeach
+                            @if(($statusCounts['cancelled'] ?? 0) > 0 || $currentView === 'cancelled')
+                                <a href="{{ route('jobs.index', ['view' => 'cancelled']) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                                          {{ $currentView === 'cancelled'
+                                              ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 ring-1 ring-gray-300 dark:ring-gray-500'
+                                              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                    </svg>
+                                    Cancelled
+                                    @if(($statusCounts['cancelled'] ?? 0) > 0)
+                                        <span class="text-xs">{{ $statusCounts['cancelled'] }}</span>
+                                    @endif
+                                </a>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
 
             {{-- When dropdown + Filter button row --}}
-            @if($currentView !== 'completed')
+            @if(!in_array($currentView, ['completed', 'cancelled']))
             <div class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sm:bg-transparent sm:border-0">
                 {{-- When dropdown --}}
                 <div class="relative" x-data="{ open: false }">
@@ -190,10 +234,20 @@
                                 <div class="flex items-center justify-between mt-2">
                                     <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                                         @if($job->scheduled_at)
-                                            <span class="{{ $job->scheduled_at->isToday() ? 'text-green-600 dark:text-green-400 font-medium' : '' }}">
-                                                {{ $job->scheduled_at->isToday() ? 'Today' : ($job->scheduled_at->isTomorrow() ? 'Tomorrow' : $job->scheduled_at->format('M j')) }}
-                                                {{ $job->scheduled_at->format('g:i A') }}
-                                            </span>
+                                            @if($job->isActive() && $job->scheduled_at->isPast())
+                                                {{-- Overdue indicator --}}
+                                                <span class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    Overdue
+                                                </span>
+                                            @else
+                                                <span class="{{ $job->scheduled_at->isToday() ? 'text-green-600 dark:text-green-400 font-medium' : '' }}">
+                                                    {{ $job->scheduled_at->isToday() ? 'Today' : ($job->scheduled_at->isTomorrow() ? 'Tomorrow' : $job->scheduled_at->format('M j')) }}
+                                                    {{ $job->scheduled_at->format('g:i A') }}
+                                                </span>
+                                            @endif
                                         @else
                                             <span class="text-amber-600 dark:text-amber-400">Unscheduled</span>
                                         @endif
@@ -361,8 +415,18 @@
                                 </td>
                                 <td class="px-4 py-4 text-gray-600 dark:text-gray-400">
                                     @if($job->scheduled_at)
-                                        <div>{{ $job->scheduled_at->format('M j, Y') }}</div>
-                                        <div class="text-xs">{{ $job->scheduled_at->format('g:i A') }}</div>
+                                        @if($job->isActive() && $job->scheduled_at->isPast())
+                                            <div class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Overdue
+                                            </div>
+                                            <div class="text-xs text-red-500">{{ $job->scheduled_at->format('M j, g:i A') }}</div>
+                                        @else
+                                            <div>{{ $job->scheduled_at->format('M j, Y') }}</div>
+                                            <div class="text-xs">{{ $job->scheduled_at->format('g:i A') }}</div>
+                                        @endif
                                     @else
                                         <span class="text-gray-400">Not scheduled</span>
                                     @endif
@@ -372,7 +436,11 @@
                                           style="background-color: {{ $job->status_color }}20; color: {{ $job->status_color }};">
                                         {{ \App\Models\Job::getStatuses()[$job->status] ?? $job->status }}
                                     </span>
-                                    @if($job->priority !== 'normal')
+                                    @if($job->isActive() && $job->scheduled_at && $job->scheduled_at->isPast())
+                                        <span class="inline-flex px-2 py-1 rounded text-xs font-medium ml-1 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
+                                            Overdue
+                                        </span>
+                                    @elseif($job->priority !== 'normal')
                                         <span class="inline-flex px-2 py-1 rounded text-xs font-medium ml-1"
                                               style="background-color: {{ $job->priority_color }}20; color: {{ $job->priority_color }};">
                                             {{ ucfirst($job->priority) }}

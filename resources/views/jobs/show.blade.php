@@ -73,17 +73,79 @@
                                 {{ $job->customer_phone }}
                             </div>
                         </div>
-                        @if($job->scheduled_at)
-                            <div class="text-right flex-shrink-0">
-                                <div class="text-xs text-gray-500 dark:text-gray-400">Scheduled</div>
-                                <div class="text-sm font-medium {{ $job->scheduled_at->isToday() ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100' }}">
-                                    {{ $job->scheduled_at->isToday() ? 'Today' : ($job->scheduled_at->isTomorrow() ? 'Tomorrow' : $job->scheduled_at->format('M j')) }}
+                        {{-- Scheduled time - Editable for active jobs --}}
+                        <div class="text-right flex-shrink-0" x-data="{ editing: false }">
+                            @if($job->scheduled_at)
+                                {{-- Display mode --}}
+                                <div x-show="!editing" @click="@if($job->isActive()) editing = true @endif"
+                                     class="{{ $job->isActive() ? 'cursor-pointer' : '' }} group">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-end gap-1">
+                                        Scheduled
+                                        @if($job->isActive())
+                                            <svg class="w-3 h-3 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                            </svg>
+                                        @endif
+                                    </div>
+                                    <div class="text-sm font-medium {{ $job->scheduled_at->isToday() ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100' }}">
+                                        {{ $job->scheduled_at->isToday() ? 'Today' : ($job->scheduled_at->isTomorrow() ? 'Tomorrow' : $job->scheduled_at->format('M j')) }}
+                                    </div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                                        {{ $job->scheduled_at->format('g:i A') }}
+                                    </div>
                                 </div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ $job->scheduled_at->format('g:i A') }}
+
+                                {{-- Edit mode --}}
+                                @if($job->isActive())
+                                    <div x-show="editing" x-cloak class="text-left">
+                                        <form method="POST" action="{{ route('jobs.reschedule', $job) }}" class="space-y-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="datetime-local" name="scheduled_at"
+                                                   value="{{ $job->scheduled_at->format('Y-m-d\TH:i') }}"
+                                                   class="block w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                            <div class="flex gap-1">
+                                                <button type="submit"
+                                                        class="flex-1 px-2 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700">
+                                                    Save
+                                                </button>
+                                                <button type="button" @click="editing = false"
+                                                        class="px-2 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-300">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                @endif
+                            @elseif($job->isActive())
+                                {{-- No schedule yet - allow adding one --}}
+                                <div x-show="!editing">
+                                    <button @click="editing = true" type="button"
+                                            class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">
+                                        + Schedule
+                                    </button>
                                 </div>
-                            </div>
-                        @endif
+                                <div x-show="editing" x-cloak class="text-left">
+                                    <form method="POST" action="{{ route('jobs.reschedule', $job) }}" class="space-y-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="datetime-local" name="scheduled_at"
+                                               value="{{ now()->addHour()->format('Y-m-d\TH:i') }}"
+                                               class="block w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                        <div class="flex gap-1">
+                                            <button type="submit"
+                                                    class="flex-1 px-2 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700">
+                                                Save
+                                            </button>
+                                            <button type="button" @click="editing = false"
+                                                    class="px-2 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-300">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     @if($job->location)
@@ -108,8 +170,90 @@
                     @endif
                 </div>
 
+                {{-- Overdue Warning Banner --}}
+                @if($job->isActive() && $job->scheduled_at && $job->scheduled_at->isPast())
+                    <div class="px-4 py-3 bg-red-50 dark:bg-red-900/30 border-t border-red-100 dark:border-red-800" x-data="{ showReschedule: false }">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-red-800 dark:text-red-200">
+                                    This job is overdue
+                                </p>
+                                <p class="text-xs text-red-600 dark:text-red-300 mt-0.5">
+                                    Was scheduled for {{ $job->scheduled_at->format('M j, Y g:i A') }} ({{ $job->scheduled_at->diffForHumans() }})
+                                </p>
+                            </div>
+                            <button @click="showReschedule = !showReschedule" type="button"
+                                    class="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 active:bg-red-800">
+                                Reschedule
+                            </button>
+                        </div>
+
+                        {{-- Reschedule form --}}
+                        <div x-show="showReschedule" x-collapse class="mt-3 pt-3 border-t border-red-200 dark:border-red-700">
+                            <form method="POST" action="{{ route('jobs.reschedule', $job) }}" class="flex flex-col sm:flex-row gap-2">
+                                @csrf
+                                @method('PATCH')
+                                <div class="flex-1">
+                                    <input type="datetime-local" name="scheduled_at"
+                                           value="{{ now()->addHour()->format('Y-m-d\TH:i') }}"
+                                           class="block w-full rounded-lg border-red-300 dark:border-red-600 dark:bg-red-900/20 dark:text-gray-100 text-sm focus:border-red-500 focus:ring-red-500">
+                                </div>
+                                <button type="submit"
+                                        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 active:bg-red-800">
+                                    Confirm Reschedule
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Cancelled Job - Restore Banner --}}
+                @if($job->status === 'cancelled')
+                    <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                    </svg>
+                                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                        Job cancelled
+                                        @if($job->cancellation_reason)
+                                            - {{ $job->cancellation_reason_label }}
+                                        @endif
+                                    </p>
+                                </div>
+                                @if($job->cancellation_notes)
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-7">
+                                        {{ $job->cancellation_notes }}
+                                    </p>
+                                @endif
+                                @if($job->cancelled_at)
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-7">
+                                        Cancelled {{ $job->cancelled_at->diffForHumans() }}
+                                    </p>
+                                @endif
+                            </div>
+                            <form method="POST" action="{{ route('jobs.restore', $job) }}" class="flex-shrink-0">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit"
+                                        class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:bg-indigo-800">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    Restore Job
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Status Change Buttons - Full width on mobile --}}
-                <div class="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div class="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700" x-data>
                     <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                         @if(in_array($job->status, ['new', 'scheduled']))
                             <form method="POST" action="{{ route('jobs.update-status', $job) }}" class="col-span-2 sm:col-span-1">
@@ -163,16 +307,10 @@
                         @endif
 
                         @if($job->isActive())
-                            <form method="POST" action="{{ route('jobs.update-status', $job) }}"
-                                  onsubmit="return confirm('Cancel this job?')" class="sm:ml-auto">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="status" value="cancelled">
-                                <button type="submit"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-gray-400 border border-transparent rounded-xl sm:rounded-lg font-semibold text-sm text-white hover:bg-gray-500 active:bg-gray-600">
-                                    Cancel Job
-                                </button>
-                            </form>
+                            <button type="button" @click="$dispatch('open-cancel-modal')"
+                                    class="sm:ml-auto w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-gray-400 border border-transparent rounded-xl sm:rounded-lg font-semibold text-sm text-white hover:bg-gray-500 active:bg-gray-600">
+                                Cancel Job
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -848,4 +986,99 @@
             });
         });
     </script>
+
+    {{-- Cancellation Modal --}}
+    @if($job->isActive())
+    <div x-data="{ open: false, reason: '', notes: '' }"
+         x-show="open"
+         x-cloak
+         @open-cancel-modal.window="open = true; reason = ''; notes = ''"
+         @keydown.escape.window="open = false"
+         class="fixed inset-0 z-50 overflow-y-auto">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-black/50 transition-opacity" @click="open = false"></div>
+
+        {{-- Modal --}}
+        <div class="flex min-h-full items-end sm:items-center justify-center p-4">
+            <div class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl transform transition-all"
+                 x-show="open"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 @click.stop>
+
+                {{-- Header --}}
+                <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            Cancel Job
+                        </h3>
+                        <button @click="open = false" type="button"
+                                class="p-1 text-gray-400 hover:text-gray-500 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Select a reason for cancelling this job
+                    </p>
+                </div>
+
+                {{-- Form --}}
+                <form method="POST" action="{{ route('jobs.cancel', $job) }}">
+                    @csrf
+                    <div class="px-4 py-4 space-y-4">
+                        {{-- Reason selection --}}
+                        <div class="space-y-2">
+                            @foreach(\App\Models\Job::getCancellationReasons() as $key => $label)
+                                <label class="flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all"
+                                       :class="reason === '{{ $key }}'
+                                           ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
+                                    <input type="radio" name="cancellation_reason" value="{{ $key }}"
+                                           x-model="reason"
+                                           class="sr-only">
+                                    <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ $label }}
+                                    </span>
+                                    <svg x-show="reason === '{{ $key }}'" class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        {{-- Additional notes --}}
+                        <div x-show="reason" x-collapse>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Additional notes (optional)
+                            </label>
+                            <textarea name="cancellation_notes" x-model="notes" rows="2"
+                                      class="block w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-red-500 focus:ring-red-500"
+                                      placeholder="Any additional details..."></textarea>
+                        </div>
+                    </div>
+
+                    {{-- Footer --}}
+                    <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                        <button type="button" @click="open = false"
+                                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-200">
+                            Keep Job
+                        </button>
+                        <button type="submit"
+                                :disabled="!reason"
+                                :class="reason ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'"
+                                class="flex-1 px-4 py-3 text-white font-medium rounded-xl transition-colors">
+                            Cancel Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
 </x-app-layout>

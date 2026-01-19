@@ -19,7 +19,7 @@ class JobController extends Controller
      */
     public function index(Request $request)
     {
-        $view = $request->query('view', 'current'); // current | completed | my_jobs
+        $view = $request->query('view', 'current'); // current | completed | my_jobs | cancelled | overdue
         $type = $request->query('type'); // ac | moto
         $priority = $request->query('priority');
         $search = $request->query('search');
@@ -38,7 +38,14 @@ class JobController extends Controller
         if ($view === 'current') {
             $query->active();
         } elseif ($view === 'completed') {
-            $query->whereIn('status', [Job::STATUS_COMPLETED, Job::STATUS_CANCELLED]);
+            $query->where('status', Job::STATUS_COMPLETED);
+        } elseif ($view === 'cancelled') {
+            $query->where('status', Job::STATUS_CANCELLED);
+        } elseif ($view === 'overdue') {
+            // Active jobs where scheduled_at is in the past
+            $query->active()
+                ->whereNotNull('scheduled_at')
+                ->where('scheduled_at', '<', Carbon::now());
         } elseif ($view === 'my_jobs') {
             $query->active()->assignedTo(auth()->id());
         }
@@ -87,8 +94,10 @@ class JobController extends Controller
         // Status counts for tabs
         $statusCounts = [
             'current' => Job::active()->count(),
-            'completed' => Job::whereIn('status', [Job::STATUS_COMPLETED, Job::STATUS_CANCELLED])->count(),
+            'completed' => Job::where('status', Job::STATUS_COMPLETED)->count(),
+            'cancelled' => Job::where('status', Job::STATUS_CANCELLED)->count(),
             'my_jobs' => Job::active()->assignedTo(auth()->id())->count(),
+            'overdue' => Job::active()->whereNotNull('scheduled_at')->where('scheduled_at', '<', Carbon::now())->count(),
         ];
 
         // Date counts for quick filters
@@ -400,6 +409,65 @@ class JobController extends Controller
         return redirect()
             ->route('jobs.show', $job)
             ->with('success', $statusMessage);
+    }
+
+    /**
+     * Restore a cancelled job back to new/scheduled status.
+     */
+    public function restore(Request $request, Job $job)
+    {
+        if ($job->status !== Job::STATUS_CANCELLED) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Only cancelled jobs can be restored.'], 422);
+            }
+            return back()->with('error', 'Only cancelled jobs can be restored.');
+        }
+
+        // Restore to scheduled if has scheduled_at, otherwise new
+        $newStatus = $job->scheduled_at ? Job::STATUS_SCHEDULED : Job::STATUS_NEW;
+        $job->updateStatus($newStatus, auth()->user(), 'Job restored from cancelled');
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Job restored successfully.']);
+        }
+
+        return redirect()
+            ->route('jobs.show', $job)
+            ->with('success', 'Job restored successfully.');
+    }
+
+    /**
+     * Cancel a job with reason.
+     */
+    public function cancel(Request $request, Job $job)
+    {
+        if (!$job->isActive()) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Only active jobs can be cancelled.'], 422);
+            }
+            return back()->with('error', 'Only active jobs can be cancelled.');
+        }
+
+        $validated = $request->validate([
+            'cancellation_reason' => ['required', Rule::in(array_keys(Job::getCancellationReasons()))],
+            'cancellation_notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $job->cancel(
+            $validated['cancellation_reason'],
+            $validated['cancellation_notes'] ?? null,
+            auth()->user()
+        );
+
+        $reasonLabel = Job::getCancellationReasons()[$validated['cancellation_reason']];
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => "Job cancelled: {$reasonLabel}"]);
+        }
+
+        return redirect()
+            ->route('jobs.show', $job)
+            ->with('success', "Job cancelled: {$reasonLabel}");
     }
 
     /**
