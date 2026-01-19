@@ -65,10 +65,61 @@ class Job extends Model
         return static::createdAtIsInteger() ? $datetime->timestamp : $datetime;
     }
 
+    // Status constants
+    public const STATUS_NEW = 'new';
+    public const STATUS_SCHEDULED = 'scheduled';
+    public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_WAITING_PARTS = 'waiting_parts';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    // Priority constants
+    public const PRIORITY_URGENT = 'urgent';
+    public const PRIORITY_HIGH = 'high';
+    public const PRIORITY_NORMAL = 'normal';
+    public const PRIORITY_LOW = 'low';
+
+    // Service type constants
+    public const TYPE_AC = 'ac';
+    public const TYPE_BIKE = 'moto';
+
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_NEW => 'New',
+            self::STATUS_SCHEDULED => 'Scheduled',
+            self::STATUS_IN_PROGRESS => 'In Progress',
+            self::STATUS_WAITING_PARTS => 'Waiting for Parts',
+            self::STATUS_COMPLETED => 'Completed',
+            self::STATUS_CANCELLED => 'Cancelled',
+        ];
+    }
+
+    public static function getPriorities(): array
+    {
+        return [
+            self::PRIORITY_URGENT => 'Urgent',
+            self::PRIORITY_HIGH => 'High',
+            self::PRIORITY_NORMAL => 'Normal',
+            self::PRIORITY_LOW => 'Low',
+        ];
+    }
+
+    public static function getActiveStatuses(): array
+    {
+        return [
+            self::STATUS_NEW,
+            self::STATUS_SCHEDULED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WAITING_PARTS,
+        ];
+    }
+
     protected $fillable = [
         'job_date',
         'job_type',
         'job_category',
+        'title',
         'customer_id',
         'customer_name',
         'customer_phone',
@@ -76,9 +127,11 @@ class Job extends Model
         'vehicle_id',
         'ac_unit_id',
         'address',
+        'location',
         'pickup_location',
         'assigned_user_id',
         'status',
+        'priority',
         'payment_status',
         'problem_description',
         'internal_notes',
@@ -87,22 +140,26 @@ class Job extends Model
         'travel_charges',
         'discount',
         'total_amount',
+        'scheduled_at',
+        'scheduled_end_at',
         'started_at',
         'completed_at',
         'closed_at',
     ];
 
     protected $casts = [
-        'job_date'        => 'date',
-        'labour_total'    => 'decimal:2',
-        'parts_total'     => 'decimal:2',
-        'travel_charges'  => 'decimal:2',
-        'discount'        => 'decimal:2',
-        'total_amount'    => 'decimal:2',
-        'updated_at'      => 'datetime',
-        'started_at'      => 'datetime',
-        'completed_at'    => 'datetime',
-        'closed_at'       => 'datetime',
+        'job_date'          => 'date',
+        'labour_total'      => 'decimal:2',
+        'parts_total'       => 'decimal:2',
+        'travel_charges'    => 'decimal:2',
+        'discount'          => 'decimal:2',
+        'total_amount'      => 'decimal:2',
+        'updated_at'        => 'datetime',
+        'scheduled_at'      => 'datetime',
+        'scheduled_end_at'  => 'datetime',
+        'started_at'        => 'datetime',
+        'completed_at'      => 'datetime',
+        'closed_at'         => 'datetime',
     ];
 
     /**
@@ -277,4 +334,263 @@ class Job extends Model
         $this->updatePaymentStatus();
     }
 
+    // ========================================
+    // New Relationships for Work Order System
+    // ========================================
+
+    /**
+     * Get all assigned technicians for this job (many-to-many).
+     */
+    public function assignees()
+    {
+        return $this->belongsToMany(User::class, 'job_assignees')
+            ->withPivot(['assigned_at', 'assigned_by'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the notes/updates timeline for this job.
+     */
+    public function notes()
+    {
+        return $this->hasMany(JobNote::class)->orderByDesc('created_at');
+    }
+
+    // ========================================
+    // Status & Workflow Methods
+    // ========================================
+
+    /**
+     * Check if job is active (not completed or cancelled).
+     */
+    public function isActive(): bool
+    {
+        return in_array($this->status, self::getActiveStatuses());
+    }
+
+    /**
+     * Check if job can be started.
+     */
+    public function canStart(): bool
+    {
+        return in_array($this->status, [self::STATUS_NEW, self::STATUS_SCHEDULED]);
+    }
+
+    /**
+     * Check if job can be completed.
+     */
+    public function canComplete(): bool
+    {
+        return in_array($this->status, [self::STATUS_IN_PROGRESS, self::STATUS_WAITING_PARTS]);
+    }
+
+    /**
+     * Update status with automatic logging.
+     */
+    public function updateStatus(string $newStatus, ?User $user = null, ?string $notes = null): void
+    {
+        $oldStatus = $this->status;
+
+        if ($oldStatus === $newStatus) {
+            return;
+        }
+
+        $this->status = $newStatus;
+
+        // Set timestamps based on status
+        if ($newStatus === self::STATUS_IN_PROGRESS && !$this->started_at) {
+            $this->started_at = now();
+        } elseif ($newStatus === self::STATUS_COMPLETED && !$this->completed_at) {
+            $this->completed_at = now();
+        }
+
+        $this->save();
+
+        // Log the status change
+        $this->notes()->create([
+            'user_id' => $user?->id,
+            'type' => 'status_change',
+            'content' => $notes ?: "Status changed from {$oldStatus} to {$newStatus}",
+            'metadata' => ['from' => $oldStatus, 'to' => $newStatus],
+        ]);
+    }
+
+    /**
+     * Add a note to the job timeline.
+     */
+    public function addNote(string $content, ?User $user = null, string $type = 'note'): JobNote
+    {
+        return $this->notes()->create([
+            'user_id' => $user?->id,
+            'type' => $type,
+            'content' => $content,
+        ]);
+    }
+
+    /**
+     * Assign technicians to this job.
+     */
+    public function assignTechnicians(array $userIds, ?User $assignedBy = null): void
+    {
+        $pivotData = [];
+        foreach ($userIds as $userId) {
+            $pivotData[$userId] = [
+                'assigned_at' => now(),
+                'assigned_by' => $assignedBy?->id,
+            ];
+        }
+
+        $this->assignees()->sync($pivotData);
+
+        // Log the assignment
+        if ($assignedBy) {
+            $names = User::whereIn('id', $userIds)->pluck('name')->join(', ');
+            $this->addNote("Assigned to: {$names}", $assignedBy, 'assignment');
+        }
+    }
+
+    // ========================================
+    // Query Scopes
+    // ========================================
+
+    /**
+     * Scope to active (non-completed, non-cancelled) jobs.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status', self::getActiveStatuses());
+    }
+
+    /**
+     * Scope to completed jobs.
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    /**
+     * Scope to jobs assigned to a specific user.
+     */
+    public function scopeAssignedTo($query, $userId)
+    {
+        return $query->whereHas('assignees', function ($q) use ($userId) {
+            $q->where('users.id', $userId);
+        });
+    }
+
+    /**
+     * Scope to jobs of a specific service type.
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('job_type', $type);
+    }
+
+    /**
+     * Scope to jobs scheduled on a specific date.
+     */
+    public function scopeScheduledOn($query, $date)
+    {
+        return $query->whereDate('scheduled_at', $date);
+    }
+
+    /**
+     * Scope to jobs scheduled between dates (for calendar).
+     */
+    public function scopeScheduledBetween($query, $start, $end)
+    {
+        return $query->whereBetween('scheduled_at', [$start, $end]);
+    }
+
+    /**
+     * Scope to jobs by priority.
+     */
+    public function scopeByPriority($query, $priority)
+    {
+        return $query->where('priority', $priority);
+    }
+
+    /**
+     * Scope for search by customer name, phone, or title.
+     */
+    public function scopeSearch($query, $term)
+    {
+        return $query->where(function ($q) use ($term) {
+            $q->where('title', 'like', "%{$term}%")
+              ->orWhere('customer_name', 'like', "%{$term}%")
+              ->orWhere('customer_phone', 'like', "%{$term}%")
+              ->orWhere('location', 'like', "%{$term}%");
+        });
+    }
+
+    // ========================================
+    // Calendar Helpers
+    // ========================================
+
+    /**
+     * Get status color for calendar display.
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_NEW => '#6b7280',           // gray
+            self::STATUS_SCHEDULED => '#3b82f6',    // blue
+            self::STATUS_IN_PROGRESS => '#f59e0b',  // amber
+            self::STATUS_WAITING_PARTS => '#ef4444', // red
+            self::STATUS_COMPLETED => '#10b981',    // green
+            self::STATUS_CANCELLED => '#9ca3af',    // gray-light
+            default => '#6b7280',
+        };
+    }
+
+    /**
+     * Get service type color for calendar.
+     */
+    public function getTypeColorAttribute(): string
+    {
+        return match ($this->job_type) {
+            self::TYPE_AC => '#0ea5e9',    // sky blue (AC = cold)
+            self::TYPE_BIKE => '#f97316',  // orange (bike = moto)
+            default => '#6b7280',
+        };
+    }
+
+    /**
+     * Get priority badge color.
+     */
+    public function getPriorityColorAttribute(): string
+    {
+        return match ($this->priority) {
+            self::PRIORITY_URGENT => '#dc2626', // red
+            self::PRIORITY_HIGH => '#f59e0b',   // amber
+            self::PRIORITY_NORMAL => '#3b82f6', // blue
+            self::PRIORITY_LOW => '#6b7280',    // gray
+            default => '#3b82f6',
+        };
+    }
+
+    /**
+     * Convert to FullCalendar event format.
+     */
+    public function toCalendarEvent(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title ?: $this->customer_name,
+            'start' => $this->scheduled_at?->toIso8601String(),
+            'end' => $this->scheduled_end_at?->toIso8601String(),
+            'backgroundColor' => $this->type_color,
+            'borderColor' => $this->status_color,
+            'extendedProps' => [
+                'customer_name' => $this->customer_name,
+                'customer_phone' => $this->customer_phone,
+                'job_type' => $this->job_type,
+                'status' => $this->status,
+                'priority' => $this->priority,
+                'location' => $this->location,
+                'assignees' => $this->assignees->pluck('name')->toArray(),
+            ],
+        ];
+    }
 }

@@ -87,11 +87,17 @@ Route::middleware('auth')->group(function () {
 
     // Jobs - Admin, Manager, Mechanic (not Cashier)
     Route::middleware('role:admin,manager,mechanic')->group(function () {
+        // Job list & CRUD
         Route::get('jobs', [JobController::class, 'index'])->name('jobs.index');
         Route::get('jobs/create', [JobController::class, 'create'])->name('jobs.create');
         Route::post('jobs', [JobController::class, 'store'])->name('jobs.store');
         Route::get('jobs/{job}', [JobController::class, 'show'])->name('jobs.show');
         Route::patch('jobs/{job}', [JobController::class, 'update'])->name('jobs.update');
+
+        // Calendar view & API
+        Route::get('jobs-calendar', [JobController::class, 'calendar'])->name('jobs.calendar');
+        Route::get('jobs-calendar/events', [JobController::class, 'calendarEvents'])->name('jobs.calendar-events');
+        Route::post('jobs-calendar/quick-create', [JobController::class, 'quickCreate'])->name('jobs.quick-create');
 
         // Customer search for job creation
         Route::get('jobs/search/customers', [JobController::class, 'searchCustomers'])
@@ -111,9 +117,15 @@ Route::middleware('auth')->group(function () {
         Route::get('jobs/{job}/quotation', [JobController::class, 'quotation'])
             ->name('jobs.quotation');
 
-        // Job Status Update
+        // Job workflow actions
         Route::patch('jobs/{job}/status', [JobController::class, 'updateStatus'])
             ->name('jobs.update-status');
+        Route::post('jobs/{job}/notes', [JobController::class, 'addNote'])
+            ->name('jobs.add-note');
+        Route::patch('jobs/{job}/assignees', [JobController::class, 'updateAssignees'])
+            ->name('jobs.update-assignees');
+        Route::patch('jobs/{job}/reschedule', [JobController::class, 'reschedule'])
+            ->name('jobs.reschedule');
     });
 
     // Job deletion - Admin only

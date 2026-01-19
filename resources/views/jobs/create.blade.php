@@ -1,4 +1,4 @@
-{{-- resources/views/jobs/create.blade.php --}}
+{{-- resources/views/jobs/create.blade.php - Mobile-First Quick Job Creation --}}
 
 <x-app-layout>
     <x-slot name="header">
@@ -7,445 +7,162 @@
         </h2>
     </x-slot>
 
-    {{-- Include Select2 CSS --}}
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <style>
-        /* Dark mode styles for Select2 */
-        .select2-container--default .select2-selection--single {
-            background-color: white;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            height: 38px;
-            padding: 4px 8px;
-        }
-        .dark .select2-container--default .select2-selection--single {
-            background-color: #374151;
-            border-color: #4b5563;
-            color: #f3f4f6;
-        }
-        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
-            color: #f3f4f6;
-        }
-        .dark .select2-dropdown {
-            background-color: #374151;
-            border-color: #4b5563;
-        }
-        .dark .select2-container--default .select2-results__option {
-            color: #f3f4f6;
-        }
-        .dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
-            background-color: #4f46e5;
-        }
-        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
-            background-color: #1f2937;
-            border-color: #4b5563;
-            color: #f3f4f6;
-        }
-        .select2-container {
-            width: 100% !important;
-        }
-    </style>
-
-    <div class="py-6">
-        <div class="max-w-3xl mx-auto sm:px-4 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                <form method="POST" action="{{ route('jobs.store') }}" class="space-y-4">
+    <div class="py-2 sm:py-6">
+        <div class="max-w-lg mx-auto px-3 sm:px-6">
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+                <form method="POST" action="{{ route('jobs.store') }}" class="p-4 space-y-4">
                     @csrf
 
-                    {{-- Job Date --}}
-                    <div>
-                        <label for="job_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Job Date <span class="text-red-500">*</span>
-                        </label>
-                        <input type="date" id="job_date" name="job_date"
-                               value="{{ old('job_date', date('Y-m-d')) }}"
-                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                               required>
-                        @error('job_date')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Select the date for this job (defaults to today).
-                        </p>
-                    </div>
-
-                    {{-- Job Type --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Job Type
-                        </label>
-                        <div class="flex gap-4">
-                            <label class="inline-flex items-center">
-                                <input type="radio" name="job_type" value="moto"
-                                       class="rounded border-gray-300 text-indigo-600"
-                                       {{ old('job_type', 'moto') === 'moto' ? 'checked' : '' }}>
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Motorcycle</span>
+                    {{-- Service Type - Large touch targets --}}
+                    <div x-data="{ jobType: '{{ old('job_type', 'moto') }}' }">
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer" @click="jobType = 'moto'">
+                                <input type="radio" name="job_type" value="moto" class="sr-only" x-model="jobType">
+                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+                                     :class="jobType === 'moto'
+                                         ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
+                                         : 'border-gray-200 dark:border-gray-600'">
+                                    <span class="text-2xl mr-2">🏍️</span>
+                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Bike</span>
+                                </div>
                             </label>
-                            <label class="inline-flex items-center">
-                                <input type="radio" name="job_type" value="ac"
-                                       class="rounded border-gray-300 text-indigo-600"
-                                       {{ old('job_type') === 'ac' ? 'checked' : '' }}>
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">AC Service</span>
+                            <label class="cursor-pointer" @click="jobType = 'ac'">
+                                <input type="radio" name="job_type" value="ac" class="sr-only" x-model="jobType">
+                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+                                     :class="jobType === 'ac'
+                                         ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
+                                         : 'border-gray-200 dark:border-gray-600'">
+                                    <span class="text-2xl mr-2">❄️</span>
+                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">AC</span>
+                                </div>
                             </label>
                         </div>
-                        @error('job_type')
+                    </div>
+
+                    {{-- Phone - Auto-focused, large input --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Phone</label>
+                        <input type="tel" name="customer_phone" id="customer_phone"
+                               value="{{ old('customer_phone', $preselectedCustomer?->phone) }}"
+                               class="block w-full text-xl p-4 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="7XXXXXX"
+                               inputmode="tel"
+                               autofocus
+                               required>
+                        @error('customer_phone')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    {{-- Job Category --}}
+                    {{-- Name --}}
                     <div>
-                        <label for="job_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Job Category
-                        </label>
-                        <select id="job_category" name="job_category"
-                                class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                       focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">Select category</option>
-                            <option value="walkin" data-job-type="moto" {{ old('job_category') === 'walkin' ? 'selected' : '' }}>Walk-in</option>
-                            <option value="pickup" data-job-type="moto" {{ old('job_category') === 'pickup' ? 'selected' : '' }}>Pickup</option>
-                            <option value="ac_service" data-job-type="ac" {{ old('job_category') === 'ac_service' ? 'selected' : '' }}>Service</option>
-                            <option value="ac_install" data-job-type="ac" {{ old('job_category') === 'ac_install' ? 'selected' : '' }}>Install/Relocate</option>
-                            <option value="ac_repair" data-job-type="ac" {{ old('job_category') === 'ac_repair' ? 'selected' : '' }}>Repair</option>
-                        </select>
-                        @error('job_category')
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
+                        <input type="text" name="customer_name"
+                               value="{{ old('customer_name', $preselectedCustomer?->name) }}"
+                               class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="Customer name"
+                               required>
+                        @error('customer_name')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    {{-- Customer --}}
+                    {{-- Title / Issue --}}
                     <div>
-                        <label for="customer_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Customer
-                        </label>
-                        <select id="customer_id" name="customer_id"
-                                class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                       focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">Search or select customer...</option>
-                            @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}"
-                                    {{ (int)old('customer_id', $preselectedCustomer?->id) === $customer->id ? 'selected' : '' }}
-                                    data-vehicles="{{ json_encode($customer->vehicles->map(fn($v) => ['id' => $v->id, 'label' => trim(($v->brand ?? '') . ' ' . ($v->model ?? '') . ' ' . ($v->registration_number ? '(' . $v->registration_number . ')' : ''))])) }}"
-                                    data-ac-units="{{ json_encode($customer->acUnits->map(fn($a) => ['id' => $a->id, 'label' => trim(($a->brand ?? 'AC') . ' ' . ($a->btu ? $a->btu . ' BTU ' : '') . ($a->location_description ? '(' . $a->location_description . ')' : ''))])) }}"
-                                    data-address="{{ $customer->address ?? '' }}">
-                                    {{ $customer->name }} ({{ $customer->phone }})
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('customer_id')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Issue</label>
+                        <input type="text" name="title"
+                               value="{{ old('title') }}"
+                               class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="AC not cooling, bike won't start...">
+                    </div>
 
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            @if($preselectedCustomer)
-                                Creating job for <strong>{{ $preselectedCustomer->name }}</strong>.
-                                <a href="{{ route('customers.show', $preselectedCustomer) }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                    View customer details
-                                </a>
-                            @else
-                                Showing 5 recent customers. Type to search all customers.
-                                <a href="{{ route('customers.create') }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
-                                    Create new customer
-                                </a>
+                    {{-- Location --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Location</label>
+                        <input type="text" name="location"
+                               value="{{ old('location') }}"
+                               class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
+                               placeholder="Hulhumale Phase 2, Flat 101...">
+                    </div>
+
+                    {{-- Schedule & Priority - Collapsible --}}
+                    <div x-data="{ showMore: {{ old('scheduled_at') || old('priority') ? 'true' : 'false' }} }">
+                        <button type="button" @click="showMore = !showMore"
+                                class="flex items-center text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                            <svg class="w-4 h-4 mr-1 transition-transform" :class="{ 'rotate-90': showMore }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                            Schedule & Priority
+                        </button>
+                        <div x-show="showMore" x-collapse class="mt-3 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Date & Time</label>
+                                    <input type="datetime-local" name="scheduled_at"
+                                           value="{{ old('scheduled_at', $scheduledAt) }}"
+                                           class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Priority</label>
+                                    <select name="priority"
+                                            class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                                        <option value="normal" {{ old('priority', 'normal') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                        <option value="high" {{ old('priority') === 'high' ? 'selected' : '' }}>High</option>
+                                        <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>🔴 Urgent</option>
+                                        <option value="low" {{ old('priority') === 'low' ? 'selected' : '' }}>Low</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {{-- Assign Technician --}}
+                            @if($technicians->count() > 0)
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-2">Assign to</label>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($technicians as $tech)
+                                        <label class="cursor-pointer">
+                                            <input type="checkbox" name="assignees[]" value="{{ $tech->id }}" class="sr-only peer"
+                                                   {{ in_array($tech->id, old('assignees', [])) ? 'checked' : '' }}>
+                                            <span class="inline-block px-3 py-2 rounded-lg text-sm border-2 transition-all
+                                                         peer-checked:border-indigo-500 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-900/30
+                                                         border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+                                                {{ $tech->name }}
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                             @endif
-                        </p>
+                        </div>
                     </div>
 
-                    {{-- Vehicle (for moto jobs) --}}
-                    <div id="vehicle-wrapper" class="{{ old('job_type', 'moto') === 'moto' ? '' : 'hidden' }}">
-                        <label for="vehicle_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Vehicle (Bike)
-                        </label>
-                        <select id="vehicle_id" name="vehicle_id"
-                                class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                       focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">Select vehicle (optional)</option>
-                            {{-- Options filled by JS based on customer --}}
-                        </select>
-                        @error('vehicle_id')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Vehicles are managed from the <a href="#" id="customer-vehicle-link" class="text-indigo-600 dark:text-indigo-400 hover:underline">customer page</a>.
-                        </p>
-                    </div>
+                    {{-- Hidden fields --}}
+                    <input type="hidden" name="job_date" value="{{ date('Y-m-d') }}">
+                    <input type="hidden" name="job_category" value="general">
 
-                    {{-- AC Unit (for AC jobs) --}}
-                    <div id="ac-unit-wrapper" class="{{ old('job_type') === 'ac' ? '' : 'hidden' }}">
-                        <label for="ac_unit_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            AC Unit
-                        </label>
-                        <select id="ac_unit_id" name="ac_unit_id"
-                                class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                       focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="">Select AC unit (optional)</option>
-                            {{-- Options filled by JS based on customer --}}
-                        </select>
-                        @error('ac_unit_id')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            AC units are managed from the <a href="#" id="customer-ac-link" class="text-indigo-600 dark:text-indigo-400 hover:underline">customer page</a>.
-                        </p>
-                    </div>
-
-                    {{-- Address / Location (pre-filled from customer) --}}
-                    <div>
-                        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Address / Location <span id="address-required-indicator" class="text-orange-500 hidden">(Recommended for AC jobs)</span>
-                        </label>
-                        <input type="text" id="address" name="address"
-                               value="{{ old('address') }}"
-                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm
-                                      focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="Address will be auto-filled from customer profile...">
-                        @error('address')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Automatically filled from customer's profile. You can edit it if needed.
-                        </p>
-                    </div>
-
-                    {{-- Pickup Location (only for Moto pickup jobs) --}}
-                    <div id="pickup-location-wrapper" class="hidden">
-                        <label for="pickup_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Pickup Location
-                        </label>
-                        <input type="text" id="pickup_location" name="pickup_location"
-                               value="{{ old('pickup_location') }}"
-                               class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                      focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="Phase 1 / Phase 2 / Highway / Garage">
-                        @error('pickup_location')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Problem Description --}}
-                    <div>
-                        <label for="problem_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Problem / Notes
-                        </label>
-                        <textarea id="problem_description" name="problem_description" rows="3"
-                                  class="block w-full rounded-md border-gray-300 shadow-sm text-sm
-                                         focus:border-indigo-500 focus:ring-indigo-500">{{ old('problem_description') }}</textarea>
-                        @error('problem_description')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="flex items-center justify-end gap-3 pt-2">
+                    {{-- Sticky Submit Button --}}
+                    <div class="sticky bottom-0 pt-4 pb-2 bg-white dark:bg-gray-800 -mx-4 px-4 border-t border-gray-100 dark:border-gray-700">
+                        <button type="submit"
+                                class="w-full py-4 px-6 bg-indigo-600 text-white text-lg font-bold rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 active:bg-indigo-800">
+                            Create Job
+                        </button>
                         <a href="{{ route('jobs.index') }}"
-                           class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+                           class="block text-center mt-2 py-2 text-gray-500 dark:text-gray-400 text-sm">
                             Cancel
                         </a>
-                        <button type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md
-                                       font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700
-                                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Save Job
-                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    {{-- Include jQuery and Select2 JS --}}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
     <script>
-        $(document).ready(function() {
-            // Store for customer assets (vehicles and AC units) and addresses
-            let customerAssetsCache = {};
-            let customerAddressCache = {};
-
-            // Initialize Select2 with AJAX search
-            $('#customer_id').select2({
-                ajax: {
-                    url: '{{ route('jobs.search-customers') }}',
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) {
-                        return {
-                            q: params.term // search term
-                        };
-                    },
-                    processResults: function (data) {
-                        // Cache the customer assets and address for later use
-                        data.results.forEach(function(customer) {
-                            customerAssetsCache[customer.id] = {
-                                vehicles: customer.vehicles,
-                                ac_units: customer.ac_units
-                            };
-                            customerAddressCache[customer.id] = customer.address || '';
-                        });
-                        return {
-                            results: data.results
-                        };
-                    },
-                    cache: true
-                },
-                placeholder: 'Search or select customer...',
-                allowClear: true,
-                minimumInputLength: 0,
-                width: '100%'
-            });
-
-            // Auto-focus search input when dropdown opens
-            $('#customer_id').on('select2:open', function() {
-                setTimeout(function() {
-                    document.querySelector('.select2-search__field').focus();
-                }, 100);
-            });
-
-            // Cache initial customer data from pre-loaded options
-            $('#customer_id option').each(function() {
-                const $option = $(this);
-                const customerId = $option.val();
-                if (customerId) {
-                    try {
-                        const vehiclesAttr = $option.attr('data-vehicles');
-                        const acUnitsAttr = $option.attr('data-ac-units');
-                        customerAssetsCache[customerId] = {
-                            vehicles: vehiclesAttr ? JSON.parse(vehiclesAttr) : [],
-                            ac_units: acUnitsAttr ? JSON.parse(acUnitsAttr) : []
-                        };
-                        customerAddressCache[customerId] = $option.attr('data-address') || '';
-                    } catch (e) {
-                        console.error('Error parsing customer data:', e);
-                        customerAssetsCache[customerId] = { vehicles: [], ac_units: [] };
-                        customerAddressCache[customerId] = '';
-                    }
-                }
-            });
-
-            const jobTypeRadios = document.querySelectorAll('input[name="job_type"]');
-            const vehicleWrapper = document.getElementById('vehicle-wrapper');
-            const acWrapper = document.getElementById('ac-unit-wrapper');
-            const vehicleSelect = document.getElementById('vehicle_id');
-            const acSelect = document.getElementById('ac_unit_id');
-            const customerVehicleLink = document.getElementById('customer-vehicle-link');
-            const customerAcLink = document.getElementById('customer-ac-link');
-            const jobCategorySelect = document.getElementById('job_category');
-            const pickupLocationWrapper = document.getElementById('pickup-location-wrapper');
-            const addressInput = document.getElementById('address');
-            const addressRequiredIndicator = document.getElementById('address-required-indicator');
-
-            function getSelectedJobType() {
-                const checked = Array.from(jobTypeRadios).find(r => r.checked);
-                return checked ? checked.value : 'moto';
+        // Auto-focus phone field on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('customer_phone');
+            if (phoneInput && !phoneInput.value) {
+                setTimeout(() => phoneInput.focus(), 100);
             }
-
-            function filterJobCategories() {
-                const type = getSelectedJobType();
-                const options = jobCategorySelect.querySelectorAll('option');
-                let firstValidOption = null;
-
-                options.forEach(opt => {
-                    if (opt.value === '') {
-                        opt.style.display = '';
-                        return;
-                    }
-
-                    const optType = opt.getAttribute('data-job-type');
-                    if (optType === type) {
-                        opt.style.display = '';
-                        if (!firstValidOption) firstValidOption = opt;
-                    } else {
-                        opt.style.display = 'none';
-                    }
-                });
-
-                // Reset selection if current selection doesn't match job type
-                const currentSelected = jobCategorySelect.value;
-                const currentOption = jobCategorySelect.querySelector(`option[value="${currentSelected}"]`);
-                if (currentOption && currentOption.getAttribute('data-job-type') !== type) {
-                    jobCategorySelect.value = '';
-                }
-
-                updatePickupLocationVisibility();
-            }
-
-            function updatePickupLocationVisibility() {
-                const type = getSelectedJobType();
-                const category = jobCategorySelect.value;
-
-                // Show pickup location only for motorcycle pickup jobs
-                if (type === 'moto' && category === 'pickup') {
-                    pickupLocationWrapper.classList.remove('hidden');
-                } else {
-                    pickupLocationWrapper.classList.add('hidden');
-                }
-            }
-
-            function updateTypeVisibility() {
-                const type = getSelectedJobType();
-                if (type === 'moto') {
-                    vehicleWrapper.classList.remove('hidden');
-                    acWrapper.classList.add('hidden');
-                    addressRequiredIndicator.classList.add('hidden');
-                } else {
-                    acWrapper.classList.remove('hidden');
-                    vehicleWrapper.classList.add('hidden');
-                    addressRequiredIndicator.classList.remove('hidden');
-                }
-                filterJobCategories();
-            }
-
-            function updateCustomerLinks() {
-                const customerId = $('#customer_id').val();
-                if (!customerId) {
-                    if (customerVehicleLink) customerVehicleLink.href = '#';
-                    if (customerAcLink) customerAcLink.href = '#';
-                    return;
-                }
-                const url = "{{ url('customers') }}/" + customerId;
-                if (customerVehicleLink) customerVehicleLink.href = url;
-                if (customerAcLink) customerAcLink.href = url;
-            }
-
-            function populateAssets() {
-                const customerId = $('#customer_id').val();
-                const assets = customerAssetsCache[customerId] || { vehicles: [], ac_units: [] };
-                const address = customerAddressCache[customerId] || '';
-
-                // Clear existing options (except first)
-                vehicleSelect.innerHTML = '<option value="">Select vehicle (optional)</option>';
-                acSelect.innerHTML = '<option value="">Select AC unit (optional)</option>';
-
-                assets.vehicles.forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.value = v.id;
-                    opt.textContent = v.label || ('Vehicle #' + v.id);
-                    vehicleSelect.appendChild(opt);
-                });
-
-                assets.ac_units.forEach(a => {
-                    const opt = document.createElement('option');
-                    opt.value = a.id;
-                    opt.textContent = a.label || ('AC Unit #' + a.id);
-                    acSelect.appendChild(opt);
-                });
-
-                // Update address from customer data
-                addressInput.value = address;
-
-                updateCustomerLinks();
-            }
-
-            // Events
-            $('#customer_id').on('change', populateAssets);
-            jobTypeRadios.forEach(r => r.addEventListener('change', updateTypeVisibility));
-            jobCategorySelect.addEventListener('change', updatePickupLocationVisibility);
-
-            // Init on load
-            updateTypeVisibility();
-            populateAssets();
-            filterJobCategories();
         });
     </script>
 </x-app-layout>

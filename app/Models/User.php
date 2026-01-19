@@ -79,6 +79,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Jobs assigned to this user (many-to-many via job_assignees).
+     */
+    public function jobAssignments()
+    {
+        return $this->belongsToMany(Job::class, 'job_assignees')
+            ->withPivot(['assigned_at', 'assigned_by'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get active jobs assigned to this user.
+     */
+    public function activeJobs()
+    {
+        return $this->jobAssignments()->whereIn('status', Job::getActiveStatuses());
+    }
+
+    /**
      * Hardcoded roles
      */
     public const ROLE_ADMIN = 'admin';
