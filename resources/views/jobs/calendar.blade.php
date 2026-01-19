@@ -72,44 +72,83 @@
             height: 2.5em;
         }
 
-        /* Mobile-specific calendar styles */
+        /* Hide FullCalendar default toolbar - we use custom */
+        .fc .fc-toolbar {
+            display: none !important;
+        }
+
+        /* Compact month grid on mobile */
         @media (max-width: 640px) {
-            .fc .fc-toolbar {
-                flex-direction: column;
-                gap: 0.75rem;
+            .fc-daygrid-day-frame {
+                min-height: 45px;
             }
-            .fc .fc-toolbar-title {
-                font-size: 1.1rem;
-                font-weight: 600;
-            }
-            .fc .fc-button {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.875rem;
-            }
-            .fc .fc-button-group {
-                display: flex;
-            }
-            .fc .fc-button-group > .fc-button {
-                flex: 1;
+            .fc-daygrid-day-top {
+                justify-content: center;
             }
             .fc-daygrid-day-number {
-                padding: 4px 8px;
-                font-size: 0.875rem;
+                padding: 2px;
+                font-size: 0.75rem;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
             }
-            .fc-event {
-                font-size: 11px;
-                padding: 3px 5px;
+            .fc-day-today .fc-daygrid-day-number {
+                background-color: #4f46e5;
+                color: white;
             }
-            .fc-timegrid-slot {
-                height: 3em;
+            /* Hide events in month grid on mobile - show in agenda below */
+            .fc-daygrid-event-harness {
+                display: none;
             }
-            .fc-timegrid-event {
-                font-size: 11px;
+            /* Show dot indicators instead */
+            .fc-daygrid-day-events {
+                display: flex;
+                justify-content: center;
+                gap: 2px;
+                margin-top: 2px;
             }
-            /* Make day cells taller on mobile for easier tapping */
+            .fc-daygrid-event-dot {
+                display: block;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+            }
+            /* Hide all-day section when empty */
+            .fc-timegrid-divider,
+            .fc-timegrid-axis-cushion {
+                display: none;
+            }
+            .fc-col-header-cell-cushion {
+                font-size: 0.7rem;
+                padding: 4px 2px;
+            }
+        }
+
+        /* Desktop styles */
+        @media (min-width: 641px) {
             .fc-daygrid-day-frame {
-                min-height: 80px;
+                min-height: 100px;
             }
+        }
+
+        /* View button active state */
+        .view-btn.active {
+            background-color: white;
+            color: #4f46e5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .dark .view-btn.active {
+            background-color: #374151;
+            color: #818cf8;
+        }
+        .view-btn:not(.active) {
+            color: #6b7280;
+        }
+        .dark .view-btn:not(.active) {
+            color: #9ca3af;
         }
 
         /* Quick create modal */
@@ -131,48 +170,122 @@
         }
     </style>
 
-    <div class="py-2 sm:py-4">
-        <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            {{-- Filters - horizontally scrollable on mobile --}}
-            <div class="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 mb-3">
-                <div class="flex items-center gap-2 min-w-max">
-                    <select id="type-filter"
-                            class="px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm min-h-[44px]">
-                        <option value="">All</option>
-                        <option value="ac">AC</option>
-                        <option value="moto">Bike</option>
-                    </select>
+    <div class="max-w-7xl mx-auto" x-data="{ showFilters: false }">
+        {{-- Sticky Calendar Header --}}
+        <div class="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+            {{-- Row 1: Navigation --}}
+            <div class="flex items-center justify-between px-3 py-2">
+                <div class="flex items-center gap-1">
+                    <button id="cal-prev" type="button"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h3 id="cal-title" class="text-base font-semibold text-gray-900 dark:text-gray-100 min-w-[120px] text-center">
+                        January 2026
+                    </h3>
+                    <button id="cal-next" type="button"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="cal-today" type="button"
+                            class="px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/50">
+                        Today
+                    </button>
+                    <button type="button" @click="showFilters = !showFilters"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            :class="showFilters ? 'bg-gray-100 dark:bg-gray-700' : ''">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
+            {{-- Row 2: View Segmented Control --}}
+            <div class="flex items-center justify-between px-3 pb-2">
+                <div id="view-toggle" class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-700 p-0.5">
+                    <button type="button" data-view="timeGridDay"
+                            class="view-btn px-4 py-1.5 text-xs font-medium rounded-md transition-colors">
+                        Day
+                    </button>
+                    <button type="button" data-view="timeGridWeek"
+                            class="view-btn px-4 py-1.5 text-xs font-medium rounded-md transition-colors hidden sm:block">
+                        Week
+                    </button>
+                    <button type="button" data-view="dayGridMonth"
+                            class="view-btn px-4 py-1.5 text-xs font-medium rounded-md transition-colors">
+                        Month
+                    </button>
+                </div>
+                {{-- Legend --}}
+                <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                        AC
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                        Bike
+                    </span>
+                </div>
+            </div>
+
+            {{-- Collapsible Filters --}}
+            <div x-show="showFilters" x-collapse class="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+                <div class="flex items-center gap-2">
+                    <select id="type-filter"
+                            class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+                        <option value="">All Types</option>
+                        <option value="ac">AC Jobs</option>
+                        <option value="moto">Bike Jobs</option>
+                    </select>
                     <select id="assignee-filter"
-                            class="px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm min-h-[44px]">
-                        <option value="">All Techs</option>
+                            class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+                        <option value="">All Technicians</option>
                         @foreach($technicians as $tech)
                             <option value="{{ $tech->id }}">{{ $tech->name }}</option>
                         @endforeach
                     </select>
-
-                    <div class="flex items-center gap-3 ml-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full bg-sky-500"></span>
-                            <span class="hidden sm:inline">AC</span>
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-3 rounded-full bg-orange-500"></span>
-                            <span class="hidden sm:inline">Bike</span>
-                        </span>
-                    </div>
                 </div>
             </div>
+        </div>
 
-            {{-- Calendar Container --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-2 sm:p-4">
-                <div id="calendar"></div>
+        {{-- Mobile Date Strip (Day view only) --}}
+        <div id="date-strip" class="sm:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-x-auto hidden">
+            <div id="date-strip-inner" class="flex py-2 px-2 gap-1">
+                {{-- Dates will be populated by JS --}}
             </div>
+        </div>
 
-            {{-- Mobile tip --}}
-            <p class="sm:hidden text-xs text-gray-500 dark:text-gray-400 text-center mt-3 px-4">
-                Tap a time slot to create a job. Tap a job to view details.
-            </p>
+        {{-- Calendar Container (hidden on mobile when in day/agenda view) --}}
+        <div id="calendar-container" class="bg-white dark:bg-gray-800">
+            <div id="calendar"></div>
+        </div>
+
+        {{-- Mobile Agenda List (shown below month grid or instead of day grid) --}}
+        <div id="agenda-list" class="sm:hidden bg-gray-50 dark:bg-gray-900 hidden">
+            <div class="px-3 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <h4 id="agenda-date-title" class="text-sm font-semibold text-gray-900 dark:text-gray-100">Today's Jobs</h4>
+            </div>
+            <div id="agenda-items" class="divide-y divide-gray-200 dark:divide-gray-700">
+                {{-- Agenda items populated by JS --}}
+            </div>
+            <div id="agenda-empty" class="hidden p-8 text-center">
+                <svg class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No jobs scheduled</p>
+                <button type="button" id="agenda-add-job"
+                        class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
+                    + Add Job
+                </button>
+            </div>
         </div>
     </div>
 
@@ -269,25 +382,28 @@
             const quickForm = document.getElementById('quick-create-form');
             const scheduledAtInput = document.getElementById('quick_scheduled_at');
 
+            // Custom header elements
+            const calTitle = document.getElementById('cal-title');
+            const calPrev = document.getElementById('cal-prev');
+            const calNext = document.getElementById('cal-next');
+            const calToday = document.getElementById('cal-today');
+            const viewBtns = document.querySelectorAll('.view-btn');
+            const dateStrip = document.getElementById('date-strip');
+            const dateStripInner = document.getElementById('date-strip-inner');
+            const calendarContainer = document.getElementById('calendar-container');
+            const agendaList = document.getElementById('agenda-list');
+            const agendaItems = document.getElementById('agenda-items');
+            const agendaEmpty = document.getElementById('agenda-empty');
+            const agendaDateTitle = document.getElementById('agenda-date-title');
+
             const isMobile = window.innerWidth < 640;
+            let currentView = isMobile ? 'dayGridMonth' : 'dayGridMonth';
+            let selectedDate = new Date();
+            let allEvents = [];
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: isMobile ? 'timeGridDay' : 'dayGridMonth',
-                headerToolbar: isMobile ? {
-                    left: 'prev,next',
-                    center: 'title',
-                    right: 'timeGridDay,dayGridMonth'
-                } : {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                buttonText: {
-                    today: 'Today',
-                    month: 'Month',
-                    week: 'Week',
-                    day: 'Day'
-                },
+                initialView: currentView,
+                headerToolbar: false, // We use custom header
                 editable: true,
                 selectable: true,
                 selectMirror: true,
@@ -313,7 +429,14 @@
 
                     fetch(`{{ route('jobs.calendar-events') }}?${params}`)
                         .then(response => response.json())
-                        .then(events => successCallback(events))
+                        .then(events => {
+                            allEvents = events; // Store for agenda view
+                            successCallback(events);
+                            // Update agenda if on mobile
+                            if (isMobile) {
+                                loadAgendaForDate(selectedDate);
+                            }
+                        })
                         .catch(error => failureCallback(error));
                 },
 
@@ -392,9 +515,229 @@
 
             calendar.render();
 
+            // Update custom title
+            function updateTitle() {
+                const view = calendar.view;
+                const date = view.currentStart;
+                const options = { month: 'short', year: 'numeric' };
+                if (view.type === 'timeGridDay') {
+                    options.day = 'numeric';
+                }
+                calTitle.textContent = date.toLocaleDateString('en-US', options);
+            }
+
+            // Update view button states
+            function updateViewButtons() {
+                viewBtns.forEach(btn => {
+                    if (btn.dataset.view === calendar.view.type) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            // Build date strip for mobile day view
+            function buildDateStrip() {
+                if (!isMobile) return;
+
+                dateStripInner.innerHTML = '';
+                const today = new Date();
+                const startDate = new Date(selectedDate);
+                startDate.setDate(startDate.getDate() - 3);
+
+                for (let i = 0; i < 14; i++) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+                    const isSelected = date.toDateString() === selectedDate.toDateString();
+                    const isToday = date.toDateString() === today.toDateString();
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `flex flex-col items-center px-3 py-1.5 rounded-lg min-w-[44px] ${
+                        isSelected
+                            ? 'bg-indigo-600 text-white'
+                            : isToday
+                                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                : 'text-gray-600 dark:text-gray-400'
+                    }`;
+                    btn.innerHTML = `
+                        <span class="text-[10px] font-medium uppercase">${date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                        <span class="text-sm font-semibold">${date.getDate()}</span>
+                    `;
+                    btn.addEventListener('click', () => {
+                        selectedDate = date;
+                        buildDateStrip();
+                        loadAgendaForDate(date);
+                    });
+                    dateStripInner.appendChild(btn);
+                }
+
+                // Scroll to selected date
+                setTimeout(() => {
+                    const selected = dateStripInner.querySelector('.bg-indigo-600');
+                    if (selected) {
+                        selected.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }, 100);
+            }
+
+            // Load agenda items for a specific date
+            function loadAgendaForDate(date) {
+                const dateStr = date.toDateString();
+                agendaDateTitle.textContent = date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                // Filter events for this date
+                const dayEvents = allEvents.filter(e => {
+                    const eventDate = new Date(e.start);
+                    return eventDate.toDateString() === dateStr;
+                }).sort((a, b) => new Date(a.start) - new Date(b.start));
+
+                agendaItems.innerHTML = '';
+
+                if (dayEvents.length === 0) {
+                    agendaEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                agendaEmpty.classList.add('hidden');
+
+                // Group by time of day
+                const morning = dayEvents.filter(e => new Date(e.start).getHours() < 12);
+                const afternoon = dayEvents.filter(e => {
+                    const h = new Date(e.start).getHours();
+                    return h >= 12 && h < 17;
+                });
+                const evening = dayEvents.filter(e => new Date(e.start).getHours() >= 17);
+
+                function renderSection(title, events) {
+                    if (events.length === 0) return;
+                    const section = document.createElement('div');
+                    section.innerHTML = `<div class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-500 dark:text-gray-400">${title}</div>`;
+                    events.forEach(event => {
+                        const time = new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                        const item = document.createElement('a');
+                        item.href = `/jobs/${event.id}`;
+                        item.className = 'flex items-center gap-3 px-3 py-3 bg-white dark:bg-gray-800 active:bg-gray-50 dark:active:bg-gray-700';
+                        item.innerHTML = `
+                            <div class="flex items-center gap-2 min-w-[60px]">
+                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${event.backgroundColor}"></span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">${time}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">${event.title}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${event.extendedProps?.customer_name || ''}</div>
+                            </div>
+                            <span class="px-2 py-0.5 text-xs rounded-full flex-shrink-0" style="background-color: ${event.extendedProps?.status_color}20; color: ${event.extendedProps?.status_color}">
+                                ${event.extendedProps?.status_label || ''}
+                            </span>
+                        `;
+                        section.appendChild(item);
+                    });
+                    agendaItems.appendChild(section);
+                }
+
+                renderSection('Morning', morning);
+                renderSection('Afternoon', afternoon);
+                renderSection('Evening', evening);
+            }
+
+            // Switch view mode
+            function switchView(viewType) {
+                currentView = viewType;
+                calendar.changeView(viewType);
+                updateTitle();
+                updateViewButtons();
+
+                if (isMobile) {
+                    if (viewType === 'timeGridDay') {
+                        // Show date strip + agenda, hide calendar
+                        dateStrip.classList.remove('hidden');
+                        calendarContainer.classList.add('hidden');
+                        agendaList.classList.remove('hidden');
+                        buildDateStrip();
+                        loadAgendaForDate(selectedDate);
+                    } else if (viewType === 'dayGridMonth') {
+                        // Show calendar + agenda below
+                        dateStrip.classList.add('hidden');
+                        calendarContainer.classList.remove('hidden');
+                        agendaList.classList.remove('hidden');
+                        loadAgendaForDate(selectedDate);
+                    } else {
+                        dateStrip.classList.add('hidden');
+                        calendarContainer.classList.remove('hidden');
+                        agendaList.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Initial setup
+            updateTitle();
+            updateViewButtons();
+            if (isMobile) {
+                agendaList.classList.remove('hidden');
+                loadAgendaForDate(selectedDate);
+            }
+
+            // Custom header button handlers
+            calPrev.addEventListener('click', () => {
+                calendar.prev();
+                updateTitle();
+                if (currentView === 'timeGridDay' && isMobile) {
+                    selectedDate = calendar.getDate();
+                    buildDateStrip();
+                    loadAgendaForDate(selectedDate);
+                }
+            });
+
+            calNext.addEventListener('click', () => {
+                calendar.next();
+                updateTitle();
+                if (currentView === 'timeGridDay' && isMobile) {
+                    selectedDate = calendar.getDate();
+                    buildDateStrip();
+                    loadAgendaForDate(selectedDate);
+                }
+            });
+
+            calToday.addEventListener('click', () => {
+                calendar.today();
+                selectedDate = new Date();
+                updateTitle();
+                if (isMobile) {
+                    buildDateStrip();
+                    loadAgendaForDate(selectedDate);
+                }
+            });
+
+            // View toggle buttons
+            viewBtns.forEach(btn => {
+                btn.addEventListener('click', () => switchView(btn.dataset.view));
+            });
+
+            // Date click in month view (mobile) - show agenda for that date
+            calendar.on('dateClick', function(info) {
+                if (isMobile && currentView === 'dayGridMonth') {
+                    selectedDate = info.date;
+                    loadAgendaForDate(info.date);
+                }
+            });
+
             // Filter change handlers
             typeFilter.addEventListener('change', () => calendar.refetchEvents());
             assigneeFilter.addEventListener('change', () => calendar.refetchEvents());
+
+            // Agenda add job button
+            document.getElementById('agenda-add-job')?.addEventListener('click', () => {
+                const localDatetime = selectedDate.toISOString().slice(0, 16);
+                scheduledAtInput.value = localDatetime;
+                modal.classList.remove('hidden');
+                document.getElementById('quick_customer_phone').focus();
+            });
 
             // Close modal helper
             function closeModal() {

@@ -587,6 +587,8 @@ class Job extends Model
                 'customer_phone' => $this->customer_phone,
                 'job_type' => $this->job_type,
                 'status' => $this->status,
+                'status_label' => self::getStatuses()[$this->status] ?? $this->status,
+                'status_color' => $this->status_color,
                 'priority' => $this->priority,
                 'location' => $this->location,
                 'assignees' => $this->assignees->pluck('name')->toArray(),
