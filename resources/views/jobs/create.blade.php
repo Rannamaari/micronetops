@@ -10,11 +10,106 @@
     <div class="py-2 sm:py-6">
         <div class="max-w-lg mx-auto px-3 sm:px-6">
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
-                <form method="POST" action="{{ route('jobs.store') }}" class="p-4 space-y-4">
+                <form method="POST" action="{{ route('jobs.store') }}" class="p-4 space-y-4"
+                      x-data="{
+                          jobType: '{{ old('job_type', 'moto') }}',
+                          phone: '{{ old('customer_phone', $preselectedCustomer?->phone ?? '') }}',
+                          customerName: '{{ old('customer_name', $preselectedCustomer?->name ?? '') }}',
+                          customerId: '{{ old('customer_id', $preselectedCustomer?->id ?? '') }}',
+                          customerAddress: '{{ old('location', $preselectedCustomer?->address ?? '') }}',
+                          phoneError: '',
+
+                          searchResults: [],
+                          selectedCustomer: {{ $preselectedCustomer ? "{ id: {$preselectedCustomer->id}, name: '{$preselectedCustomer->name}', phone: '{$preselectedCustomer->phone}', address: '" . ($preselectedCustomer->address ?? '') . "' }" : 'null' }},
+                          searching: false,
+                          searched: false,
+                          searchTimeout: null,
+                          showDropdown: false,
+
+                          normalizePhone(p) {
+                              return p.replace(/[\s\-\(\)\.]/g, '').replace(/^\+960/, '');
+                          },
+
+                          searchCustomer() {
+                              clearTimeout(this.searchTimeout);
+                              this.phoneError = '';
+                              let normalized = this.normalizePhone(this.phone);
+
+                              if (this.selectedCustomer) {
+                                  this.clearCustomer(false);
+                              }
+
+                              if (normalized.length < 3) {
+                                  this.searchResults = [];
+                                  this.showDropdown = false;
+                                  this.searched = false;
+                                  return;
+                              }
+
+                              this.searchTimeout = setTimeout(() => {
+                                  this.searching = true;
+                                  fetch('/jobs/search/customers?q=' + encodeURIComponent(normalized))
+                                      .then(r => r.json())
+                                      .then(data => {
+                                          this.searching = false;
+                                          this.searched = true;
+                                          this.searchResults = data.results || [];
+
+                                          if (this.searchResults.length === 1) {
+                                              this.selectCustomer(this.searchResults[0]);
+                                          } else if (this.searchResults.length > 1) {
+                                              this.showDropdown = true;
+                                          } else {
+                                              this.showDropdown = false;
+                                          }
+                                      })
+                                      .catch(() => {
+                                          this.searching = false;
+                                          this.searched = true;
+                                          this.searchResults = [];
+                                      });
+                              }, 400);
+                          },
+
+                          selectCustomer(customer) {
+                              this.selectedCustomer = customer;
+                              this.customerId = customer.id;
+                              this.customerName = customer.name;
+                              this.customerAddress = customer.address || '';
+                              this.phone = customer.phone;
+                              this.showDropdown = false;
+                              this.searchResults = [];
+                              this.phoneError = '';
+                          },
+
+                          clearCustomer(refocus = true) {
+                              this.selectedCustomer = null;
+                              this.customerId = '';
+                              this.customerName = '';
+                              this.customerAddress = '';
+                              this.showDropdown = false;
+                              if (refocus) {
+                                  this.$nextTick(() => {
+                                      this.$refs.phoneInput.focus();
+                                      this.searchCustomer();
+                                  });
+                              }
+                          },
+
+                          submitJob() {
+                              if (!this.selectedCustomer && this.searched && this.searchResults.length > 0) {
+                                  this.phoneError = 'Please select the existing customer for this phone number.';
+                                  this.showDropdown = this.searchResults.length > 1;
+                                  return false;
+                              }
+                              return true;
+                          }
+                      }"
+                      @submit.prevent="if (submitJob()) $el.submit()">
                     @csrf
 
                     {{-- Service Type - Large touch targets --}}
-                    <div x-data="{ jobType: '{{ old('job_type', 'moto') }}' }">
+                    <div>
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer" @click="jobType = 'moto'">
                                 <input type="radio" name="job_type" value="moto" class="sr-only" x-model="jobType">
@@ -23,7 +118,7 @@
                                          ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
                                          : 'border-gray-200 dark:border-gray-600'">
                                     <span class="text-2xl mr-2">🏍️</span>
-                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Bike</span>
+                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Moto</span>
                                 </div>
                             </label>
                             <label class="cursor-pointer" @click="jobType = 'ac'">
@@ -33,22 +128,98 @@
                                          ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
                                          : 'border-gray-200 dark:border-gray-600'">
                                     <span class="text-2xl mr-2">❄️</span>
-                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">AC</span>
+                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Cool</span>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    {{-- Phone - Auto-focused, large input --}}
-                    <div>
+                    {{-- Phone - with customer autocomplete --}}
+                    <div class="relative" @click.away="showDropdown = false">
                         <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Phone</label>
-                        <input type="tel" name="customer_phone" id="customer_phone"
-                               value="{{ old('customer_phone', $preselectedCustomer?->phone) }}"
-                               class="block w-full text-xl p-4 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="7XXXXXX"
-                               inputmode="tel"
-                               autofocus
-                               required>
+                        <div class="relative">
+                            <input type="tel" name="customer_phone" id="customer_phone"
+                                   x-ref="phoneInput"
+                                   x-model="phone"
+                                   @input="searchCustomer()"
+                                   @focus="if (searchResults.length > 1) showDropdown = true"
+                                   class="block w-full text-xl p-4 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 pr-12"
+                                   placeholder="7XXXXXX"
+                                   inputmode="tel"
+                                   autofocus
+                                   required>
+
+                            {{-- Right-side status icon inside the input --}}
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                {{-- Spinner --}}
+                                <svg x-show="searching" x-cloak class="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                {{-- Checkmark when selected --}}
+                                <svg x-show="selectedCustomer && !searching" x-cloak class="h-5 w-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {{-- Autocomplete dropdown --}}
+                        <div x-show="showDropdown && searchResults.length > 1"
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
+                             x-cloak
+                             class="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                            <template x-for="customer in searchResults" :key="customer.id">
+                                <button type="button"
+                                        @click="selectCustomer(customer)"
+                                        class="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors">
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="customer.name"></span>
+                                        <span class="text-xs text-gray-400 dark:text-gray-500" x-text="customer.phone"></span>
+                                    </div>
+                                    <p x-show="customer.address" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate" x-text="customer.address"></p>
+                                </button>
+                            </template>
+                        </div>
+
+                        {{-- Selected customer — compact inline row --}}
+                        <div x-show="selectedCustomer"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak
+                             class="mt-1.5 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
+                            <svg class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-indigo-800 dark:text-indigo-300 truncate" x-text="selectedCustomer?.name"></span>
+                            <span class="text-xs text-indigo-400 dark:text-indigo-500 shrink-0">&middot;</span>
+                            <span class="text-xs text-indigo-500 dark:text-indigo-400 shrink-0" x-text="selectedCustomer?.phone"></span>
+                            <template x-if="selectedCustomer?.address">
+                                <span class="text-xs text-indigo-400 dark:text-indigo-500 truncate hidden sm:inline" x-text="'&middot; ' + selectedCustomer?.address"></span>
+                            </template>
+                            <button type="button"
+                                    @click="clearCustomer()"
+                                    class="ml-auto text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium whitespace-nowrap">
+                                Change
+                            </button>
+                        </div>
+
+                        {{-- New customer hint --}}
+                        <p x-show="!selectedCustomer && !searching && searched && searchResults.length === 0 && !phoneError"
+                           x-cloak
+                           class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                            New customer — will be created on save
+                        </p>
+
+                        {{-- Client-side validation error --}}
+                        <p x-show="phoneError" x-text="phoneError" x-cloak
+                           class="mt-1.5 text-xs text-red-600 dark:text-red-400"></p>
+
                         @error('customer_phone')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
@@ -58,8 +229,12 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
                         <input type="text" name="customer_name"
-                               value="{{ old('customer_name', $preselectedCustomer?->name) }}"
-                               class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
+                               x-model="customerName"
+                               :readonly="!!selectedCustomer"
+                               class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                               :class="selectedCustomer
+                                   ? 'bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-default'
+                                   : 'dark:bg-gray-700'"
                                placeholder="Customer name"
                                required>
                         @error('customer_name')
@@ -80,7 +255,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Location</label>
                         <input type="text" name="location"
-                               value="{{ old('location') }}"
+                               x-model="customerAddress"
                                class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
                                placeholder="Hulhumale Phase 2, Flat 101...">
                     </div>
@@ -137,6 +312,7 @@
                     </div>
 
                     {{-- Hidden fields --}}
+                    <input type="hidden" name="customer_id" :value="customerId">
                     <input type="hidden" name="job_date" value="{{ date('Y-m-d') }}">
                     <input type="hidden" name="job_category" value="general">
 
@@ -157,7 +333,6 @@
     </div>
 
     <script>
-        // Auto-focus phone field on page load
         document.addEventListener('DOMContentLoaded', function() {
             const phoneInput = document.getElementById('customer_phone');
             if (phoneInput && !phoneInput.value) {

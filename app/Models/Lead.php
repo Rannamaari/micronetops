@@ -53,15 +53,17 @@ class Lead extends Model
 
     public function convertToCustomer(): Customer
     {
-        // Create a new customer from lead data
-        $customer = Customer::create([
-            'name' => $this->name,
-            'phone' => $this->phone,
-            'email' => $this->email,
-            'address' => $this->address,
-            'category' => $this->interested_in,
-            'notes' => $this->notes,
-        ]);
+        // Find existing customer by phone or create new one
+        $customer = Customer::firstOrCreate(
+            ['phone' => $this->phone],
+            [
+                'name' => $this->name,
+                'email' => $this->email,
+                'address' => $this->address,
+                'category' => $this->interested_in,
+                'notes' => $this->notes,
+            ]
+        );
 
         // Update lead to mark as converted
         $this->update([

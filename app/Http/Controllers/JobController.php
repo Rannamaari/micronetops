@@ -163,8 +163,8 @@ class JobController extends Controller
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])
             ->where(function ($query) use ($search) {
-                $query->where('name', 'ilike', "%{$search}%")
-                    ->orWhere('phone', 'ilike', "%{$search}%");
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             })
             ->latest()
             ->limit(20)
@@ -174,6 +174,8 @@ class JobController extends Controller
             'results' => $customers->map(function ($customer) {
                 return [
                     'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone' => $customer->phone,
                     'text' => $customer->name . ' (' . $customer->phone . ')',
                     'address' => $customer->address ?? '',
                     'vehicles' => $customer->vehicles->map(function ($v) {
@@ -230,14 +232,29 @@ class JobController extends Controller
             'pickup_location' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Try to find or create customer from phone
+        // Find or create customer — ensures one customer per phone number
         $customer = null;
         if (!empty($validated['customer_id'])) {
             $customer = Customer::find($validated['customer_id']);
         }
 
         if (!$customer && $validated['customer_phone']) {
-            $customer = Customer::where('phone', $validated['customer_phone'])->first();
+            $existing = Customer::where('phone', $validated['customer_phone'])->first();
+
+            if ($existing) {
+                // Phone belongs to an existing customer — they must select them
+                return back()->withErrors([
+                    'customer_phone' => 'This phone belongs to ' . $existing->name . '. Please select the existing customer.',
+                ])->withInput();
+            }
+
+            // Truly new phone — create the customer
+            $customer = Customer::create([
+                'name' => $validated['customer_name'],
+                'phone' => $validated['customer_phone'],
+                'address' => $validated['location'] ?? null,
+                'category' => $validated['job_type'] === 'ac' ? 'ac' : 'moto',
+            ]);
         }
 
         // Determine status based on scheduling
@@ -260,10 +277,10 @@ class JobController extends Controller
             'job_category' => $validated['job_category'] ?? 'general',
             'customer_id' => $customer?->id,
 
-            // Snapshot customer data (phone-first workflow)
-            'customer_name' => $validated['customer_name'],
-            'customer_phone' => $validated['customer_phone'],
-            'customer_email' => $customer?->email,
+            // Snapshot customer data — use DB record when customer exists
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone,
+            'customer_email' => $customer->email,
 
             // Equipment
             'vehicle_id' => $validated['vehicle_id'] ?? null,
