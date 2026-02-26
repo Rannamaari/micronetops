@@ -283,10 +283,11 @@
                 @endif
             </div>
 
-            {{-- Mobile FAB (Floating Action Button) --}}
+            {{-- Mobile FAB (Floating Action Button) - Anchored above bottom nav, right-aligned near Inventory --}}
             <a href="{{ route('jobs.create') }}"
-               class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center active:bg-indigo-700 z-40">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="sm:hidden fixed right-5 w-14 h-14 text-white rounded-2xl flex items-center justify-center z-[55] shadow-[0_4px_20px_rgba(3,101,182,0.4)] active:scale-95 active:shadow-[0_2px_10px_rgba(3,101,182,0.3)] transition-all duration-150 ease-out"
+               style="background: linear-gradient(135deg, #0365B6 0%, #024a8a 100%); bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 0.75rem);">
+                <svg class="w-6 h-6 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                 </svg>
             </a>
