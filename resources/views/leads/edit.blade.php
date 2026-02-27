@@ -149,6 +149,23 @@
                     </div>
 
                     <div>
+                        <label for="assigned_user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Assign To
+                        </label>
+                        <select id="assigned_user_id" name="assigned_user_id"
+                                class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm
+                                       focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">— Unassigned —</option>
+                            @foreach($users as $user)
+                                <option value="{{ $user->id }}" {{ old('assigned_user_id', $lead->assigned_user_id) == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('assigned_user_id')
+                            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
                         <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Notes
                         </label>

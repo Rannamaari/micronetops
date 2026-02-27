@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcUnitController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DailySalesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HRController;
@@ -111,6 +112,16 @@ Route::middleware('auth')->group(function () {
         Route::post('jobs/{job}/payments', [PaymentController::class, 'store'])
             ->name('jobs.payments.store');
 
+        // Daily Sales Log
+        Route::get('sales/daily', [DailySalesController::class, 'index'])->name('sales.daily.index');
+        Route::post('sales/daily', [DailySalesController::class, 'openLog'])->name('sales.daily.open');
+        Route::get('sales/daily/{dailySalesLog}', [DailySalesController::class, 'show'])->name('sales.daily.show');
+        Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
+        Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
+        Route::post('sales/daily/{dailySalesLog}/submit', [DailySalesController::class, 'submit'])->name('sales.daily.submit');
+        Route::post('sales/daily/{dailySalesLog}/reopen', [DailySalesController::class, 'reopen'])->name('sales.daily.reopen');
+        Route::get('sales/reports', [DailySalesController::class, 'reports'])->name('sales.reports');
+
         // Invoice & Quotation
         Route::get('jobs/{job}/invoice', [JobController::class, 'invoice'])
             ->name('jobs.invoice');
@@ -167,9 +178,17 @@ Route::middleware('auth')->group(function () {
         Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
         Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
+
+        // Bulk action must come before {lead} wildcard
+        Route::post('leads/bulk-action', [LeadController::class, 'bulkAction'])->name('leads.bulk-action');
+
         Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
         Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
         Route::patch('leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+
+        // Archive / Unarchive
+        Route::post('leads/{lead}/archive', [LeadController::class, 'archive'])->name('leads.archive');
+        Route::post('leads/{lead}/unarchive', [LeadController::class, 'unarchive'])->name('leads.unarchive');
 
         // Lead conversion to customer
         Route::post('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])->name('leads.convert');
@@ -182,6 +201,9 @@ Route::middleware('auth')->group(function () {
 
         // Quick status update
         Route::patch('leads/{lead}/update-status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
+
+        // Reopen lost lead
+        Route::post('leads/{lead}/reopen', [LeadController::class, 'reopen'])->name('leads.reopen');
     });
 
     // Lead deletion - Admin only

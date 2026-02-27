@@ -12,6 +12,7 @@ class InventoryLog extends Model
     protected $fillable = [
         'inventory_item_id',
         'job_id',
+        'daily_sales_log_id',
         'quantity_change',
         'type',
         'user_id',
@@ -31,5 +32,10 @@ class InventoryLog extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function dailySalesLog()
+    {
+        return $this->belongsTo(DailySalesLog::class);
     }
 }

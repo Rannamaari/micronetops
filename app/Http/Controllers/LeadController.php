@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\Customer;
+use App\Models\User;
 use App\Models\LeadInteraction;
 use Illuminate\Http\Request;
 
@@ -17,28 +18,64 @@ class LeadController extends Controller
         $search = $request->get('search');
         $statusFilter = $request->get('status', 'all');
         $priorityFilter = $request->get('priority', 'all');
+        $assignedFilter = $request->get('assigned', 'all');
 
-        $query = Lead::with(['createdBy', 'convertedToCustomer']);
+        // Auto-archive leads with no interaction in 60 days (active leads only)
+        Lead::whereIn('status', ['new', 'contacted', 'interested', 'qualified'])
+            ->where('archived', false)
+            ->where(function ($q) {
+                $q->where('last_contact_at', '<', now()->subDays(60))
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('last_contact_at')
+                         ->where('created_at', '<', now()->subDays(60));
+                  });
+            })
+            ->update([
+                'archived' => true,
+                'archived_at' => now(),
+            ]);
 
-        // Apply filters
-        $query->byStatus($statusFilter)
-              ->byPriority($priorityFilter)
-              ->search($search);
+        $query = Lead::with(['createdBy', 'convertedToCustomer', 'assignedUser']);
+
+        // Handle archived tab
+        if ($statusFilter === 'archived') {
+            $query->archived();
+        } else {
+            $query->notArchived();
+            $query->byStatus($statusFilter)
+                  ->byPriority($priorityFilter)
+                  ->search($search);
+
+            // Filter by assigned user
+            if ($assignedFilter && $assignedFilter !== 'all') {
+                $query->assignedTo($assignedFilter);
+            }
+        }
+
+        if ($statusFilter === 'archived') {
+            // Still apply search to archived
+            $query->search($search);
+        }
 
         $leads = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
-        // Get status counts for filter badges
+        // Get status counts (exclude archived from normal counts)
         $statusCounts = [
-            'all' => Lead::count(),
-            'new' => Lead::where('status', 'new')->count(),
-            'contacted' => Lead::where('status', 'contacted')->count(),
-            'interested' => Lead::where('status', 'interested')->count(),
-            'qualified' => Lead::where('status', 'qualified')->count(),
-            'converted' => Lead::where('status', 'converted')->count(),
-            'lost' => Lead::where('status', 'lost')->count(),
+            'all' => Lead::notArchived()->count(),
+            'new' => Lead::notArchived()->where('status', 'new')->count(),
+            'contacted' => Lead::notArchived()->where('status', 'contacted')->count(),
+            'interested' => Lead::notArchived()->where('status', 'interested')->count(),
+            'qualified' => Lead::notArchived()->where('status', 'qualified')->count(),
+            'converted' => Lead::notArchived()->where('status', 'converted')->count(),
+            'lost' => Lead::notArchived()->where('status', 'lost')->count(),
+            'archived' => Lead::archived()->count(),
         ];
 
-        return view('leads.index', compact('leads', 'search', 'statusFilter', 'priorityFilter', 'statusCounts'));
+        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('leads.index', compact('leads', 'search', 'statusFilter', 'priorityFilter', 'assignedFilter', 'statusCounts', 'users'));
     }
 
     /**
@@ -46,7 +83,11 @@ class LeadController extends Controller
      */
     public function create()
     {
-        return view('leads.create');
+        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('leads.create', compact('users'));
     }
 
     /**
@@ -64,6 +105,7 @@ class LeadController extends Controller
             'interested_in' => ['required', 'string', 'in:moto,ac,both'],
             'notes'         => ['nullable', 'string'],
             'follow_up_date' => ['nullable', 'date'],
+            'assigned_user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -93,9 +135,10 @@ class LeadController extends Controller
      */
     public function show(Lead $lead)
     {
-        $lead->load(['interactions.user', 'createdBy', 'convertedToCustomer']);
+        $lead->load(['interactions.user', 'createdBy', 'convertedToCustomer', 'assignedUser', 'lostByUser']);
+        $lostReasons = Lead::LOST_REASONS;
 
-        return view('leads.show', compact('lead'));
+        return view('leads.show', compact('lead', 'lostReasons'));
     }
 
     /**
@@ -103,7 +146,11 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
-        return view('leads.edit', compact('lead'));
+        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('leads.edit', compact('lead', 'users'));
     }
 
     /**
@@ -122,6 +169,7 @@ class LeadController extends Controller
             'interested_in' => ['required', 'string', 'in:moto,ac,both'],
             'notes'         => ['nullable', 'string'],
             'follow_up_date' => ['nullable', 'date'],
+            'assigned_user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $lead->update($validated);
@@ -146,6 +194,68 @@ class LeadController extends Controller
         return redirect()
             ->route('leads.index')
             ->with('success', 'Lead deleted successfully.');
+    }
+
+    /**
+     * Archive a lead.
+     */
+    public function archive(Lead $lead)
+    {
+        $lead->archive();
+
+        return back()->with('success', 'Lead archived successfully.');
+    }
+
+    /**
+     * Unarchive a lead.
+     */
+    public function unarchive(Lead $lead)
+    {
+        $lead->unarchive();
+
+        return back()->with('success', 'Lead restored from archive.');
+    }
+
+    /**
+     * Bulk action on multiple leads.
+     */
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'action' => ['required', 'string', 'in:archive,delete'],
+            'lead_ids' => ['required', 'array'],
+            'lead_ids.*' => ['integer', 'exists:leads,id'],
+        ]);
+
+        $leads = Lead::whereIn('id', $validated['lead_ids'])->get();
+        $count = 0;
+
+        if ($validated['action'] === 'archive') {
+            foreach ($leads as $lead) {
+                $lead->archive();
+                $count++;
+            }
+            return back()->with('success', $count . ' lead(s) archived.');
+        }
+
+        if ($validated['action'] === 'delete') {
+            // Only admin can bulk delete
+            if (!auth()->user()->canDelete()) {
+                return back()->with('error', 'Only admins can delete leads.');
+            }
+
+            foreach ($leads as $lead) {
+                // Skip converted leads
+                if ($lead->status === 'converted') {
+                    continue;
+                }
+                $lead->delete();
+                $count++;
+            }
+            return back()->with('success', $count . ' lead(s) deleted.');
+        }
+
+        return back();
     }
 
     /**
@@ -235,7 +345,8 @@ class LeadController extends Controller
     public function markAsLost(Request $request, Lead $lead)
     {
         $validated = $request->validate([
-            'lost_reason' => ['required', 'string', 'max:500'],
+            'lost_reason_id' => ['required', 'string', 'in:' . implode(',', array_keys(Lead::LOST_REASONS))],
+            'lost_notes' => ['nullable', 'string', 'max:500'],
             'do_not_contact' => ['nullable', 'boolean'],
         ]);
 
@@ -246,11 +357,21 @@ class LeadController extends Controller
                 ->with('success', 'Lead marked as "Do Not Contact".');
         }
 
-        $lead->markAsLost($validated['lost_reason']);
+        $lead->markAsLost($validated['lost_reason_id'], $validated['lost_notes'] ?? null);
 
         return redirect()
             ->route('leads.index')
             ->with('success', 'Lead marked as lost.');
+    }
+
+    /**
+     * Reopen a lost lead.
+     */
+    public function reopen(Lead $lead)
+    {
+        $lead->reopen();
+
+        return back()->with('success', 'Lead reopened successfully.');
     }
 
     /**

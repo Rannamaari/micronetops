@@ -35,6 +35,10 @@
                         <a href="{{ route('jobs.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                             Jobs
                         </a>
+
+                        <a href="{{ route('sales.daily.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Sales Log
+                        </a>
                     @endif
 
                     <a href="{{ route('reports.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -148,6 +152,7 @@
 
                 @if(Auth::user()->canCreateJobs())
                     <a href="{{ route('jobs.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Jobs</a>
+                    <a href="{{ route('sales.daily.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('sales.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Sales Log</a>
                 @endif
 
                 <!-- Reports Accordion -->

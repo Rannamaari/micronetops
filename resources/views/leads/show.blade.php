@@ -17,7 +17,7 @@
             </div>
 
             {{-- Convert to Customer Button --}}
-            @if($lead->status !== 'converted')
+            @if($lead->status !== 'converted' && $lead->status !== 'lost')
                 <div class="hidden sm:block">
                     <form action="{{ route('leads.convert', $lead) }}" method="POST"
                           onsubmit="return confirm('Convert this lead to a customer?')">
@@ -58,24 +58,18 @@
             {{-- Call Attempts Warning --}}
             @if($lead->call_attempts >= 2 && $lead->status !== 'converted' && $lead->status !== 'lost')
                 <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                            <div>
-                                <div class="text-sm font-semibold text-orange-900 dark:text-orange-100">
-                                    {{ $lead->call_attempts }} call attempts made
-                                </div>
-                                <div class="text-sm text-orange-800 dark:text-orange-200 mt-1">
-                                    This lead has been called {{ $lead->call_attempts }} times. Consider marking as lost if customer is not interested.
-                                </div>
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <div>
+                            <div class="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                                {{ $lead->call_attempts }} call attempts made
+                            </div>
+                            <div class="text-sm text-orange-800 dark:text-orange-200 mt-1">
+                                This lead has been called {{ $lead->call_attempts }} times. Consider marking as lost if customer is not interested.
                             </div>
                         </div>
-                        <button onclick="document.getElementById('mark-lost-modal').classList.remove('hidden')"
-                                class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 rounded-md text-xs font-medium text-white transition whitespace-nowrap">
-                            Mark as Lost
-                        </button>
                     </div>
                 </div>
             @endif
@@ -100,7 +94,7 @@
             @endif
 
             {{-- Convert Button - Mobile --}}
-            @if($lead->status !== 'converted')
+            @if($lead->status !== 'converted' && $lead->status !== 'lost')
                 <div class="block sm:hidden">
                     <form action="{{ route('leads.convert', $lead) }}" method="POST"
                           onsubmit="return confirm('Convert this lead to a customer?')">
@@ -133,13 +127,15 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="{{ route('leads.edit', $lead) }}"
-                           class="inline-flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                            <span class="hidden sm:inline">Edit</span>
-                        </a>
+                        @if($lead->status !== 'lost')
+                            <a href="{{ route('leads.edit', $lead) }}"
+                               class="inline-flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                <span class="hidden sm:inline">Edit</span>
+                            </a>
+                        @endif
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -212,6 +208,14 @@
                                 </button>
                             </form>
                         @endforeach
+
+                        <button onclick="document.getElementById('mark-lost-modal').classList.remove('hidden')"
+                                class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                            </svg>
+                            Mark as Lost
+                        </button>
                     </div>
                 </div>
             @endif
@@ -318,13 +322,16 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Interactions</h3>
-                    <button onclick="document.getElementById('interaction-form').classList.toggle('hidden')"
-                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-md text-xs font-medium text-white transition">
-                        + Add Interaction
-                    </button>
+                    @if($lead->status !== 'lost')
+                        <button onclick="document.getElementById('interaction-form').classList.toggle('hidden')"
+                                class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-md text-xs font-medium text-white transition">
+                            + Add Interaction
+                        </button>
+                    @endif
                 </div>
 
                 {{-- Add Interaction Form --}}
+                @if($lead->status !== 'lost')
                 <div id="interaction-form" class="hidden p-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
                     <form action="{{ route('leads.interactions.store', $lead) }}" method="POST" class="space-y-3">
                         @csrf
@@ -367,6 +374,7 @@
                         </div>
                     </form>
                 </div>
+                @endif
 
                 <div class="p-4">
                     @forelse($lead->interactions as $interaction)
@@ -407,10 +415,42 @@
                 </div>
             </div>
 
-            @if($lead->lost_reason)
-                <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                    <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Lost Reason</div>
-                    <div class="text-sm text-gray-900 dark:text-gray-100">{{ $lead->lost_reason }}</div>
+            {{-- Lost Lead Banner --}}
+            @if($lead->status === 'lost')
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-xl p-5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                            </svg>
+                            <div>
+                                <div class="text-base font-bold text-red-900 dark:text-red-100 mb-1">Lead Lost</div>
+                                <div class="text-sm font-semibold text-red-800 dark:text-red-200">
+                                    Reason: {{ $lead->lost_reason_label ?? $lead->lost_reason ?? 'Unknown' }}
+                                </div>
+                                @if($lead->lost_notes)
+                                    <div class="text-sm text-red-700 dark:text-red-300 mt-1">{{ $lead->lost_notes }}</div>
+                                @endif
+                                <div class="text-xs text-red-600 dark:text-red-400 mt-2">
+                                    Lost on {{ $lead->lost_at ? $lead->lost_at->format('M d, Y \a\t h:i A') : 'N/A' }}
+                                    @if($lead->lostByUser)
+                                        by {{ $lead->lostByUser->name }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <form action="{{ route('leads.reopen', $lead) }}" method="POST"
+                              onsubmit="return confirm('Reopen this lead? It will be set back to New status.')">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-red-300 dark:border-red-700 rounded-lg text-sm font-semibold text-red-700 dark:text-red-300 shadow-sm transition whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Reopen Lead
+                            </button>
+                        </form>
+                    </div>
                 </div>
             @endif
         </div>
@@ -425,12 +465,25 @@
                 @csrf
 
                 <div>
-                    <label for="lost_reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="lost_reason_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Reason <span class="text-red-500">*</span>
                     </label>
-                    <textarea id="lost_reason" name="lost_reason" rows="3" required
+                    <select id="lost_reason_id" name="lost_reason_id" required
+                            class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Select a reason...</option>
+                        @foreach($lostReasons as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="lost_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Additional Notes <span class="text-xs text-gray-500">(Optional)</span>
+                    </label>
+                    <textarea id="lost_notes" name="lost_notes" rows="2"
                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                              placeholder="E.g., Not interested, Too expensive, Went with competitor..."></textarea>
+                              placeholder="Any extra details..." maxlength="500"></textarea>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -454,4 +507,13 @@
             </form>
         </div>
     </div>
+
+    {{-- Auto-open Mark as Lost modal when coming from index 3-dot menu --}}
+    @if(request('mark_as_lost'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('mark-lost-modal').classList.remove('hidden');
+            });
+        </script>
+    @endif
 </x-app-layout>

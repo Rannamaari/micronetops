@@ -89,6 +89,7 @@ class DashboardController extends Controller
         $overdueLeads = Lead::where('follow_up_date', '<', $now)
             ->whereIn('status', ['new', 'contacted', 'interested', 'qualified'])
             ->where('do_not_contact', false)
+            ->where('archived', false)
             ->orderBy('follow_up_date', 'asc')
             ->limit(5)
             ->get();

@@ -9,6 +9,17 @@ class Lead extends Model
 {
     use HasFactory;
 
+    const LOST_REASONS = [
+        'no_budget'       => 'No Budget',
+        'too_expensive'   => 'Too Expensive',
+        'competitor'      => 'Went with Competitor',
+        'no_response'     => 'No Response / Ghosted',
+        'bad_timing'      => 'Bad Timing',
+        'not_interested'  => 'Not Interested',
+        'duplicate'       => 'Duplicate Lead',
+        'other'           => 'Other',
+    ];
+
     protected $fillable = [
         'name',
         'phone',
@@ -26,7 +37,14 @@ class Lead extends Model
         'converted_to_customer_id',
         'converted_at',
         'lost_reason',
+        'lost_reason_id',
+        'lost_notes',
+        'lost_at',
+        'lost_by',
         'do_not_contact',
+        'archived',
+        'archived_at',
+        'assigned_user_id',
     ];
 
     protected $casts = [
@@ -34,6 +52,9 @@ class Lead extends Model
         'last_contact_at' => 'datetime',
         'converted_at' => 'datetime',
         'do_not_contact' => 'boolean',
+        'archived' => 'boolean',
+        'archived_at' => 'datetime',
+        'lost_at' => 'datetime',
     ];
 
     public function interactions()
@@ -49,6 +70,16 @@ class Lead extends Model
     public function convertedToCustomer()
     {
         return $this->belongsTo(Customer::class, 'converted_to_customer_id');
+    }
+
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function lostByUser()
+    {
+        return $this->belongsTo(User::class, 'lost_by');
     }
 
     public function convertToCustomer(): Customer
@@ -84,7 +115,23 @@ class Lead extends Model
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['new', 'contacted', 'interested', 'qualified']);
+        return $query->whereIn('status', ['new', 'contacted', 'interested', 'qualified'])
+                      ->where('archived', false);
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->where('archived', true);
+    }
+
+    public function scopeNotArchived($query)
+    {
+        return $query->where('archived', false);
+    }
+
+    public function scopeAssignedTo($query, $userId)
+    {
+        return $query->where('assigned_user_id', $userId);
     }
 
     public function scopeConverted($query)
@@ -160,18 +207,28 @@ class Lead extends Model
         return max(0, min($score, 100));
     }
 
-    public function markAsLost(string $reason): void
+    public function markAsLost(string $reasonId, ?string $notes = null): void
     {
+        $label = self::LOST_REASONS[$reasonId] ?? $reasonId;
+
         $this->update([
             'status' => 'lost',
-            'lost_reason' => $reason,
+            'lost_reason_id' => $reasonId,
+            'lost_notes' => $notes,
+            'lost_at' => now(),
+            'lost_by' => auth()->id(),
+            'lost_reason' => $label,
         ]);
 
-        // Add interaction log
+        $logMessage = 'Lead marked as lost. Reason: ' . $label;
+        if ($notes) {
+            $logMessage .= ' — ' . $notes;
+        }
+
         $this->interactions()->create([
             'user_id' => auth()->id(),
             'type' => 'other',
-            'notes' => 'Lead marked as lost. Reason: ' . $reason,
+            'notes' => $logMessage,
         ]);
     }
 
@@ -180,10 +237,12 @@ class Lead extends Model
         $this->update([
             'do_not_contact' => true,
             'status' => 'lost',
-            'lost_reason' => 'Customer requested not to be contacted',
+            'lost_reason' => 'Not Interested',
+            'lost_reason_id' => 'not_interested',
+            'lost_at' => now(),
+            'lost_by' => auth()->id(),
         ]);
 
-        // Add interaction log
         $this->interactions()->create([
             'user_id' => auth()->id(),
             'type' => 'other',
@@ -191,8 +250,96 @@ class Lead extends Model
         ]);
     }
 
+    public function reopen(): void
+    {
+        $this->update([
+            'status' => 'new',
+            'lost_reason' => null,
+            'lost_reason_id' => null,
+            'lost_notes' => null,
+            'lost_at' => null,
+            'lost_by' => null,
+            'do_not_contact' => false,
+        ]);
+
+        $this->interactions()->create([
+            'user_id' => auth()->id(),
+            'type' => 'other',
+            'notes' => 'Lead reopened',
+        ]);
+    }
+
+    public function getLostReasonLabelAttribute(): ?string
+    {
+        return self::LOST_REASONS[$this->lost_reason_id] ?? null;
+    }
+
     public function shouldStopCalling(): bool
     {
         return $this->call_attempts >= 3 || $this->do_not_contact;
+    }
+
+    public function archive(): void
+    {
+        $this->update([
+            'archived' => true,
+            'archived_at' => now(),
+        ]);
+
+        $this->interactions()->create([
+            'user_id' => auth()->id(),
+            'type' => 'other',
+            'notes' => 'Lead archived',
+        ]);
+    }
+
+    public function unarchive(): void
+    {
+        $this->update([
+            'archived' => false,
+            'archived_at' => null,
+        ]);
+
+        $this->interactions()->create([
+            'user_id' => auth()->id(),
+            'type' => 'other',
+            'notes' => 'Lead restored from archive',
+        ]);
+    }
+
+    public function getFollowUpDisplayAttribute(): ?string
+    {
+        if (!$this->follow_up_date) {
+            return null;
+        }
+
+        if ($this->status === 'converted' || $this->status === 'lost') {
+            return $this->follow_up_date->format('M d, Y');
+        }
+
+        if ($this->follow_up_date->isToday()) {
+            return 'Today';
+        }
+
+        $diff = now()->startOfDay()->diffInDays($this->follow_up_date->startOfDay(), false);
+
+        if ($diff < 0) {
+            return abs($diff) . 'd overdue';
+        }
+
+        return 'in ' . $diff . 'd';
+    }
+
+    public function getFollowUpIsOverdueAttribute(): bool
+    {
+        if (!$this->follow_up_date) {
+            return false;
+        }
+
+        if ($this->status === 'converted' || $this->status === 'lost') {
+            return false;
+        }
+
+        return $this->follow_up_date->isPast() && !$this->follow_up_date->isToday();
     }
 }
