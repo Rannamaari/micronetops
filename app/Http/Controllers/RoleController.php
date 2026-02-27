@@ -23,13 +23,13 @@ class RoleController extends Controller
             [
                 'name' => 'Admin',
                 'slug' => 'admin',
-                'description' => 'Full access, can delete anything',
+                'description' => 'Full access — approve petty cash, delete, EOD reopen, reports',
                 'users_count' => \App\Models\User::where('role', 'admin')->count(),
             ],
             [
                 'name' => 'Manager',
                 'slug' => 'manager',
-                'description' => 'Can do everything except delete',
+                'description' => 'Operations, EOD, reports, edit customers. No delete, no petty cash approve',
                 'users_count' => \App\Models\User::where('role', 'manager')->count(),
             ],
             [
@@ -47,8 +47,20 @@ class RoleController extends Controller
             [
                 'name' => 'Cashier',
                 'slug' => 'cashier',
-                'description' => 'Dashboard and reports only',
+                'description' => 'Dashboard and petty cash history only',
                 'users_count' => \App\Models\User::where('role', 'cashier')->count(),
+            ],
+            [
+                'name' => 'HR',
+                'slug' => 'hr',
+                'description' => 'Employee management, payroll, attendance, loans',
+                'users_count' => \App\Models\User::where('role', 'hr')->count(),
+            ],
+            [
+                'name' => 'Customer',
+                'slug' => 'customer',
+                'description' => 'Rattehin access only',
+                'users_count' => \App\Models\User::where('role', 'customer')->count(),
             ],
         ]);
 
