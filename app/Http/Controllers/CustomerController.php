@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
 {
@@ -76,6 +77,10 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
+        if (!Auth::user()->canEditCustomers()) {
+            abort(403);
+        }
+
         return view('customers.edit', compact('customer'));
     }
 
@@ -84,6 +89,9 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $customer)
     {
+        if (!Auth::user()->canEditCustomers()) {
+            abort(403);
+        }
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone,' . $customer->id],

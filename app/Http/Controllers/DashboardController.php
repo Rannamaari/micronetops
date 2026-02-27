@@ -40,23 +40,23 @@ class DashboardController extends Controller
             ->where('job_date', '>=', $startOfMonth)
             ->count();
 
-        // Sales today (using job's job_date)
+        // Sales today (from job payments — daily sales are now included as jobs)
         $salesToday = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
             ->whereBetween('jobs.job_date', [$startOfDay, $endOfDay])
             ->sum('payments.amount');
 
-        // Sales this month (using job's job_date)
+        // Sales this month
         $salesThisMonth = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
             ->where('jobs.job_date', '>=', $startOfMonth)
             ->sum('payments.amount');
 
-        // Sales this month - AC (using job's job_date)
+        // Sales this month - AC
         $salesThisMonthAC = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
             ->where('jobs.job_date', '>=', $startOfMonth)
             ->where('jobs.job_type', 'ac')
             ->sum('payments.amount');
 
-        // Sales this month - Moto (using job's job_date)
+        // Sales this month - Moto
         $salesThisMonthMoto = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
             ->where('jobs.job_date', '>=', $startOfMonth)
             ->where('jobs.job_type', 'moto')
@@ -122,7 +122,6 @@ class DashboardController extends Controller
             $startOfDay = $date->copy()->startOfDay();
             $endOfDay = $date->copy()->endOfDay();
 
-            // Use job's job_date instead of payment's created_at
             $dailySales = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
                 ->whereBetween('jobs.job_date', [$startOfDay, $endOfDay])
                 ->sum('payments.amount');
@@ -148,13 +147,11 @@ class DashboardController extends Controller
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
-            // AC Sales (using job's job_date)
             $acMonthlySales = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
                 ->whereBetween('jobs.job_date', [$startOfMonth, $endOfMonth])
                 ->where('jobs.job_type', 'ac')
                 ->sum('payments.amount');
 
-            // Moto Sales (using job's job_date)
             $motoMonthlySales = Payment::join('jobs', 'payments.job_id', '=', 'jobs.id')
                 ->whereBetween('jobs.job_date', [$startOfMonth, $endOfMonth])
                 ->where('jobs.job_type', 'moto')
@@ -176,7 +173,7 @@ class DashboardController extends Controller
     {
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
-        // Best selling items for AC jobs (last 30 days using job_date)
+        // Best selling items for AC jobs (last 30 days)
         $acItems = JobItem::select('inventory_item_id', DB::raw('SUM(job_items.quantity) as total_quantity'))
             ->join('jobs', 'job_items.job_id', '=', 'jobs.id')
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
@@ -189,7 +186,7 @@ class DashboardController extends Controller
             ->with('inventoryItem')
             ->get();
 
-        // Best selling services for AC jobs (last 30 days using job_date)
+        // Best selling services for AC jobs
         $acServices = JobItem::select('inventory_item_id', DB::raw('SUM(job_items.quantity) as total_quantity'))
             ->join('jobs', 'job_items.job_id', '=', 'jobs.id')
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
@@ -202,7 +199,7 @@ class DashboardController extends Controller
             ->with('inventoryItem')
             ->get();
 
-        // Best selling items for Moto jobs (last 30 days using job_date)
+        // Best selling items for Moto jobs
         $motoItems = JobItem::select('inventory_item_id', DB::raw('SUM(job_items.quantity) as total_quantity'))
             ->join('jobs', 'job_items.job_id', '=', 'jobs.id')
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')
@@ -215,7 +212,7 @@ class DashboardController extends Controller
             ->with('inventoryItem')
             ->get();
 
-        // Best selling services for Moto jobs (last 30 days using job_date)
+        // Best selling services for Moto jobs
         $motoServices = JobItem::select('inventory_item_id', DB::raw('SUM(job_items.quantity) as total_quantity'))
             ->join('jobs', 'job_items.job_id', '=', 'jobs.id')
             ->join('inventory_items', 'job_items.inventory_item_id', '=', 'inventory_items.id')

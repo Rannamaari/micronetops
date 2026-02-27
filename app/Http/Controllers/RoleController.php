@@ -33,10 +33,16 @@ class RoleController extends Controller
                 'users_count' => \App\Models\User::where('role', 'manager')->count(),
             ],
             [
-                'name' => 'Mechanic',
-                'slug' => 'mechanic',
-                'description' => 'Can manage customers, jobs, and expenses',
-                'users_count' => \App\Models\User::where('role', 'mechanic')->count(),
+                'name' => 'Moto Mechanic',
+                'slug' => 'moto_mechanic',
+                'description' => 'Micro Moto sales & jobs only, add customers, create petty cash',
+                'users_count' => \App\Models\User::where('role', 'moto_mechanic')->count(),
+            ],
+            [
+                'name' => 'AC Mechanic',
+                'slug' => 'ac_mechanic',
+                'description' => 'Micro Cool sales & jobs only, add customers, create petty cash',
+                'users_count' => \App\Models\User::where('role', 'ac_mechanic')->count(),
             ],
             [
                 'name' => 'Cashier',

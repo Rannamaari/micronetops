@@ -35,16 +35,15 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('approve-petty-cash', function ($user) {
-            return $user->hasAnyRole(['admin', 'manager']);
+            return $user->isAdmin();
         });
 
         Gate::define('view-reports', function ($user) {
-            // All users can view reports
-            return true;
+            return $user->canViewReports();
         });
 
         Gate::define('manage-jobs', function ($user) {
-            return $user->hasAnyRole(['admin', 'manager', 'mechanic']);
+            return $user->hasAnyRole(['admin', 'manager', 'moto_mechanic', 'ac_mechanic']);
         });
 
         Gate::define('manage-payments', function ($user) {

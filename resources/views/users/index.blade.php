@@ -35,7 +35,8 @@
                                 'customer' => 'Customers',
                                 'admin' => 'Admins',
                                 'manager' => 'Managers',
-                                'mechanic' => 'Mechanics',
+                                'moto_mechanic' => 'Moto Mechanics',
+                                'ac_mechanic' => 'AC Mechanics',
                                 'cashier' => 'Cashiers',
                                 'hr' => 'HR',
                             ];

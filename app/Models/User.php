@@ -101,7 +101,8 @@ class User extends Authenticatable
      */
     public const ROLE_ADMIN = 'admin';
     public const ROLE_MANAGER = 'manager';
-    public const ROLE_MECHANIC = 'mechanic';
+    public const ROLE_MOTO_MECHANIC = 'moto_mechanic';
+    public const ROLE_AC_MECHANIC = 'ac_mechanic';
     public const ROLE_CASHIER = 'cashier';
     public const ROLE_HR = 'hr';
     public const ROLE_CUSTOMER = 'customer'; // Regular users (Rattehin users)
@@ -139,11 +140,42 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is mechanic
+     * Check if user is moto mechanic
      */
-    public function isMechanic(): bool
+    public function isMotoMechanic(): bool
     {
-        return $this->role === self::ROLE_MECHANIC;
+        return $this->role === self::ROLE_MOTO_MECHANIC;
+    }
+
+    /**
+     * Check if user is AC mechanic
+     */
+    public function isAcMechanic(): bool
+    {
+        return $this->role === self::ROLE_AC_MECHANIC;
+    }
+
+    /**
+     * Check if user is any type of mechanic
+     */
+    public function isAnyMechanic(): bool
+    {
+        return $this->isMotoMechanic() || $this->isAcMechanic();
+    }
+
+    /**
+     * Get the business unit this user is restricted to.
+     * Returns 'moto', 'cool', or null (null = both/all units).
+     */
+    public function allowedBusinessUnit(): ?string
+    {
+        if ($this->isMotoMechanic()) {
+            return 'moto';
+        }
+        if ($this->isAcMechanic()) {
+            return 'cool';
+        }
+        return null;
     }
 
     /**
@@ -179,11 +211,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user can approve expenses (admin or manager)
+     * Check if user can approve expenses (admin only)
      */
     public function canApproveExpenses(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+        return $this->isAdmin();
     }
 
     /**
@@ -199,7 +231,7 @@ class User extends Authenticatable
      */
     public function canCreateJobs(): bool
     {
-        return !$this->isCashier();
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
     }
 
     /**
@@ -207,7 +239,23 @@ class User extends Authenticatable
      */
     public function canViewCustomers(): bool
     {
-        return !$this->isCashier();
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
+    }
+
+    /**
+     * Check if user can edit customers (admin, manager)
+     */
+    public function canEditCustomers(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Check if user can delete customers (admin only)
+     */
+    public function canDeleteCustomers(): bool
+    {
+        return $this->isAdmin();
     }
 
     /**
@@ -215,15 +263,31 @@ class User extends Authenticatable
      */
     public function canCreateExpenses(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MECHANIC]);
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
     }
 
     /**
-     * Check if user can view reports
+     * Check if user can view reports (admin, manager)
      */
     public function canViewReports(): bool
     {
-        return true; // All users can view reports
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Check if user can run End of Day (admin, manager)
+     */
+    public function canRunEod(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Check if user can delete draft sales (admin, manager)
+     */
+    public function canDeleteSales(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
     }
 
     /**
@@ -243,7 +307,8 @@ class User extends Authenticatable
         return $this->hasAnyRole([
             self::ROLE_ADMIN,
             self::ROLE_MANAGER,
-            self::ROLE_MECHANIC,
+            self::ROLE_MOTO_MECHANIC,
+            self::ROLE_AC_MECHANIC,
             self::ROLE_CASHIER
         ]);
     }

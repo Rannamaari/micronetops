@@ -5,6 +5,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DailySalesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EodController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HRController;
 use App\Http\Controllers\InventoryController;
@@ -74,8 +75,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Reports - Operations users only
-    Route::middleware('operations')->group(function () {
+    // Reports - Admin and Manager only
+    Route::middleware('role:admin,manager')->group(function () {
         Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
         Route::get('reports/road-worthiness', [RoadWorthinessReportController::class, 'index'])
             ->name('reports.road-worthiness');
@@ -86,8 +87,8 @@ Route::middleware('auth')->group(function () {
         Route::get('reports/inventory-overview', [ReportsController::class, 'inventoryOverview'])->name('reports.inventory-overview');
     });
 
-    // Jobs - Admin, Manager, Mechanic (not Cashier)
-    Route::middleware('role:admin,manager,mechanic')->group(function () {
+    // Jobs - Admin, Manager, Moto Mechanic, AC Mechanic
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
         // Job list & CRUD
         Route::get('jobs', [JobController::class, 'index'])->name('jobs.index');
         Route::get('jobs/create', [JobController::class, 'create'])->name('jobs.create');
@@ -118,9 +119,21 @@ Route::middleware('auth')->group(function () {
         Route::get('sales/daily/{dailySalesLog}', [DailySalesController::class, 'show'])->name('sales.daily.show');
         Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
         Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
+        Route::post('sales/daily/{dailySalesLog}/set-customer', [DailySalesController::class, 'setCustomer'])->name('sales.daily.set-customer');
+        Route::post('sales/daily/{dailySalesLog}/create-customer', [DailySalesController::class, 'createAndSetCustomer'])->name('sales.daily.create-customer');
         Route::post('sales/daily/{dailySalesLog}/submit', [DailySalesController::class, 'submit'])->name('sales.daily.submit');
+        Route::get('sales/daily/{dailySalesLog}/quotation', [DailySalesController::class, 'quotation'])->name('sales.daily.quotation');
         Route::post('sales/daily/{dailySalesLog}/reopen', [DailySalesController::class, 'reopen'])->name('sales.daily.reopen');
+        Route::delete('sales/daily/{dailySalesLog}', [DailySalesController::class, 'destroy'])->name('sales.daily.destroy');
         Route::get('sales/reports', [DailySalesController::class, 'reports'])->name('sales.reports');
+
+        // End of Day
+        Route::get('sales/eod', [EodController::class, 'index'])->name('sales.eod.index');
+        Route::post('sales/eod', [EodController::class, 'create'])->name('sales.eod.create');
+        Route::get('sales/eod/{eod}', [EodController::class, 'show'])->name('sales.eod.show');
+        Route::post('sales/eod/{eod}/close', [EodController::class, 'close'])->name('sales.eod.close');
+        Route::post('sales/eod/{eod}/deposit', [EodController::class, 'deposit'])->name('sales.eod.deposit');
+        Route::post('sales/eod/{eod}/reopen', [EodController::class, 'reopen'])->name('sales.eod.reopen');
 
         // Invoice & Quotation
         Route::get('jobs/{job}/invoice', [JobController::class, 'invoice'])
@@ -152,8 +165,8 @@ Route::middleware('auth')->group(function () {
             ->name('jobs.payments.destroy');
     });
 
-    // Customers - Admin, Manager, Mechanic (not Cashier)
-    Route::middleware('role:admin,manager,mechanic')->group(function () {
+    // Customers - Admin, Manager, Moto Mechanic, AC Mechanic
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
         Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
         Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
@@ -173,8 +186,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
     });
 
-    // Leads - Admin, Manager, Mechanic (not Cashier)
-    Route::middleware('role:admin,manager,mechanic')->group(function () {
+    // Leads - Admin, Manager, Moto Mechanic, AC Mechanic
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
         Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
         Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
@@ -216,15 +229,15 @@ Route::middleware('auth')->group(function () {
         Route::get('petty-cash/history', [PettyCashController::class, 'history'])->name('petty-cash.history');
     });
 
-    // Petty Cash - Admin, Manager, Mechanic can view and create
-    Route::middleware('role:admin,manager,mechanic')->group(function () {
+    // Petty Cash - Admin, Manager, Moto Mechanic, AC Mechanic can view and create
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
         Route::get('petty-cash', [PettyCashController::class, 'index'])->name('petty-cash.index');
         Route::get('petty-cash/create', [PettyCashController::class, 'create'])->name('petty-cash.create');
         Route::post('petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
     });
 
-    // Petty Cash Approval - Admin, Manager only
-    Route::middleware('role:admin,manager')->group(function () {
+    // Petty Cash Approval - Admin only
+    Route::middleware('role:admin')->group(function () {
         Route::post('petty-cash/{pettyCash}/approve', [PettyCashController::class, 'approve'])
             ->name('petty-cash.approve');
         Route::post('petty-cash/{pettyCash}/reject', [PettyCashController::class, 'reject'])

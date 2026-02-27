@@ -7,7 +7,7 @@
             <a href="{{ route('sales.daily.index') }}"
                class="inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                Back to Sales Log
+                Back to Sales
             </a>
         </div>
     </x-slot>
@@ -110,8 +110,7 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cash</th>
-                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transfer</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                                 </tr>
                             </thead>
@@ -120,8 +119,16 @@
                                     <tr>
                                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $summary['date']->format('D, d M') }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $summary['business_unit'] === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</td>
-                                        <td class="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400">{{ number_format($summary['cash'], 2) }}</td>
-                                        <td class="px-4 py-3 text-sm text-right text-blue-600 dark:text-blue-400">{{ number_format($summary['transfer'], 2) }}</td>
+                                        <td class="px-4 py-3 text-center">
+                                            @if($summary['payment_method'])
+                                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
+                                                    {{ $summary['payment_method'] === 'cash' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' }}">
+                                                    {{ ucfirst($summary['payment_method']) }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 dark:text-gray-500">&mdash;</span>
+                                            @endif
+                                        </td>
                                         <td class="px-4 py-3 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{{ number_format($summary['grand'], 2) }}</td>
                                     </tr>
                                 @endforeach

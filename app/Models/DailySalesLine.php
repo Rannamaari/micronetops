@@ -19,12 +19,16 @@ class DailySalesLine extends Model
         'line_total',
         'is_stock_item',
         'note',
+        'is_gst_applicable',
+        'gst_amount',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
         'is_stock_item' => 'boolean',
+        'is_gst_applicable' => 'boolean',
+        'gst_amount' => 'decimal:2',
     ];
 
     public function log()

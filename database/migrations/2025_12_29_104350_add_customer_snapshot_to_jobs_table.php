@@ -24,15 +24,26 @@ return new class extends Migration
         });
 
         // Populate existing records with current customer data
-        DB::statement("
-            UPDATE jobs j
-            SET customer_name = c.name,
-                customer_phone = c.phone,
-                customer_email = c.email
-            FROM customers c
-            WHERE j.customer_id = c.id
-            AND j.customer_name IS NULL
-        ");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                UPDATE jobs j
+                SET customer_name = c.name,
+                    customer_phone = c.phone,
+                    customer_email = c.email
+                FROM customers c
+                WHERE j.customer_id = c.id
+                AND j.customer_name IS NULL
+            ");
+        } else {
+            // SQLite-compatible approach using subqueries
+            DB::statement("
+                UPDATE jobs
+                SET customer_name = (SELECT name FROM customers WHERE customers.id = jobs.customer_id),
+                    customer_phone = (SELECT phone FROM customers WHERE customers.id = jobs.customer_id),
+                    customer_email = (SELECT email FROM customers WHERE customers.id = jobs.customer_id)
+                WHERE customer_name IS NULL AND customer_id IS NOT NULL
+            ");
+        }
     }
 
     /**

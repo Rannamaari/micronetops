@@ -8,6 +8,15 @@
                 </a>
             </div>
 
+            @php
+                $isSalesSection = request()->routeIs('customers.*')
+                    || request()->routeIs('leads.*')
+                    || request()->routeIs('jobs.*')
+                    || request()->routeIs('sales.*')
+                    || request()->routeIs('inventory.*')
+                    || request()->routeIs('inventory-categories.*');
+            @endphp
+
             <!-- Desktop & Tablet Navigation -->
             <div class="hidden md:flex items-center gap-1">
                 @if(Auth::user()->canAccessHR())
@@ -21,29 +30,17 @@
                         Dashboard
                     </a>
 
-                    @if(Auth::user()->canViewCustomers())
-                        <a href="{{ route('customers.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Customers
-                        </a>
-
-                        <a href="{{ route('leads.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Leads
-                        </a>
-                    @endif
-
                     @if(Auth::user()->canCreateJobs())
-                        <a href="{{ route('jobs.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Jobs
-                        </a>
-
-                        <a href="{{ route('sales.daily.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Sales Log
+                        <a href="{{ route('sales.daily.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $isSalesSection ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Sales
                         </a>
                     @endif
 
-                    <a href="{{ route('reports.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                        Reports
-                    </a>
+                    @if(Auth::user()->canViewReports())
+                        <a href="{{ route('reports.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Reports
+                        </a>
+                    @endif
 
                     @if(Auth::user()->canCreateExpenses())
                         <a href="{{ route('petty-cash.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -52,12 +49,6 @@
                     @elseif(Auth::user()->isCashier())
                         <a href="{{ route('petty-cash.history') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.history') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                             Expenses
-                        </a>
-                    @endif
-
-                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                        <a href="{{ route('inventory.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
-                            Inventory
                         </a>
                     @endif
 
@@ -145,51 +136,74 @@
             @if(Auth::user()->canAccessOperations())
                 <a href="{{ route('dashboard') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Dashboard</a>
 
-                @if(Auth::user()->canViewCustomers())
-                    <a href="{{ route('customers.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Customers</a>
-                    <a href="{{ route('leads.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Leads</a>
-                @endif
-
                 @if(Auth::user()->canCreateJobs())
-                    <a href="{{ route('jobs.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Jobs</a>
-                    <a href="{{ route('sales.daily.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('sales.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Sales Log</a>
+                    <!-- Sales Accordion -->
+                    <div x-data="{ salesOpen: {{ $isSalesSection ? 'true' : 'false' }} }">
+                        <button @click="salesOpen = !salesOpen" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ $isSalesSection ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">
+                            <span>Sales</span>
+                            <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': salesOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="salesOpen"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-1"
+                             class="mt-2 ml-3 space-y-1 pl-3 border-l-2 border-gray-200">
+                            <a href="{{ route('customers.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('customers.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Customers</a>
+                            <a href="{{ route('leads.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Leads</a>
+                            <a href="{{ route('jobs.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Jobs</a>
+                            @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                                <a href="{{ route('inventory.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory</a>
+                            @endif
+                            <a href="{{ route('sales.daily.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.daily.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Daily Sales</a>
+                            @if(Auth::user()->canViewReports())
+                                <a href="{{ route('sales.reports') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.reports') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Sales Reports</a>
+                            @endif
+                            @if(Auth::user()->canRunEod())
+                                <a href="{{ route('sales.eod.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.eod.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">End of Day</a>
+                            @endif
+                        </div>
+                    </div>
                 @endif
 
-                <!-- Reports Accordion -->
-                <div x-data="{ reportsOpen: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
-                    <button @click="reportsOpen = !reportsOpen" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">
-                        <span>Reports</span>
-                        <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': reportsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div x-show="reportsOpen"
-                         x-cloak
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 -translate-y-1"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-150"
-                         x-transition:leave-start="opacity-100 translate-y-0"
-                         x-transition:leave-end="opacity-0 -translate-y-1"
-                         class="mt-2 ml-3 space-y-1 pl-3 border-l-2 border-gray-200">
-                        <a href="{{ route('reports.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.index') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Overview</a>
-                        <a href="{{ route('reports.road-worthiness') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.road-worthiness') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Road Worthiness</a>
-                        <a href="{{ route('reports.daily-sales') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.daily-sales') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Daily Sales</a>
-                        <a href="{{ route('reports.best-sellers') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.best-sellers') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Best Sellers</a>
-                        <a href="{{ route('reports.low-inventory') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.low-inventory') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Low Inventory</a>
-                        <a href="{{ route('reports.sales-trends') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.sales-trends') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Sales Trends</a>
-                        <a href="{{ route('reports.inventory-overview') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.inventory-overview') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory Overview</a>
+                @if(Auth::user()->canViewReports())
+                    <!-- Reports Accordion -->
+                    <div x-data="{ reportsOpen: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }">
+                        <button @click="reportsOpen = !reportsOpen" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('reports.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">
+                            <span>Reports</span>
+                            <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': reportsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="reportsOpen"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-1"
+                             class="mt-2 ml-3 space-y-1 pl-3 border-l-2 border-gray-200">
+                            <a href="{{ route('reports.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.index') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Overview</a>
+                            <a href="{{ route('reports.road-worthiness') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.road-worthiness') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Road Worthiness</a>
+                            <a href="{{ route('reports.daily-sales') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.daily-sales') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Daily Sales</a>
+                            <a href="{{ route('reports.best-sellers') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.best-sellers') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Best Sellers</a>
+                            <a href="{{ route('reports.low-inventory') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.low-inventory') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Low Inventory</a>
+                            <a href="{{ route('reports.sales-trends') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.sales-trends') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Sales Trends</a>
+                            <a href="{{ route('reports.inventory-overview') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.inventory-overview') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory Overview</a>
+                        </div>
                     </div>
-                </div>
+                @endif
 
                 @if(Auth::user()->canCreateExpenses())
                     <a href="{{ route('petty-cash.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Petty Cash</a>
                 @elseif(Auth::user()->isCashier())
                     <a href="{{ route('petty-cash.history') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.history') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Expenses</a>
-                @endif
-
-                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                    <a href="{{ route('inventory.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Inventory</a>
                 @endif
 
                 @if(Auth::user()->canManageUsers())
@@ -204,6 +218,43 @@
             <a href="{{ route('rattehin.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('rattehin.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Rattehin</a>
         </div>
     </div>
+
+    <!-- Sales Sub Navigation (Desktop/Tablet Only) -->
+    @if($isSalesSection)
+        <div class="hidden md:block border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex gap-6 lg:gap-8 overflow-x-auto py-3 scrollbar-hide">
+                    <a href="{{ route('customers.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('customers.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Customers
+                    </a>
+                    <a href="{{ route('leads.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('leads.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Leads
+                    </a>
+                    <a href="{{ route('jobs.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('jobs.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Jobs
+                    </a>
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('inventory.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Inventory
+                        </a>
+                    @endif
+                    <a href="{{ route('sales.daily.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('sales.daily.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Daily Sales
+                    </a>
+                    @if(Auth::user()->canViewReports())
+                        <a href="{{ route('sales.reports') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('sales.reports') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Sales Reports
+                        </a>
+                    @endif
+                    @if(Auth::user()->canRunEod())
+                        <a href="{{ route('sales.eod.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('sales.eod.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            End of Day
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Reports Sub Navigation (Desktop/Tablet Only) -->
     @if(request()->routeIs('reports.*'))

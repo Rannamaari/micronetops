@@ -2,43 +2,62 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class RoleTestUsersSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Create one test user per role for access testing.
+     * Password for all: "password"
      */
     public function run(): void
     {
-        // Create test users for each role
-        \App\Models\User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@test.com',
-            'password' => bcrypt('password'),
-            'role' => 'admin',
-        ]);
+        $password = Hash::make('password');
 
-        \App\Models\User::create([
-            'name' => 'Manager User',
-            'email' => 'manager@test.com',
-            'password' => bcrypt('password'),
-            'role' => 'manager',
-        ]);
+        $testUsers = [
+            [
+                'name' => 'Test Admin',
+                'email' => 'admin@test.com',
+                'role' => 'admin',
+            ],
+            [
+                'name' => 'Test Manager',
+                'email' => 'manager@test.com',
+                'role' => 'manager',
+            ],
+            [
+                'name' => 'Test Moto Mechanic',
+                'email' => 'moto@test.com',
+                'role' => 'moto_mechanic',
+            ],
+            [
+                'name' => 'Test AC Mechanic',
+                'email' => 'ac@test.com',
+                'role' => 'ac_mechanic',
+            ],
+            [
+                'name' => 'Test Cashier',
+                'email' => 'cashier@test.com',
+                'role' => 'cashier',
+            ],
+            [
+                'name' => 'Test HR',
+                'email' => 'hr@test.com',
+                'role' => 'hr',
+            ],
+        ];
 
-        \App\Models\User::create([
-            'name' => 'Mechanic User',
-            'email' => 'mechanic@test.com',
-            'password' => bcrypt('password'),
-            'role' => 'mechanic',
-        ]);
-
-        \App\Models\User::create([
-            'name' => 'Cashier User',
-            'email' => 'cashier@test.com',
-            'password' => bcrypt('password'),
-            'role' => 'cashier',
-        ]);
+        foreach ($testUsers as $userData) {
+            User::updateOrCreate(
+                ['email' => $userData['email']],
+                [
+                    'name' => $userData['name'],
+                    'password' => $password,
+                    'role' => $userData['role'],
+                ]
+            );
+        }
     }
 }

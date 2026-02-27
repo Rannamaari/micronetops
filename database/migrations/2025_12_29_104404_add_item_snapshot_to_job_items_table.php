@@ -23,18 +23,31 @@ return new class extends Migration
         });
 
         // Populate existing records with current item data
-        DB::statement("
-            UPDATE job_items ji
-            SET item_name = COALESCE(ii.name, 'Item'),
-                item_description = CONCAT(
-                    COALESCE(ii.brand, ''),
-                    CASE WHEN ii.brand IS NOT NULL THEN ' - ' ELSE '' END,
-                    COALESCE(ii.sku, '')
-                )
-            FROM inventory_items ii
-            WHERE ji.inventory_item_id = ii.id
-            AND ji.item_name IS NULL
-        ");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("
+                UPDATE job_items ji
+                SET item_name = COALESCE(ii.name, 'Item'),
+                    item_description = CONCAT(
+                        COALESCE(ii.brand, ''),
+                        CASE WHEN ii.brand IS NOT NULL THEN ' - ' ELSE '' END,
+                        COALESCE(ii.sku, '')
+                    )
+                FROM inventory_items ii
+                WHERE ji.inventory_item_id = ii.id
+                AND ji.item_name IS NULL
+            ");
+        } else {
+            // SQLite-compatible approach
+            DB::statement("
+                UPDATE job_items
+                SET item_name = COALESCE((SELECT name FROM inventory_items WHERE inventory_items.id = job_items.inventory_item_id), 'Item'),
+                    item_description = (
+                        SELECT COALESCE(brand, '') || CASE WHEN brand IS NOT NULL THEN ' - ' ELSE '' END || COALESCE(sku, '')
+                        FROM inventory_items WHERE inventory_items.id = job_items.inventory_item_id
+                    )
+                WHERE item_name IS NULL AND inventory_item_id IS NOT NULL
+            ");
+        }
     }
 
     /**

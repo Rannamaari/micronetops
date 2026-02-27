@@ -110,7 +110,7 @@ class JobController extends Controller
         ];
 
         // Get technicians for filter dropdown
-        $technicians = User::whereIn('role', [User::ROLE_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])->get();
+        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])->get();
 
         return view('jobs.index', compact('jobs', 'view', 'type', 'priority', 'search', 'when', 'statusCounts', 'dateCounts', 'technicians'));
     }
@@ -144,7 +144,7 @@ class JobController extends Controller
         }
 
         // Get technicians for assignment
-        $technicians = User::whereIn('role', [User::ROLE_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
             ->orderBy('name')
             ->get();
 
@@ -339,7 +339,7 @@ class JobController extends Controller
         $partItems = $inventoryItems->where('is_service', false);
 
         // Get technicians for reassignment
-        $technicians = User::whereIn('role', [User::ROLE_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
             ->orderBy('name')
             ->get();
 
@@ -619,7 +619,7 @@ class JobController extends Controller
      */
     public function calendar(Request $request)
     {
-        $technicians = User::whereIn('role', [User::ROLE_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
             ->orderBy('name')
             ->get();
 

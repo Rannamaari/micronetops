@@ -70,9 +70,10 @@
                                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             <option value="">Select a role</option>
                             <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin - Full access, can delete anything</option>
-                            <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager - Can do everything except delete</option>
-                            <option value="mechanic" {{ old('role') === 'mechanic' ? 'selected' : '' }}>Mechanic - Can manage customers, jobs, and expenses</option>
-                            <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier - Dashboard and reports only</option>
+                            <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager - Operations, EOD, reports, no delete</option>
+                            <option value="moto_mechanic" {{ old('role') === 'moto_mechanic' ? 'selected' : '' }}>Moto Mechanic - Micro Moto sales & jobs only</option>
+                            <option value="ac_mechanic" {{ old('role') === 'ac_mechanic' ? 'selected' : '' }}>AC Mechanic - Micro Cool sales & jobs only</option>
+                            <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier - Dashboard and petty cash history only</option>
                             <option value="hr" {{ old('role') === 'hr' ? 'selected' : '' }}>HR - Employees, payroll, and loans management only</option>
                         </select>
                         @error('role')

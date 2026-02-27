@@ -71,7 +71,7 @@ class LeadController extends Controller
             'archived' => Lead::archived()->count(),
         ];
 
-        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+        $users = User::whereIn('role', ['admin', 'manager', 'moto_mechanic', 'ac_mechanic'])
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -83,7 +83,7 @@ class LeadController extends Controller
      */
     public function create()
     {
-        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+        $users = User::whereIn('role', ['admin', 'manager', 'moto_mechanic', 'ac_mechanic'])
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -146,7 +146,7 @@ class LeadController extends Controller
      */
     public function edit(Lead $lead)
     {
-        $users = User::whereIn('role', ['admin', 'manager', 'mechanic'])
+        $users = User::whereIn('role', ['admin', 'manager', 'moto_mechanic', 'ac_mechanic'])
             ->orderBy('name')
             ->get(['id', 'name']);
 
