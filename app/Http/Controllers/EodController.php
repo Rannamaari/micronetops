@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
+use App\Models\AccountTransaction;
+use App\Models\AccountTransfer;
 use App\Models\DailySalesLog;
 use App\Models\EodReconciliation;
 use Illuminate\Http\Request;
@@ -83,7 +86,7 @@ class EodController extends Controller
 
     public function show(EodReconciliation $eod)
     {
-        $eod->load('closedByUser', 'depositedByUser');
+        $eod->load('closedByUser', 'depositedByUser', 'depositedAccount');
 
         $submittedSales = DailySalesLog::forDate($eod->date)
             ->forUnit($eod->business_unit)
@@ -96,7 +99,12 @@ class EodController extends Controller
         $transferTotal = $submittedSales->where('payment_method', 'transfer')->sum(fn($s) => $s->totals['grand']);
         $grandTotal = $cashTotal + $transferTotal;
 
-        return view('sales.eod-show', compact('eod', 'salesCount', 'cashTotal', 'transferTotal', 'grandTotal'));
+        $accounts = Account::where('is_active', true)
+            ->where('is_system', false)
+            ->orderBy('name')
+            ->get();
+
+        return view('sales.eod-show', compact('eod', 'salesCount', 'cashTotal', 'transferTotal', 'grandTotal', 'accounts'));
     }
 
     public function close(Request $request, EodReconciliation $eod)
@@ -132,10 +140,42 @@ class EodController extends Controller
 
         $eod->close($denominations, $validated['notes'] ?? null);
 
+        // Record cash on hand into a system cash account per unit (so deposit can transfer out)
+        if ($eod->counted_cash > 0) {
+            $cashAccountName = $eod->business_unit === 'moto' ? 'Cash - Micro Moto' : 'Cash - Micro Cool';
+            $cashAccount = Account::firstOrCreate(
+                ['name' => $cashAccountName],
+                ['type' => Account::TYPE_BUSINESS, 'is_active' => true, 'is_system' => true, 'balance' => 0]
+            );
+
+            $existingTx = AccountTransaction::where('account_id', $cashAccount->id)
+                ->where('type', 'eod_cash_in')
+                ->where('related_type', EodReconciliation::class)
+                ->where('related_id', $eod->id)
+                ->first();
+
+            if (!$existingTx) {
+                $amount = (float) $eod->counted_cash;
+                $cashAccount->balance = (float) $cashAccount->balance + $amount;
+                $cashAccount->save();
+
+                AccountTransaction::create([
+                    'account_id' => $cashAccount->id,
+                    'type' => 'eod_cash_in',
+                    'amount' => $amount,
+                    'occurred_at' => $eod->date,
+                    'description' => 'EOD cash counted for ' . $eod->date->format('Y-m-d') . ' (' . $eod->business_unit . ')',
+                    'related_type' => EodReconciliation::class,
+                    'related_id' => $eod->id,
+                    'created_by' => Auth::id(),
+                ]);
+            }
+        }
+
         return redirect()->route('sales.eod.show', $eod)->with('success', 'End of Day closed successfully.');
     }
 
-    public function deposit(EodReconciliation $eod)
+    public function deposit(Request $request, EodReconciliation $eod)
     {
         if (!Auth::user()->hasAnyRole(['admin', 'manager'])) {
             abort(403);
@@ -145,7 +185,66 @@ class EodController extends Controller
             return back()->with('error', 'EOD must be closed before marking as deposited.');
         }
 
-        $eod->markDeposited();
+        $validated = $request->validate([
+            'account_id' => ['required', 'exists:accounts,id'],
+        ]);
+
+        $amount = (float) $eod->counted_cash;
+        if ($amount <= 0) {
+            return back()->with('error', 'No cash amount available to deposit.');
+        }
+
+        $depositAccount = Account::find($validated['account_id']);
+
+        $cashAccountName = $eod->business_unit === 'moto' ? 'Cash - Micro Moto' : 'Cash - Micro Cool';
+        $cashAccount = Account::firstOrCreate(
+            ['name' => $cashAccountName],
+            ['type' => Account::TYPE_BUSINESS, 'is_active' => true, 'is_system' => true, 'balance' => 0]
+        );
+
+        \DB::transaction(function () use ($eod, $amount, $cashAccount, $depositAccount) {
+            $transfer = AccountTransfer::create([
+                'from_account_id' => $cashAccount->id,
+                'to_account_id' => $depositAccount->id,
+                'amount' => $amount,
+                'occurred_at' => $eod->date,
+                'notes' => 'EOD deposit for ' . $eod->date->format('Y-m-d') . ' (' . $eod->business_unit . ')',
+                'related_type' => EodReconciliation::class,
+                'related_id' => $eod->id,
+                'created_by' => Auth::id(),
+            ]);
+
+            $cashAccount->balance = (float) $cashAccount->balance - $amount;
+            $cashAccount->save();
+
+            $depositAccount->balance = (float) $depositAccount->balance + $amount;
+            $depositAccount->save();
+
+            AccountTransaction::create([
+                'account_id' => $cashAccount->id,
+                'type' => 'transfer_out',
+                'amount' => -$amount,
+                'occurred_at' => $eod->date,
+                'description' => 'EOD deposit to ' . $depositAccount->name,
+                'related_type' => AccountTransfer::class,
+                'related_id' => $transfer->id,
+                'created_by' => Auth::id(),
+            ]);
+
+            AccountTransaction::create([
+                'account_id' => $depositAccount->id,
+                'type' => 'transfer_in',
+                'amount' => $amount,
+                'occurred_at' => $eod->date,
+                'description' => 'EOD deposit from ' . $cashAccount->name,
+                'related_type' => AccountTransfer::class,
+                'related_id' => $transfer->id,
+                'created_by' => Auth::id(),
+            ]);
+
+            $eod->deposited_account_id = $depositAccount->id;
+            $eod->markDeposited();
+        });
 
         return redirect()->route('sales.eod.show', $eod)->with('success', 'Cash marked as deposited.');
     }

@@ -99,6 +99,23 @@
                                 </div>
                             </div>
                         </a>
+
+                        {{-- Profit & Loss Report --}}
+                        @if(auth()->user()->hasAnyRole(['admin', 'manager']))
+                            <a href="{{ route('reports.pnl') }}" class="block p-6 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/30 transition">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-12 h-12 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 15l3-3 4 4 6-6"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Profit & Loss</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Accrual summary by month, quarter, or year</p>
+                                    </div>
+                                </div>
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

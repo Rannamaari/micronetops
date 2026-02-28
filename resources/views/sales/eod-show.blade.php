@@ -290,6 +290,14 @@
                             <form method="POST" action="{{ route('sales.eod.deposit', $eod) }}"
                                   onsubmit="return confirm('Mark this cash as deposited/handed over?')">
                                 @csrf
+                                <div class="flex items-center gap-2 mb-3">
+                                    <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Deposit To</label>
+                                    <select name="account_id" class="rounded border-gray-300 text-sm">
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <button type="submit"
                                         class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

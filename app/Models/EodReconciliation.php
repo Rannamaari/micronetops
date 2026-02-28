@@ -27,6 +27,7 @@ class EodReconciliation extends Model
         'closed_at',
         'deposited_by',
         'deposited_at',
+        'deposited_account_id',
     ];
 
     protected $casts = [
@@ -54,6 +55,11 @@ class EodReconciliation extends Model
     public function depositedByUser()
     {
         return $this->belongsTo(User::class, 'deposited_by');
+    }
+
+    public function depositedAccount()
+    {
+        return $this->belongsTo(Account::class, 'deposited_account_id');
     }
 
     // Scopes

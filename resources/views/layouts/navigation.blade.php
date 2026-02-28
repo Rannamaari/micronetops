@@ -42,6 +42,12 @@
                         </a>
                     @endif
 
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('expenses.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') || request()->routeIs('vendors.*') || request()->routeIs('accounts.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Expenses
+                        </a>
+                    @endif
+
                     @if(Auth::user()->canCreateExpenses())
                         <a href="{{ route('petty-cash.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('petty-cash.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                             Petty Cash
@@ -196,6 +202,36 @@
                             <a href="{{ route('reports.low-inventory') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.low-inventory') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Low Inventory</a>
                             <a href="{{ route('reports.sales-trends') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.sales-trends') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Sales Trends</a>
                             <a href="{{ route('reports.inventory-overview') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.inventory-overview') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory Overview</a>
+                            @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                                <a href="{{ route('reports.pnl') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('reports.pnl') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Profit & Loss</a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                    <!-- Expenses Accordion -->
+                    <div x-data="{ expensesOpen: {{ (request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') || request()->routeIs('vendors.*') || request()->routeIs('accounts.*') || request()->routeIs('recurring-expenses.*')) ? 'true' : 'false' }} }">
+                        <button @click="expensesOpen = !expensesOpen" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ (request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') || request()->routeIs('vendors.*') || request()->routeIs('accounts.*') || request()->routeIs('recurring-expenses.*')) ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">
+                            <span>Expenses</span>
+                            <svg class="w-5 h-5 transition-transform duration-200" :class="{ 'rotate-180': expensesOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div x-show="expensesOpen"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-1"
+                             class="mt-2 ml-3 space-y-1 pl-3 border-l-2 border-gray-200">
+                            <a href="{{ route('expenses.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('expenses.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Expenses</a>
+                            <a href="{{ route('expense-categories.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('expense-categories.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Expense Categories</a>
+                            <a href="{{ route('vendors.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('vendors.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Vendors</a>
+                            <a href="{{ route('accounts.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('accounts.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Accounts</a>
+                            <a href="{{ route('recurring-expenses.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('recurring-expenses.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Recurring Expenses</a>
                         </div>
                     </div>
                 @endif
@@ -256,6 +292,31 @@
         </div>
     @endif
 
+    <!-- Expenses Sub Navigation (Desktop/Tablet Only) -->
+    @if(request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') || request()->routeIs('vendors.*') || request()->routeIs('accounts.*') || request()->routeIs('recurring-expenses.*'))
+        <div class="hidden md:block border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex gap-6 lg:gap-8 overflow-x-auto py-3 scrollbar-hide">
+                    <a href="{{ route('expenses.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('expenses.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Expenses
+                    </a>
+                    <a href="{{ route('expense-categories.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('expense-categories.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Expense Categories
+                    </a>
+                    <a href="{{ route('vendors.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('vendors.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Vendors
+                    </a>
+                    <a href="{{ route('accounts.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('accounts.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Accounts
+                    </a>
+                    <a href="{{ route('recurring-expenses.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('recurring-expenses.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Recurring Expenses
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Reports Sub Navigation (Desktop/Tablet Only) -->
     @if(request()->routeIs('reports.*'))
         <div class="hidden md:block border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
@@ -282,6 +343,11 @@
                     <a href="{{ route('reports.inventory-overview') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.inventory-overview') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
                         Inventory Overview
                     </a>
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('reports.pnl') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.pnl') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Profit & Loss
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

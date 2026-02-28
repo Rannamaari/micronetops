@@ -43,6 +43,13 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        'sqlite_source' => [
+            'driver' => 'sqlite',
+            'database' => env('SQLITE_SOURCE_DATABASE', base_path('micromoto_ops')),
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

@@ -8,14 +8,22 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EodController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HRController;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountTransferController;
+use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryCategoryController;
+use App\Http\Controllers\InventoryPurchaseController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobItemController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\PnLController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PettyCashController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RecurringExpenseController;
+use App\Http\Controllers\VendorController;
 use App\Http\Controllers\RattehinController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RoadWorthinessReportController;
@@ -278,12 +286,61 @@ Route::middleware('auth')->group(function () {
             ->name('inventory.toggle-active');
         Route::post('inventory/{inventory}/adjust-stock', [InventoryController::class, 'adjustStock'])
             ->name('inventory.adjust-stock');
+        Route::get('inventory/{inventory}/purchase', [InventoryPurchaseController::class, 'create'])
+            ->name('inventory.purchases.create');
+        Route::post('inventory/{inventory}/purchase', [InventoryPurchaseController::class, 'store'])
+            ->name('inventory.purchases.store');
         Route::resource('inventory-categories', InventoryCategoryController::class);
     });
 
     // Inventory deletion - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    });
+
+    // Finance & P&L - Admin, Manager only
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
+        Route::get('accounts/create', [AccountController::class, 'create'])->name('accounts.create');
+        Route::post('accounts', [AccountController::class, 'store'])->name('accounts.store');
+        Route::get('accounts/{account}', [AccountController::class, 'show'])->name('accounts.show');
+        Route::get('accounts/{account}/edit', [AccountController::class, 'edit'])->name('accounts.edit');
+        Route::patch('accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
+        Route::post('accounts/{account}/adjust', [AccountController::class, 'adjust'])->name('accounts.adjust');
+
+        Route::get('account-transfers', [AccountTransferController::class, 'index'])->name('accounts.transfers.index');
+        Route::get('account-transfers/create', [AccountTransferController::class, 'create'])->name('accounts.transfers.create');
+        Route::post('account-transfers', [AccountTransferController::class, 'store'])->name('accounts.transfers.store');
+
+        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+        Route::get('expenses/create-cogs', [ExpenseController::class, 'createCogs'])->name('expenses.create-cogs');
+        Route::get('expenses/create-operating', [ExpenseController::class, 'createOperating'])->name('expenses.create-operating');
+        Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+        Route::get('expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
+        Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+
+        Route::get('recurring-expenses', [RecurringExpenseController::class, 'index'])->name('recurring-expenses.index');
+        Route::get('recurring-expenses/create', [RecurringExpenseController::class, 'create'])->name('recurring-expenses.create');
+        Route::post('recurring-expenses', [RecurringExpenseController::class, 'store'])->name('recurring-expenses.store');
+        Route::get('recurring-expenses/{recurringExpense}/edit', [RecurringExpenseController::class, 'edit'])->name('recurring-expenses.edit');
+        Route::patch('recurring-expenses/{recurringExpense}', [RecurringExpenseController::class, 'update'])->name('recurring-expenses.update');
+        Route::post('recurring-expenses/generate', [RecurringExpenseController::class, 'generate'])->name('recurring-expenses.generate');
+
+        Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
+        Route::get('vendors/create', [VendorController::class, 'create'])->name('vendors.create');
+        Route::post('vendors', [VendorController::class, 'store'])->name('vendors.store');
+        Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
+        Route::patch('vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
+
+        Route::get('expense-categories', [ExpenseCategoryController::class, 'index'])->name('expense-categories.index');
+        Route::get('expense-categories/create', [ExpenseCategoryController::class, 'create'])->name('expense-categories.create');
+        Route::post('expense-categories', [ExpenseCategoryController::class, 'store'])->name('expense-categories.store');
+        Route::get('expense-categories/{expenseCategory}/edit', [ExpenseCategoryController::class, 'edit'])->name('expense-categories.edit');
+        Route::patch('expense-categories/{expenseCategory}', [ExpenseCategoryController::class, 'update'])->name('expense-categories.update');
+
+        Route::get('reports/pnl', [PnLController::class, 'index'])->name('reports.pnl');
     });
 
     // Employee Management - Admin and HR

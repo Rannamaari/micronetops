@@ -41,10 +41,18 @@
                             </span>
                         </div>
                     </div>
-                    <a href="{{ route('inventory.edit', $inventoryItem) }}"
-                       class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
-                        Edit
-                    </a>
+                    <div class="flex gap-2">
+                        @if(!$inventoryItem->is_service)
+                            <a href="{{ route('inventory.purchases.create', $inventoryItem) }}"
+                               class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 focus:outline-none">
+                                Record Purchase
+                            </a>
+                        @endif
+                        <a href="{{ route('inventory.edit', $inventoryItem) }}"
+                           class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
+                            Edit
+                        </a>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -212,4 +220,3 @@
         </div>
     </div>
 </x-app-layout>
-

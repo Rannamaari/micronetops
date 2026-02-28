@@ -46,6 +46,11 @@ class InventoryItem extends Model
         return $this->hasMany(InventoryLog::class);
     }
 
+    public function purchases()
+    {
+        return $this->hasMany(InventoryPurchase::class);
+    }
+
     /**
      * Scope for active items
      */
