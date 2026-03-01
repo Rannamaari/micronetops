@@ -33,20 +33,25 @@
                     <div class="border-2 border-red-200 dark:border-red-800 rounded-lg p-6 bg-red-50 dark:bg-red-900/20">
                         <h4 class="font-semibold text-red-800 dark:text-red-300 mb-2">Purge Business Data</h4>
                         <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            This action will permanently delete the following:
+                            This action will permanently delete all transactional data:
                         </p>
                         <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-3 space-y-1">
-                            <li>All jobs, job items, and payments</li>
-                            <li>All inventory items and inventory logs</li>
-                            <li>All petty cash entries</li>
+                            <li>All jobs, job items, payments, and job notes</li>
+                            <li>All daily sales logs and lines</li>
+                            <li>All expenses and inventory purchases</li>
+                            <li>All EOD reconciliations</li>
+                            <li>All leads and lead interactions</li>
+                            <li>All account transactions and transfers</li>
+                            <li>All bills</li>
+                            <li>Inventory quantities and account balances reset to zero</li>
                         </ul>
 
                         <p class="text-sm text-green-700 dark:text-green-300 font-medium mb-3">
-                            ✓ Customers, vehicles, AC units, and road worthiness data will be preserved
+                            Preserved: customers, vehicles, AC units, inventory items & categories, expense categories, accounts, vendors, recurring expenses, petty cash, employees, users & roles
                         </p>
 
                         <p class="text-sm text-red-600 dark:text-red-400 font-semibold mb-4">
-                            ⚠️ This action cannot be undone. Use this to reset business operations while keeping customer data.
+                            This action cannot be undone.
                         </p>
 
                         <button
@@ -74,7 +79,7 @@
                 <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 text-center">Confirm Data Purge</h3>
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-                        This will delete all jobs, inventory, and petty cash. Customers will be preserved. This action cannot be undone.
+                        This will delete all jobs, sales, expenses, leads, EOD, bills, and transactions. Inventory quantities and account balances will be reset to zero. This action cannot be undone.
                     </p>
 
                     <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">

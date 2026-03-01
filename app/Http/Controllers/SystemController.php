@@ -22,13 +22,12 @@ class SystemController extends Controller
     }
 
     /**
-     * Purge all data from the system (admin only)
-     * This deletes jobs, inventory, and petty cash but KEEPS customers
-     * Useful for testing and starting fresh while preserving customer data
+     * Purge all transactional data from the system (admin only)
+     * Keeps: users, roles, customers, vehicles, ac_units, inventory items/categories,
+     *        expense categories, accounts, vendors, employees, recurring expenses
      */
     public function purgeAllData(Request $request)
     {
-        // Only admins can purge data
         if (!auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized. Only administrators can purge data.');
         }
@@ -36,40 +35,62 @@ class SystemController extends Controller
         try {
             DB::beginTransaction();
 
-            // Delete in order to avoid foreign key constraint violations
-            // NOTE: Customers, vehicles, and AC units are preserved
+            // Delete child tables first to avoid FK violations
 
-            // 1. Delete payments (child of jobs)
+            // Jobs & related
             DB::table('payments')->delete();
-
-            // 2. Delete job_items (child of both jobs and inventory_items)
             DB::table('job_items')->delete();
-
-            // 3. Delete inventory_logs (child of both jobs and inventory_items)
+            DB::table('job_notes')->delete();
+            DB::table('job_assignees')->delete();
             DB::table('inventory_logs')->delete();
-
-            // 4. Delete jobs (parent, also cascades to related data)
             DB::table('jobs')->delete();
 
-            // 5. Delete inventory_items
-            DB::table('inventory_items')->delete();
+            // Daily sales
+            DB::table('daily_sales_lines')->delete();
+            DB::table('daily_sales_logs')->delete();
 
-            // 6. Delete petty_cash entries
-            DB::table('petty_cash')->delete();
+            // Expenses & purchases
+            DB::table('inventory_purchases')->delete();
+            DB::table('expenses')->delete();
+
+            // EOD
+            DB::table('eod_reconciliations')->delete();
+
+            // NOTE: Petty cash is preserved
+
+            // Leads
+            DB::table('lead_interactions')->delete();
+            DB::table('leads')->delete();
+
+            // Account transactions & transfers
+            DB::table('account_transfers')->delete();
+            DB::table('account_transactions')->delete();
+
+            // Bills
+            DB::table('bill_items')->delete();
+            DB::table('bill_shared_items')->delete();
+            DB::table('bill_participants')->delete();
+            DB::table('bills')->delete();
+
+            // Reset inventory quantities to 0
+            DB::table('inventory_items')->update(['quantity' => 0]);
+
+            // Reset account balances to 0
+            DB::table('accounts')->update(['balance' => 0]);
 
             // NOTE: We do NOT delete:
-            // - customers
-            // - vehicles
-            // - ac_units
-            // - road_worthiness_history (tied to vehicles)
-            // - inventory_categories
-            // - users
+            // - users, roles, user_roles
+            // - customers, vehicles, ac_units, road_worthiness_history, insurance_histories
+            // - inventory_items, inventory_categories
+            // - expense_categories, accounts, vendors, recurring_expenses
+            // - petty_cash
+            // - employees and payroll data
 
             DB::commit();
 
             Log::info('System data purged by admin user: ' . auth()->user()->email);
 
-            return redirect()->back()->with('success', 'Data purged successfully! Jobs, inventory, and petty cash have been deleted. Customers and their data have been preserved.');
+            return redirect()->back()->with('success', 'All transactional data purged. Jobs, sales, expenses, leads, EOD, and bills deleted. Inventory quantities and account balances reset to zero. Customers, inventory items, categories, petty cash, and settings preserved.');
         } catch (\Exception $e) {
             DB::rollBack();
 
