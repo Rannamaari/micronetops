@@ -6,7 +6,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-[1600px] mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <form method="POST" action="{{ route('expenses.store') }}" class="space-y-4">
@@ -84,12 +84,12 @@
                             <textarea name="notes" rows="3" class="mt-1 w-full rounded border-gray-300">{{ old('notes') }}</textarea>
                         </div>
                         @php
-                            $cogsGrid = 'grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)]';
+                            $cogsGrid = 'grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)]';
                             $cogsInput = 'w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                             $cogsSelect = 'w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pl-3 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                             $cogsReadonly = 'w-full h-11 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 px-3 text-sm text-right tabular-nums font-medium';
                             $cogsLabel = 'block lg:hidden text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1';
-                            $cogsTip = '<span class="relative group/tip inline-flex cursor-help"><svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/></svg><span class="absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[11px] text-white bg-gray-900 dark:bg-gray-600 rounded shadow-lg whitespace-nowrap opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all pointer-events-none">';
+                            $cogsTip = '<span class="relative group/tip inline-flex cursor-help"><svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/></svg><span class="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 text-[11px] text-white bg-gray-900 dark:bg-gray-600 rounded shadow-lg whitespace-nowrap opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all pointer-events-none">';
                             $cogsTipEnd = '</span></span>';
                         @endphp
 
@@ -108,7 +108,7 @@
 
                             <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
                                 <div class="overflow-x-auto">
-                                    <div class="lg:min-w-[1120px]">
+                                    <div class="lg:min-w-[1240px]">
                                         {{-- Header Row (lg+ only) --}}
                                         <div class="hidden lg:grid {{ $cogsGrid }} gap-3 px-5 pr-14 py-3 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Item</div>
@@ -118,6 +118,7 @@
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1">Unit {!! $cogsTip !!}Auto-filled for existing items{!! $cogsTipEnd !!}</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Qty</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Unit Cost</div>
+                                            <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right flex items-center justify-end gap-1">Sell Price {!! $cogsTip !!}Auto-filled for existing items{!! $cogsTipEnd !!}</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-center flex items-center gap-1">GST {!! $cogsTip !!}Add 8% GST to cost{!! $cogsTipEnd !!}</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Total</div>
                                         </div>
@@ -131,16 +132,20 @@
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                                     </button>
 
-                                                    <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)] lg:items-center">
+                                                    <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)] lg:items-center">
                                                         {{-- Item --}}
+                                                        @php
+                                                            $selectedItemId = $purchase['inventory_item_id'] ?? '';
+                                                            $selectedItemName = '';
+                                                            if ($selectedItemId) {
+                                                                $selectedItemObj = $inventoryItems->firstWhere('id', (int) $selectedItemId);
+                                                                $selectedItemName = $selectedItemObj?->name ?? '';
+                                                            }
+                                                        @endphp
                                                         <div class="col-span-2 lg:col-auto">
                                                             <label class="{{ $cogsLabel }}">Item</label>
-                                                            <select name="purchases[{{ $index }}][inventory_item_id]" class="{{ $cogsSelect }} inventory-item-select">
-                                                                <option value="">Select item</option>
-                                                                @foreach ($inventoryItems as $item)
-                                                                    <option value="{{ $item->id }}" data-unit="{{ $item->unit }}" data-cost="{{ $item->cost_price }}" data-category="{{ $item->category }}" data-sku="{{ $item->sku }}" data-inventory-category-id="{{ $item->inventory_category_id }}" @selected((string) ($purchase['inventory_item_id'] ?? '') === (string) $item->id)>{{ $item->name }}</option>
-                                                                @endforeach
-                                                            </select>
+                                                            <input type="hidden" name="purchases[{{ $index }}][inventory_item_id]" class="inventory-item-id" value="{{ $selectedItemId }}">
+                                                            <input type="text" list="inventory-datalist" class="{{ $cogsInput }} inventory-item-search" placeholder="Search & select item..." value="{{ $selectedItemName }}" autocomplete="off">
                                                             @error("purchases.$index.inventory_item_id")<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                                                         </div>
                                                         {{-- New Item Name --}}
@@ -183,6 +188,12 @@
                                                             <label class="{{ $cogsLabel }}">Unit Cost</label>
                                                             <input name="purchases[{{ $index }}][unit_cost]" type="number" step="0.01" class="{{ $cogsInput }} text-right" value="{{ $purchase['unit_cost'] ?? '' }}">
                                                             @error("purchases.$index.unit_cost")<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                                                        </div>
+                                                        {{-- Sell Price + Margin --}}
+                                                        <div>
+                                                            <label class="{{ $cogsLabel }}">Sell Price</label>
+                                                            <input name="purchases[{{ $index }}][sell_price]" type="number" step="0.01" class="{{ $cogsInput }} text-right sell-price" value="{{ $purchase['sell_price'] ?? '' }}" placeholder="0.00">
+                                                            <p class="mt-0.5 text-[10px] tabular-nums text-right margin-display text-gray-400">&nbsp;</p>
                                                         </div>
                                                         {{-- GST 8% --}}
                                                         <div class="flex items-center lg:justify-center">
@@ -229,7 +240,14 @@
     </div>
 </x-app-layout>
 
+<datalist id="inventory-datalist">
+    @foreach ($inventoryItems as $item)
+        <option value="{{ $item->name }}" data-id="{{ $item->id }}" data-unit="{{ $item->unit }}" data-cost="{{ $item->cost_price }}" data-sell="{{ $item->sell_price }}" data-category="{{ $item->category }}" data-sku="{{ $item->sku }}" data-inventory-category-id="{{ $item->inventory_category_id }}">
+    @endforeach
+</datalist>
+
 <script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('category-search');
     const select = document.getElementById('category-select');
@@ -278,32 +296,26 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', applyFilters);
     applyFilters();
 
-    const filterInventoryOptions = (inventorySelect) => {
-        if (!inventorySelect) return;
+    const datalistEl = document.getElementById('inventory-datalist');
+    const datalistOptions = datalistEl ? Array.from(datalistEl.options) : [];
+
+    const findItemByName = (name) => {
+        if (!name) return null;
+        const n = name.trim().toLowerCase();
+        return datalistOptions.find(opt => opt.value.toLowerCase() === n) || null;
+    };
+
+    const rebuildDatalist = () => {
         const unit = businessUnitSelect?.value || '';
-        let firstVisible = null;
-        Array.from(inventorySelect.options).forEach((opt) => {
-            if (!opt.value) {
-                opt.hidden = false;
-                return;
-            }
-            const itemUnit = opt.dataset.category || '';
-            const isVisible = !unit || unit === 'shared' || itemUnit === unit;
-            opt.hidden = !isVisible;
-            if (isVisible && !firstVisible) firstVisible = opt;
-        });
-        if (inventorySelect.selectedOptions.length && inventorySelect.selectedOptions[0].hidden) {
-            inventorySelect.value = firstVisible?.value || '';
-        }
-    };
-
-    const refreshInventoryFilters = () => {
-        purchaseRows.querySelectorAll('select[name$="[inventory_item_id]"]').forEach((inventorySelect) => {
-            filterInventoryOptions(inventorySelect);
+        datalistOptions.forEach(opt => {
+            const matchesUnit = !unit || unit === 'shared' || (opt.dataset.category || '') === unit;
+            opt.disabled = !matchesUnit;
+            opt.hidden = !matchesUnit;
         });
     };
 
-    businessUnitSelect?.addEventListener('change', refreshInventoryFilters);
+    businessUnitSelect?.addEventListener('change', rebuildDatalist);
+    rebuildDatalist();
 
     const setLineTotal = (row, value) => {
         const target = row.querySelector('.line-total');
@@ -320,11 +332,27 @@ document.addEventListener('DOMContentLoaded', function () {
         purchaseRows.querySelectorAll('.purchase-row').forEach((row) => {
             const qty = parseFloat(row.querySelector('[name$="[quantity]"]').value || 0);
             const unitCost = parseFloat(row.querySelector('[name$="[unit_cost]"]').value || 0);
+            const sellPrice = parseFloat(row.querySelector('.sell-price')?.value || 0);
             const hasGst = row.querySelector('.gst-checkbox')?.checked || false;
             const multiplier = hasGst ? 1.08 : 1;
-            const lineTotal = qty * unitCost * multiplier;
+            const effectiveCost = unitCost * multiplier;
+            const lineTotal = qty * effectiveCost;
             setLineTotal(row, lineTotal.toFixed(2));
             total += lineTotal;
+
+            // Margin display
+            const marginEl = row.querySelector('.margin-display');
+            if (marginEl) {
+                if (sellPrice > 0 && effectiveCost > 0) {
+                    const margin = ((sellPrice - effectiveCost) / sellPrice) * 100;
+                    const color = margin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+                    marginEl.className = `mt-0.5 text-[10px] tabular-nums text-right margin-display ${color}`;
+                    marginEl.textContent = `${margin >= 0 ? '+' : ''}${margin.toFixed(1)}% margin`;
+                } else {
+                    marginEl.className = 'mt-0.5 text-[10px] tabular-nums text-right margin-display text-gray-400';
+                    marginEl.innerHTML = '&nbsp;';
+                }
+            }
         });
         if (autoCalcAmount && autoCalcAmount.checked && amountInput) {
             amountInput.value = total.toFixed(2);
@@ -332,57 +360,70 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const wireRow = (row) => {
-        const selectItem = row.querySelector('.inventory-item-select');
+        const searchInput = row.querySelector('.inventory-item-search');
+        const hiddenId = row.querySelector('.inventory-item-id');
         const nameInput = row.querySelector('.inventory-item-name');
         const skuInput = row.querySelector('.inventory-item-sku');
         const categorySelect = row.querySelector('.inventory-item-category');
         const unitInput = row.querySelector('[name$="[unit]"]');
         const costInput = row.querySelector('[name$="[unit_cost]"]');
-        filterInventoryOptions(selectItem);
-        selectItem.addEventListener('change', () => {
-            const opt = selectItem.options[selectItem.selectedIndex];
-            if (opt?.dataset?.unit) unitInput.value = opt.dataset.unit;
-            if (opt?.dataset?.cost) costInput.value = opt.dataset.cost;
-            if (opt?.dataset?.sku) skuInput.value = opt.dataset.sku;
-            if (opt?.dataset?.inventoryCategoryId) categorySelect.value = opt.dataset.inventoryCategoryId;
-            if (selectItem.value) {
+        const sellPriceInput = row.querySelector('.sell-price');
+
+        const applyItemSelection = (opt) => {
+            if (opt) {
+                hiddenId.value = opt.dataset.id || '';
+                if (opt.dataset.unit) unitInput.value = opt.dataset.unit;
+                if (opt.dataset.cost) costInput.value = opt.dataset.cost;
+                if (opt.dataset.sell) sellPriceInput.value = opt.dataset.sell;
+                if (opt.dataset.sku) skuInput.value = opt.dataset.sku;
+                if (opt.dataset.inventoryCategoryId) categorySelect.value = opt.dataset.inventoryCategoryId;
                 nameInput.value = '';
                 nameInput.disabled = true;
                 skuInput.disabled = true;
                 categorySelect.disabled = true;
             } else {
+                hiddenId.value = '';
                 nameInput.disabled = false;
                 skuInput.disabled = false;
                 categorySelect.disabled = false;
             }
             calcTotals();
+        };
+
+        searchInput.addEventListener('input', () => {
+            const matched = findItemByName(searchInput.value);
+            applyItemSelection(matched);
         });
+
         nameInput.addEventListener('input', () => {
             if (nameInput.value.trim()) {
-                selectItem.value = '';
-                selectItem.disabled = true;
+                searchInput.value = '';
+                searchInput.disabled = true;
+                hiddenId.value = '';
                 skuInput.disabled = false;
                 categorySelect.disabled = false;
             } else {
-                selectItem.disabled = false;
+                searchInput.disabled = false;
             }
         });
-        row.querySelectorAll('input').forEach((input) => input.addEventListener('input', calcTotals));
+
+        row.querySelectorAll('input').forEach(input => input.addEventListener('input', calcTotals));
         row.querySelector('.gst-checkbox')?.addEventListener('change', calcTotals);
         row.querySelector('.remove-row').addEventListener('click', () => {
             row.remove();
             toggleEmptyState();
             calcTotals();
         });
-        if (selectItem.value) {
+
+        // Initial state for pre-populated rows (old() data)
+        if (hiddenId.value) {
             nameInput.disabled = true;
             skuInput.disabled = true;
             categorySelect.disabled = true;
         }
         if (nameInput.value.trim()) {
-            selectItem.disabled = true;
-            skuInput.disabled = false;
-            categorySelect.disabled = false;
+            searchInput.disabled = true;
+            hiddenId.value = '';
         }
     };
 
@@ -405,15 +446,11 @@ document.addEventListener('DOMContentLoaded', function () {
             <button type="button" class="remove-row absolute top-3 right-3 lg:top-1/2 lg:-translate-y-1/2 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition lg:opacity-0 lg:group-hover/row:opacity-100 focus:opacity-100" title="Remove item">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
-            <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)] lg:items-center">
+            <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)] lg:items-center">
                 <div class="col-span-2 lg:col-auto">
                     <label class="${cogsLabelCls}">Item</label>
-                    <select name="purchases[${index}][inventory_item_id]" class="${cogsSelectCls} inventory-item-select">
-                        <option value="">Select item</option>
-                        @foreach ($inventoryItems as $item)
-                            <option value="{{ $item->id }}" data-unit="{{ $item->unit }}" data-cost="{{ $item->cost_price }}" data-category="{{ $item->category }}" data-sku="{{ $item->sku }}" data-inventory-category-id="{{ $item->inventory_category_id }}">{{ $item->name }}</option>
-                        @endforeach
-                    </select>
+                    <input type="hidden" name="purchases[${index}][inventory_item_id]" class="inventory-item-id" value="">
+                    <input type="text" list="inventory-datalist" class="${cogsInputCls} inventory-item-search" placeholder="Search & select item..." autocomplete="off">
                 </div>
                 <div class="col-span-2 lg:col-auto">
                     <label class="${cogsLabelCls}">New Item</label>
@@ -444,6 +481,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <label class="${cogsLabelCls}">Unit Cost</label>
                     <input name="purchases[${index}][unit_cost]" type="number" step="0.01" class="${cogsInputCls} text-right">
                 </div>
+                <div>
+                    <label class="${cogsLabelCls}">Sell Price</label>
+                    <input name="purchases[${index}][sell_price]" type="number" step="0.01" class="${cogsInputCls} text-right sell-price" placeholder="0.00">
+                    <p class="mt-0.5 text-[10px] tabular-nums text-right margin-display text-gray-400">&nbsp;</p>
+                </div>
                 <div class="flex items-center lg:justify-center">
                     <label class="inline-flex items-center gap-1.5 cursor-pointer">
                         <input type="hidden" name="purchases[${index}][has_gst]" value="0">
@@ -464,7 +506,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     addPurchaseRow?.addEventListener('click', addRow);
-    refreshInventoryFilters();
     purchaseRows.querySelectorAll('.purchase-row').forEach(wireRow);
     toggleEmptyState();
     calcTotals();

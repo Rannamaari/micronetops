@@ -11,6 +11,7 @@ class ExpenseCategorySeeder extends Seeder
     {
         $categories = [
             ['name' => 'Inventory Cost', 'type' => ExpenseCategory::TYPE_COGS],
+            ['name' => 'Utilities', 'type' => ExpenseCategory::TYPE_OPERATING],
             ['name' => 'Salary', 'type' => ExpenseCategory::TYPE_OPERATING],
             ['name' => 'Electricity Bill', 'type' => ExpenseCategory::TYPE_OPERATING],
             ['name' => 'Water Bill', 'type' => ExpenseCategory::TYPE_OPERATING],

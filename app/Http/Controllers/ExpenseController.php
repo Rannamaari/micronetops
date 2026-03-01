@@ -407,6 +407,9 @@ class ExpenseController extends Controller
                 $inventoryItem->cost_price = round($weightedCost, 2);
             }
             $inventoryItem->quantity = $newQty;
+            if (!empty($row['sell_price']) && (float) $row['sell_price'] > 0) {
+                $inventoryItem->sell_price = (float) $row['sell_price'];
+            }
             $inventoryItem->save();
 
             InventoryLog::create([
