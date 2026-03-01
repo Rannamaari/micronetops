@@ -17,7 +17,7 @@
                     @endif
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <a href="{{ route('sales.daily.index', ['date' => $log->date->toDateString()]) }}"
                    class="inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -62,8 +62,8 @@
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-5xl mx-auto sm:px-4 lg:px-8 space-y-6">
+    <div class="py-4 sm:py-6">
+        <div class="max-w-5xl mx-auto px-4 sm:px-4 lg:px-8 space-y-4 sm:space-y-6">
             {{-- Flash messages --}}
             @if(session('success'))
                 <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm">
@@ -400,7 +400,7 @@
 
             {{-- Lines Table --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
-                <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                         Sale Lines ({{ $log->lines->count() }})
                     </h3>
@@ -411,7 +411,8 @@
                         No lines yet. Add your first sale above.
                     </div>
                 @else
-                    <div class="overflow-x-auto">
+                    {{-- Desktop Table --}}
+                    <div class="hidden sm:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
@@ -421,7 +422,7 @@
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                                     @if(!$log->isSubmitted())
-                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16"></th>
+                                        <th class="px-4 py-3 w-16"></th>
                                     @endif
                                 </tr>
                             </thead>
@@ -466,6 +467,52 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+
+                    {{-- Mobile Cards --}}
+                    <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                        @foreach($log->lines as $line)
+                            <div class="p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $line->description }}</span>
+                                            @if($line->is_stock_item)
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-medium">Part</span>
+                                            @elseif($line->inventory_item_id)
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">Service</span>
+                                            @else
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 font-medium">Custom</span>
+                                            @endif
+                                            @if($line->is_gst_applicable)
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 font-medium">+GST</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                                            {{ $line->qty }} x {{ number_format($line->unit_price, 2) }} MVR
+                                            @if($line->is_gst_applicable)
+                                                <span class="text-amber-600 dark:text-amber-400">+ {{ number_format($line->gst_amount, 2) }} GST</span>
+                                            @endif
+                                        </div>
+                                        @if($line->note)
+                                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $line->note }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ number_format($line->line_total + $line->gst_amount, 2) }}</span>
+                                        @if(!$log->isSubmitted())
+                                            <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 @endif
             </div>
