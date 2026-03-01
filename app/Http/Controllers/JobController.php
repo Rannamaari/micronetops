@@ -278,9 +278,9 @@ class JobController extends Controller
             'customer_id' => $customer?->id,
 
             // Snapshot customer data — use DB record when customer exists
-            'customer_name' => $customer->name,
-            'customer_phone' => $customer->phone,
-            'customer_email' => $customer->email,
+            'customer_name' => $customer?->name ?? $validated['customer_name'] ?? 'Walk-in',
+            'customer_phone' => $customer?->phone ?? $validated['customer_phone'] ?? null,
+            'customer_email' => $customer?->email ?? $validated['customer_email'] ?? null,
 
             // Equipment
             'vehicle_id' => $validated['vehicle_id'] ?? null,

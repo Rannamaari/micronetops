@@ -120,26 +120,17 @@ class DailySalesLog extends Model
         $unit = $this->business_unit; // 'moto' or 'cool'
         $jobType = $unit === 'cool' ? 'ac' : 'moto';
 
-        if ($this->customer_id) {
-            $customer = Customer::find($this->customer_id);
-        }
-
-        if (empty($customer)) {
-            $walkInPhone = 'WALKIN-' . strtoupper($unit);
-            $customer = Customer::firstOrCreate(
-                ['phone' => $walkInPhone],
-                ['name' => 'Walk-in Customer (' . ucfirst($unit) . ')', 'category' => $jobType]
-            );
-        }
+        $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
 
         $job = Job::create([
             'job_date'       => $this->date,
             'job_type'       => $jobType,
             'job_category'   => 'general',
             'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
-            'customer_id'    => $customer->id,
-            'customer_name'  => $customer->name,
-            'customer_phone' => $customer->phone,
+            'customer_id'    => $customer?->id,
+            'customer_name'  => $customer?->name ?? 'Walk-in',
+            'customer_phone' => $customer?->phone,
+            'customer_email' => $customer?->email,
             'status'         => 'completed',
             'payment_status' => 'paid',
             'priority'       => 'normal',
