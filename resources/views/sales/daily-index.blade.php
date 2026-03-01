@@ -33,7 +33,7 @@
                 <form method="GET" action="{{ route('sales.daily.index') }}" class="flex flex-wrap items-end gap-3">
                     <div class="flex-1 min-w-[130px]">
                         <label for="date" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                        <input type="date" name="date" id="date" value="{{ $date }}"
+                        <input type="date" name="date" id="date" value="{{ $date }}" max="{{ now()->toDateString() }}"
                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
                     </div>
                     <div class="w-28">
@@ -51,7 +51,8 @@
                     </button>
                 </form>
 
-                {{-- New Sale buttons --}}
+                {{-- New Sale buttons (only for today or past dates) --}}
+                @if($date <= now()->toDateString())
                 <div class="flex flex-wrap gap-2 mt-4">
                     @if(!Auth::user()->allowedBusinessUnit() || Auth::user()->allowedBusinessUnit() === 'moto')
                         <form method="POST" action="{{ route('sales.daily.open') }}">
@@ -78,6 +79,7 @@
                         </form>
                     @endif
                 </div>
+                @endif
             </div>
 
             {{-- Sales List --}}

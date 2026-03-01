@@ -49,7 +49,7 @@ class DailySalesController extends Controller
     public function openLog(Request $request)
     {
         $validated = $request->validate([
-            'date' => ['required', 'date'],
+            'date' => ['required', 'date', 'before_or_equal:today'],
             'business_unit' => ['required', 'in:moto,cool'],
         ]);
 
