@@ -125,9 +125,10 @@ class DailySalesLog extends Model
         }
 
         if (empty($customer)) {
+            $walkInPhone = 'WALKIN-' . strtoupper($unit);
             $customer = Customer::firstOrCreate(
-                ['phone' => $unit === 'moto' ? '0000000' : '0000001'],
-                ['name' => 'Walk-in Customer', 'category' => $jobType]
+                ['phone' => $walkInPhone],
+                ['name' => 'Walk-in Customer (' . ucfirst($unit) . ')', 'category' => $jobType]
             );
         }
 
