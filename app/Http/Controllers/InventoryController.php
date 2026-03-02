@@ -26,12 +26,13 @@ class InventoryController extends Controller
         $categoryId = $request->query('category_id', 'all'); // specific category
         $search = $request->query('search'); // search term
 
-        // Search
+        // Search (case-insensitive)
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('brand', 'like', "%{$search}%");
+            $s = mb_strtolower($search);
+            $query->where(function($q) use ($s) {
+                $q->whereRaw('lower(name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(sku) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(brand) like ?', ["%{$s}%"]);
             });
         }
 
