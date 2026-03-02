@@ -27,12 +27,12 @@ class EmployeeController extends Controller
 
         // Search
         if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('employee_number', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('position', 'like', "%{$search}%");
+            $s = mb_strtolower($request->search);
+            $query->where(function($q) use ($s) {
+                $q->whereRaw('lower(name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(employee_number) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(phone) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(position) like ?', ["%{$s}%"]);
             });
         }
 

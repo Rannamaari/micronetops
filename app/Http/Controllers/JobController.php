@@ -163,8 +163,9 @@ class JobController extends Controller
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])
             ->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                $s = mb_strtolower($search);
+                $query->whereRaw('lower(name) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(phone) like ?', ["%{$s}%"]);
             })
             ->latest()
             ->limit(20)

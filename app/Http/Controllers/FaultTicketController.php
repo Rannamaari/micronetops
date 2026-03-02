@@ -56,12 +56,12 @@ class FaultTicketController extends Controller
 
         // Search
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('ticket_number', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_phone', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%");
+            $s = mb_strtolower($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->whereRaw('lower(ticket_number) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(customer_name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(customer_phone) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(title) like ?', ["%{$s}%"]);
             });
         }
 

@@ -163,11 +163,12 @@ class Lead extends Model
     public function scopeSearch($query, $search)
     {
         if ($search) {
-            return $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('phone', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('address', 'like', '%' . $search . '%');
+            $s = mb_strtolower($search);
+            return $query->where(function ($q) use ($s) {
+                $q->whereRaw('lower(name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(phone) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(email) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(address) like ?', ["%{$s}%"]);
             });
         }
         return $query;

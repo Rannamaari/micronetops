@@ -599,11 +599,12 @@ class Job extends Model
      */
     public function scopeSearch($query, $term)
     {
-        return $query->where(function ($q) use ($term) {
-            $q->where('title', 'like', "%{$term}%")
-              ->orWhere('customer_name', 'like', "%{$term}%")
-              ->orWhere('customer_phone', 'like', "%{$term}%")
-              ->orWhere('location', 'like', "%{$term}%");
+        $s = mb_strtolower($term);
+        return $query->where(function ($q) use ($s) {
+            $q->whereRaw('lower(title) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(customer_name) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(customer_phone) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(location) like ?', ["%{$s}%"]);
         });
     }
 

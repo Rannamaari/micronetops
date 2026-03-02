@@ -13,10 +13,11 @@ class VendorController extends Controller
 
         $query = Vendor::query();
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('contact_name', 'like', "%{$search}%");
+            $s = mb_strtolower($search);
+            $query->where(function ($q) use ($s) {
+                $q->whereRaw('lower(name) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(phone) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(contact_name) like ?', ["%{$s}%"]);
             });
         }
 

@@ -37,10 +37,11 @@ class ExpenseController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('vendor', 'like', "%{$search}%")
-                    ->orWhere('reference', 'like', "%{$search}%")
-                    ->orWhere('notes', 'like', "%{$search}%");
+            $s = mb_strtolower($search);
+            $query->where(function ($q) use ($s) {
+                $q->whereRaw('lower(vendor) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(reference) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(notes) like ?', ["%{$s}%"]);
             });
         }
 
