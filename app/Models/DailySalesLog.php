@@ -22,6 +22,7 @@ class DailySalesLog extends Model
         'customer_id',
         'payment_method',
         'cash_tendered',
+        'transfer_account_id',
     ];
 
     protected $casts = [
@@ -65,6 +66,11 @@ class DailySalesLog extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function transferAccount()
+    {
+        return $this->belongsTo(Account::class, 'transfer_account_id');
+    }
+
     public function scopeForDate($query, $date)
     {
         return $query->whereDate('date', $date);
@@ -90,7 +96,7 @@ class DailySalesLog extends Model
         return $this->status === 'submitted';
     }
 
-    public function submit(string $paymentMethod, ?float $cashTendered = null): void
+    public function submit(string $paymentMethod, ?float $cashTendered = null, ?int $transferAccountId = null): void
     {
         // --- Set payment method on all lines (for reports compatibility) ---
         $this->lines()->update(['payment_method' => $paymentMethod]);
@@ -167,7 +173,28 @@ class DailySalesLog extends Model
             'job_id' => $job->id,
             'payment_method' => $paymentMethod,
             'cash_tendered' => $paymentMethod === 'cash' ? $cashTendered : null,
+            'transfer_account_id' => $paymentMethod === 'transfer' ? $transferAccountId : null,
         ]);
+
+        // --- Credit the transfer account ---
+        if ($paymentMethod === 'transfer' && $transferAccountId) {
+            $account = Account::find($transferAccountId);
+            if ($account) {
+                $account->balance += $totals['grand'];
+                $account->save();
+
+                AccountTransaction::create([
+                    'account_id' => $account->id,
+                    'type' => 'sale_transfer',
+                    'amount' => $totals['grand'],
+                    'occurred_at' => now()->toDateString(),
+                    'description' => 'Daily sale #' . $this->id . ' transfer (sale date: ' . $this->date->format('Y-m-d') . ')',
+                    'related_type' => self::class,
+                    'related_id' => $this->id,
+                    'created_by' => Auth::id(),
+                ]);
+            }
+        }
     }
 
     public function reopen(): void
@@ -194,6 +221,19 @@ class DailySalesLog extends Model
             $log->delete();
         }
 
+        // Reverse transfer account credit
+        if ($this->payment_method === 'transfer' && $this->transfer_account_id) {
+            $account = Account::find($this->transfer_account_id);
+            if ($account) {
+                $grandTotal = $this->totals['grand'];
+                $account->balance -= $grandTotal;
+                $account->save();
+            }
+            AccountTransaction::where('related_type', self::class)
+                ->where('related_id', $this->id)
+                ->delete();
+        }
+
         $this->update([
             'status' => 'draft',
             'submitted_at' => null,
@@ -201,6 +241,7 @@ class DailySalesLog extends Model
             'job_id' => null,
             'payment_method' => null,
             'cash_tendered' => null,
+            'transfer_account_id' => null,
         ]);
     }
 

@@ -17,6 +17,34 @@ class AccountController extends Controller
         return view('accounts.index', compact('accounts'));
     }
 
+    public function logs(Request $request)
+    {
+        $query = AccountTransaction::with('account')
+            ->latest('occurred_at')
+            ->latest('id');
+
+        if ($request->filled('account_id')) {
+            $query->where('account_id', $request->account_id);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('occurred_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('occurred_at', '<=', $request->date_to);
+        }
+
+        $transactions = $query->paginate(30)->withQueryString();
+        $accounts = Account::orderBy('name')->get();
+
+        return view('accounts.logs', compact('transactions', 'accounts'));
+    }
+
     public function create()
     {
         $types = Account::getTypes();

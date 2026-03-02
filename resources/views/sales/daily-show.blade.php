@@ -553,10 +553,66 @@
                                         <span class="text-gray-500 dark:text-gray-400">Change: <strong class="text-green-600 dark:text-green-400">{{ number_format($log->cash_tendered - $totals['grand'], 2) }} MVR</strong></span>
                                     </div>
                                 @endif
+                                @if($log->payment_method === 'transfer' && $log->transferAccount)
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <span class="text-gray-500 dark:text-gray-400">Account:</span>
+                                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ $log->transferAccount->name }}</span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endif
                 </div>
+
+                {{-- Account Log (for submitted transfer sales) --}}
+                @if($log->isSubmitted() && $log->payment_method === 'transfer' && $log->transferAccount)
+                    <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
+                        <div class="px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Account Log</h3>
+                        </div>
+                        <div class="p-4 sm:p-6">
+                            @if($accountTransaction)
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Account</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Description</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            <tr>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ $accountTransaction->occurred_at?->format('d M Y') }}</td>
+                                                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                    <a href="{{ route('accounts.show', $log->transfer_account_id) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                                        {{ $log->transferAccount->name }}
+                                                    </a>
+                                                </td>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                        Sale Transfer
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{{ $accountTransaction->description }}</td>
+                                                <td class="px-4 py-2 text-sm text-right font-semibold text-green-600 dark:text-green-400">
+                                                    +{{ number_format($accountTransaction->amount, 2) }} MVR
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                    Account balance after: <strong class="text-gray-900 dark:text-gray-100">{{ number_format($log->transferAccount->balance, 2) }} MVR</strong>
+                                </div>
+                            @else
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No account transaction recorded for this sale. Reopen and re-submit to create the transaction.</p>
+                            @endif
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Submit Sale Panel (draft only) --}}
                 @if(!$log->isSubmitted())
@@ -565,13 +621,14 @@
                             showPanel: false,
                             paymentMethod: 'cash',
                             cashTendered: '',
+                            transferAccountId: '',
                             grandTotal: {{ $totals['grand'] }},
                             get change() {
                                 let tendered = parseFloat(this.cashTendered) || 0;
                                 return tendered - this.grandTotal;
                             },
                             get canSubmit() {
-                                if (this.paymentMethod === 'transfer') return true;
+                                if (this.paymentMethod === 'transfer') return this.transferAccountId !== '';
                                 return parseFloat(this.cashTendered) >= this.grandTotal;
                             }
                          }">
@@ -630,6 +687,18 @@
                                                 <span class="font-bold" :class="change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" x-text="change.toFixed(2) + ' MVR'"></span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {{-- Transfer Account (only for transfer) --}}
+                                    <div x-show="paymentMethod === 'transfer'" x-cloak>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Transfer To Account</label>
+                                        <select name="transfer_account_id" x-model="transferAccountId"
+                                                class="w-full max-w-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                            <option value="">-- Select Account --</option>
+                                            @foreach($accounts as $account)
+                                                <option value="{{ $account->id }}">{{ $account->name }} ({{ number_format($account->balance, 2) }} MVR)</option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
                                     {{-- Action Buttons --}}

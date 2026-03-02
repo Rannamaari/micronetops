@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\FaultTicket;
 use App\Models\InventoryItem;
 use App\Models\Job;
 use App\Models\JobItem;
@@ -85,6 +86,29 @@ class DashboardController extends Controller
         // === BEST SELLING ITEMS & SERVICES ===
         $bestSellingData = $this->getBestSellingData();
 
+        // === FAULT TICKET KPIs ===
+        $faultOpenCount = FaultTicket::open()->count();
+        $faultOverdueCount = FaultTicket::overdue()->count();
+        $faultResolvedThisWeek = FaultTicket::where('status', 'resolved')
+            ->where('resolved_at', '>=', $startOfWeek)
+            ->count();
+
+        // Avg resolution time this month (hours)
+        $resolvedThisMonth = FaultTicket::where('status', 'resolved')
+            ->where('resolved_at', '>=', $startOfMonth)
+            ->whereNotNull('resolved_at')
+            ->get();
+
+        $avgResolutionHours = $resolvedThisMonth->count() > 0
+            ? round($resolvedThisMonth->avg(fn ($t) => $t->getResolutionHours()), 1)
+            : null;
+
+        // SLA Met % this month
+        $slaMetCount = $resolvedThisMonth->filter(fn ($t) => $t->metSla())->count();
+        $slaMetPercent = $resolvedThisMonth->count() > 0
+            ? round(($slaMetCount / $resolvedThisMonth->count()) * 100, 1)
+            : null;
+
         // === OVERDUE LEADS ===
         $overdueLeads = Lead::where('follow_up_date', '<', $now)
             ->whereIn('status', ['new', 'contacted', 'interested', 'qualified'])
@@ -108,7 +132,12 @@ class DashboardController extends Controller
             'dailySalesData',
             'monthlyTrendsData',
             'bestSellingData',
-            'overdueLeads'
+            'overdueLeads',
+            'faultOpenCount',
+            'faultOverdueCount',
+            'faultResolvedThisWeek',
+            'avgResolutionHours',
+            'slaMetPercent'
         ));
     }
 

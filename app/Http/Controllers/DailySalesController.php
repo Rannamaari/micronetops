@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
+use App\Models\AccountTransaction;
 use App\Models\Customer;
 use App\Models\DailySalesLog;
 use App\Models\DailySalesLine;
@@ -80,7 +82,7 @@ class DailySalesController extends Controller
 
     public function show(DailySalesLog $dailySalesLog)
     {
-        $dailySalesLog->load('lines.inventoryItem', 'createdByUser', 'submittedByUser', 'customer');
+        $dailySalesLog->load('lines.inventoryItem', 'createdByUser', 'submittedByUser', 'customer', 'transferAccount');
 
         $categoryMap = $dailySalesLog->business_unit === 'moto' ? 'moto' : 'ac';
         $inventoryItems = InventoryItem::active()
@@ -88,9 +90,20 @@ class DailySalesController extends Controller
             ->orderBy('name')
             ->get();
 
+        $accounts = Account::where('is_active', true)->where('is_system', false)->orderBy('name')->get();
+
+        $accountTransaction = null;
+        if ($dailySalesLog->isSubmitted() && $dailySalesLog->transfer_account_id) {
+            $accountTransaction = AccountTransaction::where('related_type', DailySalesLog::class)
+                ->where('related_id', $dailySalesLog->id)
+                ->first();
+        }
+
         return view('sales.daily-show', [
             'log' => $dailySalesLog,
             'inventoryItems' => $inventoryItems,
+            'accounts' => $accounts,
+            'accountTransaction' => $accountTransaction,
         ]);
     }
 
@@ -167,11 +180,13 @@ class DailySalesController extends Controller
         $validated = $request->validate([
             'payment_method' => ['required', 'in:cash,transfer'],
             'cash_tendered' => ['nullable', 'required_if:payment_method,cash', 'numeric', 'min:' . $grandTotal],
+            'transfer_account_id' => ['nullable', 'required_if:payment_method,transfer', 'exists:accounts,id'],
         ]);
 
         $dailySalesLog->submit(
             $validated['payment_method'],
-            $validated['payment_method'] === 'cash' ? (float) $validated['cash_tendered'] : null
+            $validated['payment_method'] === 'cash' ? (float) $validated['cash_tendered'] : null,
+            $validated['payment_method'] === 'transfer' ? (int) $validated['transfer_account_id'] : null
         );
 
         return back()->with('success', 'Sale submitted and stock updated.');

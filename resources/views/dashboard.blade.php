@@ -258,6 +258,43 @@
                 </div>
             @endif
 
+            {{-- Fault Tickets KPI Panel --}}
+            <div class="mb-6 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Fault Tickets</h3>
+                        <a href="{{ route('faults.index') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {{-- Open --}}
+                        <a href="{{ route('faults.index', ['tab' => 'open']) }}" class="block text-center p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition">
+                            <p class="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{{ $faultOpenCount }}</p>
+                            <p class="text-xs font-medium text-yellow-600 dark:text-yellow-400 mt-1">Open</p>
+                        </a>
+                        {{-- Overdue --}}
+                        <a href="{{ route('faults.index', ['tab' => 'overdue']) }}" class="block text-center p-3 rounded-lg {{ $faultOverdueCount > 0 ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30' : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600' }} transition">
+                            <p class="text-2xl font-bold {{ $faultOverdueCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300' }}">{{ $faultOverdueCount }}</p>
+                            <p class="text-xs font-medium {{ $faultOverdueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400' }} mt-1">Overdue</p>
+                        </a>
+                        {{-- Resolved This Week --}}
+                        <a href="{{ route('faults.index', ['tab' => 'resolved']) }}" class="block text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition">
+                            <p class="text-2xl font-bold text-green-700 dark:text-green-300">{{ $faultResolvedThisWeek }}</p>
+                            <p class="text-xs font-medium text-green-600 dark:text-green-400 mt-1">Resolved This Week</p>
+                        </a>
+                        {{-- Avg Resolution Time --}}
+                        <div class="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                            <p class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{ $avgResolutionHours !== null ? $avgResolutionHours . 'h' : '—' }}</p>
+                            <p class="text-xs font-medium text-blue-600 dark:text-blue-400 mt-1">Avg Resolution</p>
+                        </div>
+                        {{-- SLA Met % --}}
+                        <div class="text-center p-3 rounded-lg {{ $slaMetPercent !== null && $slaMetPercent < 80 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-emerald-50 dark:bg-emerald-900/20' }}">
+                            <p class="text-2xl font-bold {{ $slaMetPercent !== null && $slaMetPercent < 80 ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300' }}">{{ $slaMetPercent !== null ? $slaMetPercent . '%' : '—' }}</p>
+                            <p class="text-xs font-medium {{ $slaMetPercent !== null && $slaMetPercent < 80 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400' }} mt-1">SLA Met</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Sales Breakdown Row --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {{-- AC Sales This Month --}}

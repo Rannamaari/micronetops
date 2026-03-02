@@ -5,6 +5,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DailySalesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FaultTicketController;
 use App\Http\Controllers\EodController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HRController;
@@ -164,8 +165,9 @@ Route::middleware('auth')->group(function () {
             ->name('jobs.cancel');
     });
 
-    // Job deletion - Admin only
+    // Job & Fault Ticket deletion - Admin only
     Route::middleware('role:admin')->group(function () {
+        Route::delete('faults/{faultTicket}', [FaultTicketController::class, 'destroy'])->name('faults.destroy');
         Route::delete('jobs/{job}', [JobController::class, 'destroy'])->name('jobs.destroy');
         Route::delete('jobs/{job}/items/{item}', [JobItemController::class, 'destroy'])
             ->name('jobs.items.destroy');
@@ -230,6 +232,16 @@ Route::middleware('auth')->group(function () {
     // Lead deletion - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+    });
+
+    // Fault Tickets - All authenticated operations users
+    Route::middleware('operations')->group(function () {
+        Route::get('faults', [FaultTicketController::class, 'index'])->name('faults.index');
+        Route::get('faults/create', [FaultTicketController::class, 'create'])->name('faults.create');
+        Route::post('faults', [FaultTicketController::class, 'store'])->name('faults.store');
+        Route::get('faults/customer-jobs/{customer}', [FaultTicketController::class, 'customerJobs'])->name('faults.customer-jobs');
+        Route::get('faults/{faultTicket}', [FaultTicketController::class, 'show'])->name('faults.show');
+        Route::patch('faults/{faultTicket}', [FaultTicketController::class, 'update'])->name('faults.update');
     });
 
     // Petty Cash History - Operations users only
@@ -301,6 +313,7 @@ Route::middleware('auth')->group(function () {
     // Finance & P&L - Admin, Manager only
     Route::middleware('role:admin,manager')->group(function () {
         Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
+        Route::get('accounts/logs', [AccountController::class, 'logs'])->name('accounts.logs');
         Route::get('accounts/create', [AccountController::class, 'create'])->name('accounts.create');
         Route::post('accounts', [AccountController::class, 'store'])->name('accounts.store');
         Route::get('accounts/{account}', [AccountController::class, 'show'])->name('accounts.show');
