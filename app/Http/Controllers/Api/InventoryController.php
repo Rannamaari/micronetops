@@ -57,6 +57,69 @@ class InventoryController extends Controller
     }
 
     /**
+     * POST /api/inventory
+     * Add a new inventory item.
+     *
+     * Body: { "name": "Brake Pad", "category": "moto", "unit": "pcs", "quantity": 10,
+     *         "sell_price": 250, "sku": "BP001", "brand": "Honda", "low_stock_limit": 2 }
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name'            => ['required', 'string', 'max:255'],
+                'category'        => ['required', 'in:moto,ac'],
+                'unit'            => ['nullable', 'string', 'max:20'],
+                'quantity'        => ['nullable', 'integer', 'min:0'],
+                'sell_price'      => ['nullable', 'numeric', 'min:0'],
+                'cost_price'      => ['nullable', 'numeric', 'min:0'],
+                'sku'             => ['nullable', 'string', 'max:255', 'unique:inventory_items,sku'],
+                'brand'           => ['nullable', 'string', 'max:255'],
+                'low_stock_limit' => ['nullable', 'integer', 'min:0'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        $item = InventoryItem::create([
+            'name'            => $validated['name'],
+            'category'        => $validated['category'],
+            'unit'            => $validated['unit'] ?? 'pcs',
+            'quantity'        => $validated['quantity'] ?? 0,
+            'sell_price'      => $validated['sell_price'] ?? 0,
+            'cost_price'      => $validated['cost_price'] ?? 0,
+            'sku'             => $validated['sku'] ?? null,
+            'brand'           => $validated['brand'] ?? null,
+            'low_stock_limit' => $validated['low_stock_limit'] ?? 0,
+            'is_active'       => true,
+            'is_service'      => false,
+        ]);
+
+        return response()->json([
+            'message' => "Item \"{$item->name}\" added to inventory.",
+            'data'    => $item->only(['id', 'name', 'sku', 'brand', 'category', 'unit', 'quantity', 'sell_price', 'low_stock_limit']),
+        ], 201);
+    }
+
+    /**
+     * DELETE /api/inventory/{id}
+     * Delete an inventory item by ID.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $item = InventoryItem::find($id);
+
+        if (!$item) {
+            return response()->json(['error' => "Inventory item #{$id} not found."], 404);
+        }
+
+        $name = $item->name;
+        $item->delete();
+
+        return response()->json(['message' => "Item \"{$name}\" deleted from inventory."]);
+    }
+
+    /**
      * POST /api/inventory/update
      * Update stock for an item.
      *

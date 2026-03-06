@@ -22,9 +22,11 @@ Route::middleware('api.token')->group(function () {
 
     // --- Inventory ---
     Route::prefix('inventory')->group(function () {
-        Route::get('/',        [InventoryController::class, 'index']);
-        Route::get('/search',  [InventoryController::class, 'search']);
-        Route::post('/update', [InventoryController::class, 'update']);
+        Route::get('/',          [InventoryController::class, 'index']);
+        Route::post('/',         [InventoryController::class, 'store']);
+        Route::get('/search',    [InventoryController::class, 'search']);
+        Route::post('/update',   [InventoryController::class, 'update']);
+        Route::delete('/{id}',   [InventoryController::class, 'destroy']);
     });
 
     // --- Customers ---
