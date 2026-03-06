@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\SalesController;
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('api.token')->group(function () {
+
+    // --- Dashboard ---
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // --- Inventory ---
     Route::prefix('inventory')->group(function () {
