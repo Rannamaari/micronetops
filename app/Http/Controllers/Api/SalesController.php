@@ -188,6 +188,50 @@ class SalesController extends Controller
     }
 
     /**
+     * DELETE /api/sales/{id}
+     * Delete a sale (reopens it first to reverse stock, then deletes).
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $log = DailySalesLog::find($id);
+
+        if (!$log) {
+            return response()->json(['error' => "Sale #{$id} not found."], 404);
+        }
+
+        $actor = User::where('role', 'admin')->first();
+        if (!$actor) {
+            return response()->json(['error' => 'No admin user found on the system.'], 500);
+        }
+
+        DB::beginTransaction();
+        try {
+            Auth::setUser($actor);
+
+            // If submitted, reopen first to reverse stock deductions, job, and payment
+            if ($log->isSubmitted()) {
+                $log->reopen();
+            }
+
+            $log->lines()->delete();
+            $log->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => "Sale #{$id} deleted and stock reversed successfully.",
+                'sale_id' => $id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'error'   => 'Sale could not be deleted.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/sales/today
      * Summary of today's submitted sales, optionally filtered by business_unit.
      *

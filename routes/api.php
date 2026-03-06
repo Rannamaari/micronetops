@@ -31,8 +31,9 @@ Route::middleware('api.token')->group(function () {
 
     // --- Sales (Micro Moto / Micro Cool) ---
     Route::prefix('sales')->group(function () {
-        Route::post('/',       [SalesController::class, 'store']);
-        Route::get('/today',   [SalesController::class, 'today']);
+        Route::post('/',          [SalesController::class, 'store']);
+        Route::get('/today',      [SalesController::class, 'today']);
+        Route::delete('/{id}',    [SalesController::class, 'destroy']);
     });
 
     // --- Expenses (Petty Cash) ---
