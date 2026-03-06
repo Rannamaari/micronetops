@@ -188,6 +188,70 @@ class SalesController extends Controller
     }
 
     /**
+     * GET /api/sales
+     * Fetch sales by date or date range, optionally filtered by business_unit.
+     *
+     * Query params:
+     *   date=2026-03-05                      → single day
+     *   from=2026-03-01&to=2026-03-05        → date range
+     *   business_unit=moto|cool              → optional filter
+     *
+     * Defaults to today if no date params given.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $date = $request->query('date');
+        $from = $request->query('from');
+        $to   = $request->query('to');
+        $unit = $request->query('business_unit');
+
+        // Resolve date range
+        if ($date) {
+            $from = $to = $date;
+        } elseif (!$from && !$to) {
+            $from = $to = now()->toDateString();
+        } elseif ($from && !$to) {
+            $to = now()->toDateString();
+        } elseif (!$from && $to) {
+            $from = $to;
+        }
+
+        $query = DailySalesLog::with('customer')
+            ->submitted()
+            ->whereBetween('date', [$from, $to]);
+
+        if ($unit) {
+            $query->forUnit($unit);
+        }
+
+        $logs = $query->orderBy('date', 'desc')->get();
+
+        $data = $logs->map(function ($log) {
+            $totals = $log->totals;
+            return [
+                'sale_id'        => $log->id,
+                'date'           => $log->date->format('Y-m-d'),
+                'business_unit'  => $log->business_unit,
+                'unit_label'     => $log->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto',
+                'customer'       => $log->customer?->name ?? 'Walk-in',
+                'payment_method' => $log->payment_method,
+                'lines_count'    => $log->lines()->count(),
+                'grand_total'    => number_format($totals['grand'], 2),
+            ];
+        });
+
+        $grandTotal = $logs->sum(fn($l) => $l->totals['grand']);
+
+        return response()->json([
+            'from'        => $from,
+            'to'          => $to,
+            'sales_count' => $logs->count(),
+            'grand_total' => number_format($grandTotal, 2),
+            'data'        => $data,
+        ]);
+    }
+
+    /**
      * DELETE /api/sales/{id}
      * Delete a sale (reopens it first to reverse stock, then deletes).
      */
