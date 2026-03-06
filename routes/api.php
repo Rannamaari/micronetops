@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\SalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,12 @@ Route::middleware('api.token')->group(function () {
         Route::post('/',          [SalesController::class, 'store']);
         Route::get('/today',      [SalesController::class, 'today']);
         Route::delete('/{id}',    [SalesController::class, 'destroy']);
+    });
+
+    // --- Leads ---
+    Route::prefix('leads')->group(function () {
+        Route::post('/',         [LeadController::class, 'store']);
+        Route::get('/pending',   [LeadController::class, 'pending']);
     });
 
     // --- Expenses (Petty Cash) ---
