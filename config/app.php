@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | OpenClaw Bot API Token
+    |--------------------------------------------------------------------------
+    | Static bearer token used to authenticate the OpenClaw Telegram bot.
+    | Set OPENCLAW_API_TOKEN in your .env file on the server.
+    */
+    'openclaw_api_token' => env('OPENCLAW_API_TOKEN'),
+
 ];
