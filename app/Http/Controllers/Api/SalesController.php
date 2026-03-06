@@ -44,7 +44,7 @@ class SalesController extends Controller
                 'customer_name'  => ['nullable', 'string', 'max:255'],
                 'customer_phone' => ['nullable', 'string', 'max:50'],
                 'payment_method' => ['required', 'in:cash,transfer'],
-                'date'           => ['nullable', 'date', 'before_or_equal:today'],
+                'date'           => ['nullable', 'date'],
                 'notes'          => ['nullable', 'string', 'max:1000'],
                 'items'          => ['required', 'array', 'min:1'],
                 'items.*.identifier'  => ['nullable', 'string', 'max:255'],
@@ -149,8 +149,8 @@ class SalesController extends Controller
             }
 
             // --- Submit (deducts stock, creates job + payment) ---
-            // Temporarily authenticate as the admin actor so Auth::id() works inside submit()
-            Auth::loginUsingOnce($actor);
+            // Set the actor as the authenticated user so Auth::id() works inside submit()
+            Auth::setUser($actor);
             $log->submit($validated['payment_method']);
 
             DB::commit();
