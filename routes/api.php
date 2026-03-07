@@ -71,6 +71,7 @@ Route::middleware('api.token')->group(function () {
         Route::post('/',            [BusinessExpenseController::class, 'store']);
         Route::get('/categories',   [BusinessExpenseController::class, 'categories']);
         Route::get('/vendors',      [BusinessExpenseController::class, 'vendors']);
+        Route::post('/vendors',     [BusinessExpenseController::class, 'createVendor']);
         Route::get('/accounts',     [BusinessExpenseController::class, 'accounts']);
     });
 

@@ -56,6 +56,49 @@ class BusinessExpenseController extends Controller
     }
 
     /**
+     * POST /api/expenses/vendors
+     * Create a new vendor.
+     *
+     * Body: { "name": "STELCO", "phone": "3321234", "contact_name": "Ali" }
+     */
+    public function createVendor(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name'         => ['required', 'string', 'max:255'],
+                'phone'        => ['nullable', 'string', 'max:50'],
+                'contact_name' => ['nullable', 'string', 'max:255'],
+                'address'      => ['nullable', 'string', 'max:500'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        $existing = Vendor::whereRaw('lower(name) = ?', [strtolower($validated['name'])])->first();
+        if ($existing) {
+            return response()->json([
+                'created' => false,
+                'message' => 'Vendor already exists.',
+                'data'    => $existing->only(['id', 'name', 'phone', 'contact_name']),
+            ]);
+        }
+
+        $vendor = Vendor::create([
+            'name'         => $validated['name'],
+            'phone'        => $validated['phone'] ?? '',
+            'contact_name' => $validated['contact_name'] ?? null,
+            'address'      => $validated['address'] ?? null,
+            'is_active'    => true,
+        ]);
+
+        return response()->json([
+            'created' => true,
+            'message' => "Vendor \"{$vendor->name}\" created.",
+            'data'    => $vendor->only(['id', 'name', 'phone', 'contact_name']),
+        ], 201);
+    }
+
+    /**
      * GET /api/expenses/accounts
      * List available accounts the bot can charge expenses against.
      */
@@ -207,7 +250,7 @@ class BusinessExpenseController extends Controller
         if (!$vendor) {
             $vendor = Vendor::create([
                 'name'         => $validated['vendor'],
-                'phone'        => $validated['vendor_phone'] ?? null,
+                'phone'        => $validated['vendor_phone'] ?? '',
                 'contact_name' => $validated['vendor_contact'] ?? null,
                 'is_active'    => true,
             ]);
@@ -261,7 +304,7 @@ class BusinessExpenseController extends Controller
                     'account_id'   => $account->id,
                     'type'         => 'expense',
                     'amount'       => -$amount,
-                    'occurred_at'  => $expense->incurred_at,
+                    'occurred_at'  => $expense->incurred_at->format('Y-m-d'),
                     'description'  => 'Expense: ' . $category->name . ' — ' . $vendor->name,
                     'related_type' => Expense::class,
                     'related_id'   => $expense->id,
