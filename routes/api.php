@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\FaultTicketController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\SalesController;
@@ -42,6 +43,16 @@ Route::middleware('api.token')->group(function () {
         Route::post('/',          [SalesController::class, 'store']);
         Route::get('/today',      [SalesController::class, 'today']);
         Route::delete('/{id}',    [SalesController::class, 'destroy']);
+    });
+
+    // --- Fault Tickets ---
+    Route::prefix('faults')->group(function () {
+        Route::get('/',             [FaultTicketController::class, 'index']);
+        Route::post('/',            [FaultTicketController::class, 'store']);
+        Route::get('/{id}',         [FaultTicketController::class, 'show']);
+        Route::patch('/{id}/assign',[FaultTicketController::class, 'assign']);
+        Route::patch('/{id}/resolve',[FaultTicketController::class, 'resolve']);
+        Route::patch('/{id}/close', [FaultTicketController::class, 'close']);
     });
 
     // --- Leads ---
