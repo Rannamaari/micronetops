@@ -412,4 +412,70 @@ class BusinessExpenseController extends Controller
             ]);
         }
     }
+
+    /**
+     * DELETE /api/expenses/{id}
+     * Delete an expense and reverse all its effects:
+     *   - Refunds the amount back to the account
+     *   - Removes the account transaction
+     *   - For COGS: reverses inventory stock additions
+     *   - Deletes inventory purchase records
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $expense = Expense::with('category', 'inventoryPurchases')->find($id);
+
+        if (!$expense) {
+            return response()->json(['error' => "Expense #{$id} not found."], 404);
+        }
+
+        $actor = User::where('role', 'admin')->first();
+        Auth::setUser($actor);
+
+        try {
+            DB::transaction(function () use ($expense, $actor) {
+                // --- Reverse account balance ---
+                if ($expense->account_id) {
+                    $account = Account::find($expense->account_id);
+                    if ($account) {
+                        $account->balance = (float) $account->balance + (float) $expense->amount;
+                        $account->save();
+                    }
+
+                    // Remove account transaction record
+                    AccountTransaction::where('related_type', Expense::class)
+                        ->where('related_id', $expense->id)
+                        ->delete();
+                }
+
+                // --- Reverse COGS inventory additions ---
+                foreach ($expense->inventoryPurchases as $purchase) {
+                    $item = InventoryItem::find($purchase->inventory_item_id);
+                    if ($item) {
+                        $item->quantity = max(0, (int) $item->quantity - (float) $purchase->quantity);
+                        $item->save();
+                    }
+
+                    // Remove inventory log entries for this purchase
+                    InventoryLog::where('inventory_item_id', $purchase->inventory_item_id)
+                        ->where('notes', 'like', '%expense #' . $expense->id . '%')
+                        ->delete();
+                }
+
+                $expense->inventoryPurchases()->delete();
+                $expense->delete();
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error'   => 'Expense could not be deleted.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'message'    => "Expense #{$id} deleted and all effects reversed.",
+            'expense_id' => $id,
+            'amount_refunded' => number_format((float) $expense->amount, 2),
+        ]);
+    }
 }

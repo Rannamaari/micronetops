@@ -69,6 +69,7 @@ Route::middleware('api.token')->group(function () {
     Route::prefix('expenses')->group(function () {
         Route::get('/',             [BusinessExpenseController::class, 'index']);
         Route::post('/',            [BusinessExpenseController::class, 'store']);
+        Route::delete('/{id}',      [BusinessExpenseController::class, 'destroy']);
         Route::get('/categories',   [BusinessExpenseController::class, 'categories']);
         Route::get('/vendors',      [BusinessExpenseController::class, 'vendors']);
         Route::post('/vendors',     [BusinessExpenseController::class, 'createVendor']);
