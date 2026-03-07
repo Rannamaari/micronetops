@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\AccountTransaction;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\DailySalesLog;
 use App\Models\DailySalesLine;
@@ -41,11 +42,14 @@ class DailySalesController extends Controller
             return back()->with('error', 'Cannot delete a submitted sale. Reopen it first.');
         }
 
+        $id = $dailySalesLog->id;
         $dailySalesLog->lines()->delete();
         $dailySalesLog->delete();
 
+        ActivityLog::record('sale.deleted', "Draft sale #{$id} deleted");
+
         return redirect()->route('sales.daily.index', ['date' => $dailySalesLog->date->format('Y-m-d')])
-            ->with('success', 'Draft sale #' . $dailySalesLog->id . ' deleted.');
+            ->with('success', 'Draft sale #' . $id . ' deleted.');
     }
 
     public function openLog(Request $request)
@@ -189,6 +193,10 @@ class DailySalesController extends Controller
             $validated['payment_method'] === 'transfer' ? (int) $validated['transfer_account_id'] : null
         );
 
+        $unit = $dailySalesLog->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto';
+        $total = number_format($dailySalesLog->fresh()->totals['grand'] ?? 0, 2);
+        ActivityLog::record('sale.submitted', "Sale #{$dailySalesLog->id} submitted — {$unit}, MVR {$total} ({$validated['payment_method']})", $dailySalesLog);
+
         return back()->with('success', 'Sale submitted and stock updated.');
     }
 
@@ -212,6 +220,8 @@ class DailySalesController extends Controller
         }
 
         $dailySalesLog->reopen();
+
+        ActivityLog::record('sale.reopened', "Sale #{$dailySalesLog->id} reopened — stock reversed", $dailySalesLog);
 
         return back()->with('success', 'Sale reopened. Stock movements reversed.');
     }

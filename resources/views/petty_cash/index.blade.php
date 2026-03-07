@@ -317,8 +317,8 @@
                                 </span>
                             </td>
                             <td class="px-3 py-2">
-                                @if($entry->status === 'pending')
-                                    <div class="flex gap-2">
+                                <div class="flex gap-2 flex-wrap">
+                                    @if($entry->status === 'pending')
                                         <form method="POST" action="{{ route('petty-cash.approve', $entry) }}"
                                               onsubmit="return confirm('Approve this entry?');">
                                             @csrf
@@ -335,10 +335,19 @@
                                                 Reject
                                             </button>
                                         </form>
-                                    </div>
-                                @else
-                                    <span class="text-xs text-gray-400">—</span>
-                                @endif
+                                    @endif
+                                    @if(Auth::user()->isAdmin())
+                                        <form method="POST" action="{{ route('petty-cash.destroy', $entry) }}"
+                                              onsubmit="return confirm('Permanently delete this petty cash entry?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-xs text-red-600 dark:text-red-400 hover:underline font-semibold">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

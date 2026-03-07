@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Account;
 use App\Models\AccountTransaction;
 use App\Models\Expense;
@@ -325,6 +326,8 @@ class BusinessExpenseController extends Controller
         }
 
         $vendorCreated = $vendor->wasRecentlyCreated;
+
+        ActivityLog::record('expense.created', "API: {$category->type} expense #{$expense->id} recorded — {$category->name}, MVR {$amount} from {$account->name}", $expense, [], null, 'api');
 
         return response()->json([
             'message'        => 'Expense recorded successfully.',

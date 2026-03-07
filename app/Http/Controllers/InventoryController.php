@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\InventoryItem;
 use App\Models\InventoryCategory;
 use App\Models\InventoryLog;
@@ -114,6 +115,7 @@ class InventoryController extends Controller
         }
 
         $item = InventoryItem::create($validated);
+        ActivityLog::record('inventory.created', "Inventory item '{$item->name}' (SKU: {$item->sku}) created", $item);
 
         // Check if user wants to add another item
         if ($request->has('add_another')) {
@@ -187,6 +189,7 @@ class InventoryController extends Controller
         }
 
         $inventory->update($validated);
+        ActivityLog::record('inventory.updated', "Inventory item '{$inventory->name}' updated", $inventory);
 
         return redirect()
             ->route('inventory.index')
@@ -246,6 +249,9 @@ class InventoryController extends Controller
             'notes'              => $validated['notes'] ?? 'Manual stock adjustment',
         ]);
 
+        $direction = $quantityChange > 0 ? "+{$quantityChange}" : (string)$quantityChange;
+        ActivityLog::record('inventory.stock_adjusted', "Stock adjusted for '{$inventory->name}': {$direction} (new qty: {$newQuantity})", $inventory);
+
         return back()->with('success', 'Stock adjusted successfully.');
     }
 
@@ -259,13 +265,15 @@ class InventoryController extends Controller
         }
         // Check if item is used in any jobs
         if ($inventory->jobItems()->exists()) {
-            // Instead of deleting, just deactivate
             $inventory->is_active = false;
             $inventory->save();
+            ActivityLog::record('inventory.deactivated', "Inventory item '{$inventory->name}' deactivated (has job history)", $inventory);
             return back()->with('success', 'Item deactivated (cannot delete items used in jobs).');
         }
 
+        $name = $inventory->name;
         $inventory->delete();
+        ActivityLog::record('inventory.deleted', "Inventory item '{$name}' deleted");
         return redirect()
             ->route('inventory.index')
             ->with('success', 'Inventory item deleted successfully.');

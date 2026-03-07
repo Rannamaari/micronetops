@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\PettyCash;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -240,6 +241,8 @@ class PettyCashController extends Controller
             'paid_at'     => $validated['type'] === 'topup' ? now() : null,
         ]);
 
+        ActivityLog::record('petty_cash.created', ucfirst($entry->type) . " petty cash MVR " . number_format($entry->amount, 2) . " — {$entry->purpose}", $entry);
+
         return redirect()
             ->route('petty-cash.index')
             ->with('success', 'Petty cash entry created.');
@@ -272,7 +275,24 @@ class PettyCashController extends Controller
         $pettyCash->paid_at = now();
         $pettyCash->save();
 
+        ActivityLog::record('petty_cash.approved', "Petty cash #{$pettyCash->id} approved — MVR " . number_format($pettyCash->amount, 2) . " ({$pettyCash->purpose})", $pettyCash);
+
         return back()->with('success', 'Entry approved.');
+    }
+
+    /** Delete a petty cash entry (admin only) */
+    public function destroy(PettyCash $pettyCash)
+    {
+        if (!Auth::user()->isAdmin()) {
+            abort(403, 'Only admins can delete petty cash entries.');
+        }
+
+        $desc = ucfirst($pettyCash->type) . " #{$pettyCash->id} (MVR " . number_format($pettyCash->amount, 2) . ", {$pettyCash->purpose})";
+        $pettyCash->delete();
+
+        ActivityLog::record('petty_cash.deleted', "Deleted petty cash: {$desc}");
+
+        return back()->with('success', 'Petty cash entry deleted.');
     }
 
     /** Reject an expense request (admin/manager only) */
@@ -289,6 +309,8 @@ class PettyCashController extends Controller
         $pettyCash->status = 'rejected';
         $pettyCash->approved_by = Auth::id();
         $pettyCash->save();
+
+        ActivityLog::record('petty_cash.rejected', "Petty cash #{$pettyCash->id} rejected — MVR " . number_format($pettyCash->amount, 2) . " ({$pettyCash->purpose})", $pettyCash);
 
         return back()->with('success', 'Entry rejected.');
     }

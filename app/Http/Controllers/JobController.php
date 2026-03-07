@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Job;
 use App\Models\Customer;
 use App\Models\Vehicle;
@@ -309,6 +310,8 @@ class JobController extends Controller
         // Add creation note
         $job->addNote('Job created', auth()->user(), 'system');
 
+        ActivityLog::record('job.created', "Job #{$job->id} created for customer '{$job->customer_name}'", $job);
+
         return redirect()
             ->route('jobs.show', $job)
             ->with('success', 'Job created successfully.');
@@ -423,6 +426,8 @@ class JobController extends Controller
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'message' => $statusMessage]);
         }
+
+        ActivityLog::record('job.status_updated', "Job #{$job->id} status → {$validated['status']}", $job);
 
         return redirect()
             ->route('jobs.show', $job)
@@ -604,7 +609,9 @@ class JobController extends Controller
             return back()->with('error', 'Cannot delete a job that is in progress or completed.');
         }
 
+        $id = $job->id;
         $job->delete();
+        ActivityLog::record('job.deleted', "Job #{$id} deleted");
 
         return redirect()
             ->route('jobs.index')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\FaultTicket;
 use App\Models\Job;
@@ -129,6 +130,8 @@ class FaultTicketController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        ActivityLog::record('fault.created', "Fault ticket {$ticket->ticket_number} created — {$validated['title']} for {$validated['customer_name']}", $ticket);
+
         return redirect()->route('faults.show', $ticket)
             ->with('success', "Fault ticket {$ticket->ticket_number} created successfully.");
     }
@@ -196,6 +199,8 @@ class FaultTicketController extends Controller
                 return back()->with('error', 'Unknown action.');
         }
 
+        ActivityLog::record('fault.updated', "Fault {$faultTicket->ticket_number}: {$message}", $faultTicket);
+
         return back()->with('success', $message);
     }
 
@@ -220,6 +225,7 @@ class FaultTicketController extends Controller
     {
         $number = $faultTicket->ticket_number;
         $faultTicket->delete();
+        ActivityLog::record('fault.deleted', "Fault ticket {$number} deleted");
 
         return redirect()->route('faults.index')
             ->with('success', "Ticket {$number} deleted.");

@@ -28,7 +28,7 @@
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
                         <select name="type" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
                             <option value="">All Types</option>
-                            @foreach(['adjustment', 'expense', 'sale_transfer', 'transfer_in', 'transfer_out', 'eod_cash_in'] as $type)
+                            @foreach(['adjustment', 'expense', 'expense_reversal', 'sale_transfer', 'transfer_in', 'transfer_out', 'eod_cash_in'] as $type)
                                 <option value="{{ $type }}" {{ request('type') === $type ? 'selected' : '' }}>{{ str_replace('_', ' ', ucfirst($type)) }}</option>
                             @endforeach
                         </select>
@@ -87,6 +87,7 @@
                                                 $typeColors = [
                                                     'sale_transfer' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
                                                     'expense' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                                                    'expense_reversal' => 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
                                                     'adjustment' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
                                                     'transfer_in' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
                                                     'transfer_out' => 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',

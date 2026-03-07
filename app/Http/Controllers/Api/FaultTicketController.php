@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\FaultTicket;
 use App\Models\User;
@@ -106,6 +107,8 @@ class FaultTicketController extends Controller
             'created_by'     => $actor?->id,
             'assigned_to'    => $assignee?->id,
         ]);
+
+        ActivityLog::record('fault.created', "API: Fault ticket {$ticket->ticket_number} created — {$validated['title']} for {$customer->name}", $ticket, [], $actor?->id, 'api');
 
         return response()->json([
             'message'       => "Fault ticket {$ticket->ticket_number} created.",

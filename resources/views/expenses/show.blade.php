@@ -13,9 +13,21 @@
                     {{ strtoupper($expense->category?->type) }}
                 </span>
             </div>
-            <a href="{{ route('expenses.edit', $expense) }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm shrink-0">
-                Edit
-            </a>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="{{ route('expenses.edit', $expense) }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                    Edit
+                </a>
+                @if(Auth::user()->isAdmin())
+                    <form method="POST" action="{{ route('expenses.destroy', $expense) }}"
+                          onsubmit="return confirm('Delete Expense #{{ $expense->id }}?\n\nThis will:\n• Restore the account balance (MVR {{ number_format($expense->amount, 2) }})\n• Reverse any inventory stock changes\n\nThis cannot be undone.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                            Delete Expense
+                        </button>
+                    </form>
+                @endif
+            </div>
         </div>
     </x-slot>
 

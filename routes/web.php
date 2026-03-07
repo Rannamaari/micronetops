@@ -10,6 +10,7 @@ use App\Http\Controllers\EodController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HRController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AccountTransferController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
@@ -262,6 +263,8 @@ Route::middleware('auth')->group(function () {
             ->name('petty-cash.approve');
         Route::post('petty-cash/{pettyCash}/reject', [PettyCashController::class, 'reject'])
             ->name('petty-cash.reject');
+        Route::delete('petty-cash/{pettyCash}', [PettyCashController::class, 'destroy'])
+            ->name('petty-cash.destroy');
     });
 
     // Petty Cash Admin Dashboard - Admin only
@@ -310,6 +313,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
     });
 
+    // Activity Log - Admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+    });
+
     // Finance & P&L - Admin, Manager only
     Route::middleware('role:admin,manager')->group(function () {
         Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
@@ -333,6 +341,7 @@ Route::middleware('auth')->group(function () {
         Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
         Route::get('expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
         Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
         Route::get('recurring-expenses', [RecurringExpenseController::class, 'index'])->name('recurring-expenses.index');
         Route::get('recurring-expenses/create', [RecurringExpenseController::class, 'create'])->name('recurring-expenses.create');

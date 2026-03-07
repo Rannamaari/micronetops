@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\DailySalesLog;
 use App\Models\InventoryItem;
@@ -158,6 +159,8 @@ class SalesController extends Controller
             $totals = $log->fresh('lines')->totals;
             $unit   = $validated['business_unit'] === 'cool' ? 'Micro Cool' : 'Micro Moto';
 
+            ActivityLog::record('sale.created', "API: Sale #{$log->id} recorded for {$unit} on {$date}", $log, [], $actor?->id, 'api');
+
             return response()->json([
                 'message'       => "Sale recorded successfully for {$unit}.",
                 'sale_id'       => $log->id,
@@ -281,6 +284,8 @@ class SalesController extends Controller
             $log->delete();
 
             DB::commit();
+
+            ActivityLog::record('sale.deleted', "API: Sale #{$id} deleted and stock reversed", null, ['sale_id' => $id], null, 'api');
 
             return response()->json([
                 'message' => "Sale #{$id} deleted and stock reversed successfully.",

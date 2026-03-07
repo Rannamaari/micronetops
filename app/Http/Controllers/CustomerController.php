@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,6 +58,7 @@ class CustomerController extends Controller
         ]);
 
         $customer = Customer::create($validated);
+        ActivityLog::record('customer.created', "Customer '{$customer->name}' ({$customer->phone}) created", $customer);
 
         return redirect()
             ->route('customers.show', $customer)
@@ -102,6 +104,7 @@ class CustomerController extends Controller
         ]);
 
         $customer->update($validated);
+        ActivityLog::record('customer.updated', "Customer '{$customer->name}' ({$customer->phone}) updated", $customer);
 
         return redirect()
             ->route('customers.show', $customer)
@@ -119,11 +122,13 @@ class CustomerController extends Controller
         }
 
         // Delete associated vehicles and AC units
+        $name = $customer->name;
+        $phone = $customer->phone;
         $customer->vehicles()->delete();
         $customer->acUnits()->delete();
-
-        // Delete the customer
         $customer->delete();
+
+        ActivityLog::record('customer.deleted', "Customer '{$name}' ({$phone}) deleted");
 
         return redirect()
             ->route('customers.index')

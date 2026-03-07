@@ -115,6 +115,14 @@
                                         <td class="px-4 py-3 text-right whitespace-nowrap">
                                             <a href="{{ route('expenses.show', $expense) }}" class="text-blue-600 hover:underline text-sm" onclick="event.stopPropagation()">View</a>
                                             <a href="{{ route('expenses.edit', $expense) }}" class="text-gray-500 hover:underline text-sm ml-2" onclick="event.stopPropagation()">Edit</a>
+                                            @if(Auth::user()->isAdmin())
+                                                <form method="POST" action="{{ route('expenses.destroy', $expense) }}" class="inline ml-2" onclick="event.stopPropagation()"
+                                                      onsubmit="return confirm('Delete this expense? This will reverse the account debit and any inventory stock changes.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-red-600 hover:underline text-sm">Delete</button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -152,6 +160,14 @@
                                 </div>
                                 @if ($expense->reference)
                                     <div class="text-xs text-gray-400 mt-1.5">Ref: {{ $expense->reference }}</div>
+                                @endif
+                                @if(Auth::user()->isAdmin())
+                                    <form method="POST" action="{{ route('expenses.destroy', $expense) }}" class="mt-2"
+                                          onsubmit="return confirm('Delete this expense? This will reverse the account debit and any inventory stock changes.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-600 hover:underline">Delete</button>
+                                    </form>
                                 @endif
                             </a>
                         @empty

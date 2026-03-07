@@ -10,6 +10,7 @@ use App\Models\AccountTransaction;
 use App\Models\InventoryItem;
 use App\Models\InventoryCategory;
 use App\Models\InventoryPurchase;
+use App\Models\ActivityLog;
 use App\Models\InventoryLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -222,6 +223,8 @@ class ExpenseController extends Controller
             return back()->withErrors(['account_id' => $e->getMessage()])->withInput();
         }
 
+        ActivityLog::record('expense.created', "Expense recorded — {$validated['amount']} MVR via " . (Vendor::find($validated['vendor_id'])?->name ?? 'unknown vendor'));
+
         return redirect()->route('expenses.index')
             ->with('success', 'Expense recorded successfully.');
     }
@@ -344,6 +347,68 @@ class ExpenseController extends Controller
 
         return redirect()->route('expenses.index')
             ->with('success', 'Expense updated successfully.');
+    }
+
+    public function destroy(Expense $expense)
+    {
+        if (!Auth::user()->isAdmin()) {
+            abort(403, 'Only admins can delete expenses.');
+        }
+
+        $expenseId  = $expense->id;
+        $amount     = (float) $expense->amount;
+        $categoryName = $expense->category?->name ?? 'Expense';
+        $accountName  = $expense->account?->name;
+
+        DB::transaction(function () use ($expense, $expenseId, $amount, $categoryName, $accountName) {
+            // Restore account balance and write a reversal transaction (keeps audit trail)
+            if ($expense->account_id) {
+                $account = Account::lockForUpdate()->find($expense->account_id);
+                if ($account) {
+                    $account->balance = (float) $account->balance + $amount;
+                    $account->save();
+
+                    AccountTransaction::create([
+                        'account_id'   => $account->id,
+                        'type'         => 'expense_reversal',
+                        'amount'       => $amount,
+                        'occurred_at'  => now(),
+                        'description'  => "Expense deleted: {$categoryName} (Expense #{$expenseId})",
+                        'related_type' => Expense::class,
+                        'related_id'   => $expenseId,
+                        'created_by'   => Auth::id(),
+                    ]);
+                }
+            }
+
+            // Reverse COGS inventory purchases
+            $purchases = InventoryPurchase::where('expense_id', $expenseId)->get();
+            foreach ($purchases as $purchase) {
+                $item = InventoryItem::find($purchase->inventory_item_id);
+                if ($item) {
+                    $item->quantity = max(0, (float) $item->quantity - (float) $purchase->quantity);
+                    $item->save();
+                }
+
+                InventoryLog::where('inventory_item_id', $purchase->inventory_item_id)
+                    ->where('notes', 'Purchase for expense #' . $expenseId)
+                    ->delete();
+
+                $purchase->delete();
+            }
+
+            $expense->delete();
+        });
+
+        ActivityLog::record(
+            'expense.deleted',
+            "Deleted expense #{$expenseId} ({$categoryName}, MVR " . number_format($amount, 2) . ($accountName ? ", from {$accountName}" : '') . ')',
+            null,
+            ['expense_id' => $expenseId, 'amount' => $amount, 'category' => $categoryName, 'account' => $accountName]
+        );
+
+        return redirect()->route('expenses.index')
+            ->with('success', 'Expense deleted and account balance restored.');
     }
 
     private function applyInventoryPurchases(Expense $expense, array $validated): void

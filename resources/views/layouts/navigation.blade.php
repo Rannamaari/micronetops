@@ -237,6 +237,9 @@
                             <a href="{{ route('accounts.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('accounts.index') || request()->routeIs('accounts.show') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Accounts</a>
                             <a href="{{ route('accounts.logs') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('accounts.logs') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Account Logs</a>
                             <a href="{{ route('recurring-expenses.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('recurring-expenses.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Recurring Expenses</a>
+                            @if(Auth::user()->isAdmin())
+                                <a href="{{ route('activity-log.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('activity-log.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Activity Log</a>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -322,6 +325,11 @@
                     <a href="{{ route('recurring-expenses.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('recurring-expenses.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
                         Recurring Expenses
                     </a>
+                    @if(Auth::user()->isAdmin())
+                        <a href="{{ route('activity-log.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('activity-log.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Activity Log
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
