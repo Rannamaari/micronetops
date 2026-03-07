@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BusinessExpenseController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController;
@@ -64,8 +65,17 @@ Route::middleware('api.token')->group(function () {
         Route::get('/pending',   [LeadController::class, 'pending']);
     });
 
-    // --- Expenses (Petty Cash) ---
+    // --- Business Expenses (COGS + Operating) ---
     Route::prefix('expenses')->group(function () {
+        Route::get('/',             [BusinessExpenseController::class, 'index']);
+        Route::post('/',            [BusinessExpenseController::class, 'store']);
+        Route::get('/categories',   [BusinessExpenseController::class, 'categories']);
+        Route::get('/vendors',      [BusinessExpenseController::class, 'vendors']);
+        Route::get('/accounts',     [BusinessExpenseController::class, 'accounts']);
+    });
+
+    // --- Petty Cash ---
+    Route::prefix('petty-cash')->group(function () {
         Route::post('/',       [ExpenseController::class, 'store']);
         Route::get('/pending', [ExpenseController::class, 'pending']);
     });
