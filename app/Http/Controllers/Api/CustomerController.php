@@ -80,4 +80,93 @@ class CustomerController extends Controller
             'data'    => $customer->only(['id', 'name', 'phone', 'email', 'category']),
         ], 201);
     }
+
+    /**
+     * GET /api/customers/{id}
+     * Get a single customer with their job history summary.
+     */
+    public function show(int $id): JsonResponse
+    {
+        $customer = Customer::with('jobs:id,customer_id,job_date,total_amount,status,job_type')->find($id);
+
+        if (!$customer) {
+            return response()->json(['error' => "Customer #{$id} not found."], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'id'         => $customer->id,
+                'name'       => $customer->name,
+                'phone'      => $customer->phone,
+                'email'      => $customer->email,
+                'address'    => $customer->address,
+                'category'   => $customer->category,
+                'notes'      => $customer->notes,
+                'total_jobs' => $customer->jobs->count(),
+                'total_spent'=> number_format($customer->jobs->sum('total_amount'), 2),
+                'created_at' => $customer->created_at->format('Y-m-d'),
+            ],
+        ]);
+    }
+
+    /**
+     * PATCH /api/customers/{id}
+     * Update a customer's details. Only send fields you want to change.
+     *
+     * Body: { "name": "New Name", "phone": "7009999", "email": "x@y.com", "address": "...", "notes": "..." }
+     */
+    public function update(int $id, Request $request): JsonResponse
+    {
+        $customer = Customer::find($id);
+
+        if (!$customer) {
+            return response()->json(['error' => "Customer #{$id} not found."], 404);
+        }
+
+        try {
+            $validated = $request->validate([
+                'name'     => ['sometimes', 'string', 'max:255'],
+                'phone'    => ['sometimes', 'string', 'max:50', 'unique:customers,phone,' . $id],
+                'email'    => ['sometimes', 'nullable', 'email', 'max:255'],
+                'address'  => ['sometimes', 'nullable', 'string', 'max:500'],
+                'notes'    => ['sometimes', 'nullable', 'string'],
+                'category' => ['sometimes', 'in:moto,ac'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        $customer->update($validated);
+
+        return response()->json([
+            'message' => 'Customer updated successfully.',
+            'data'    => $customer->fresh()->only(['id', 'name', 'phone', 'email', 'address', 'category', 'notes']),
+        ]);
+    }
+
+    /**
+     * DELETE /api/customers/{id}
+     * Delete a customer. Blocked if they have existing jobs.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $customer = Customer::find($id);
+
+        if (!$customer) {
+            return response()->json(['error' => "Customer #{$id} not found."], 404);
+        }
+
+        if ($customer->jobs()->count() > 0) {
+            return response()->json([
+                'error' => "Cannot delete \"{$customer->name}\" — they have existing job records. Remove those first.",
+            ], 422);
+        }
+
+        $name = $customer->name;
+        $customer->vehicles()->delete();
+        $customer->acUnits()->delete();
+        $customer->delete();
+
+        return response()->json(['message' => "Customer \"{$name}\" deleted successfully."]);
+    }
 }

@@ -33,8 +33,11 @@ Route::middleware('api.token')->group(function () {
 
     // --- Customers ---
     Route::prefix('customers')->group(function () {
-        Route::get('/search',  [CustomerController::class, 'search']);
-        Route::post('/',       [CustomerController::class, 'store']);
+        Route::get('/search',    [CustomerController::class, 'search']);
+        Route::post('/',         [CustomerController::class, 'store']);
+        Route::get('/{id}',      [CustomerController::class, 'show']);
+        Route::patch('/{id}',    [CustomerController::class, 'update']);
+        Route::delete('/{id}',   [CustomerController::class, 'destroy']);
     });
 
     // --- Sales (Micro Moto / Micro Cool) ---
