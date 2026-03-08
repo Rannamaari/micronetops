@@ -35,6 +35,18 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
+Route::get('/data-deletion', function () {
+    return view('data-deletion');
+})->name('data-deletion');
+
+Route::get('/terms-and-condition', function () {
+    return view('terms-and-condition');
+})->name('terms');
+
 Route::get('/', function () {
     if (auth()->check()) {
         // Redirect HR users to HR dashboard
