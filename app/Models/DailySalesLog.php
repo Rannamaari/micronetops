@@ -155,9 +155,7 @@ class DailySalesLog extends Model
             ]);
         }
 
-        $job->recalculateTotals();
-
-        // Create a single payment for the grand total
+        // Create payment BEFORE recalculateTotals so updatePaymentStatus sees it
         $totals = $this->totals;
         Payment::create([
             'job_id' => $job->id,
@@ -165,6 +163,8 @@ class DailySalesLog extends Model
             'method' => $paymentMethod,
             'status' => 'completed',
         ]);
+
+        $job->recalculateTotals();
 
         $this->update([
             'status' => 'submitted',
