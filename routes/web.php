@@ -43,6 +43,10 @@ Route::get('/privacy-policy', function () {
     return view('privacy-policy');
 })->name('privacy.policy');
 
+Route::get('/privacy', function () {
+    return view('privacy-policy');
+});
+
 Route::get('/data-deletion', function () {
     return view('data-deletion');
 })->name('data-deletion');
@@ -50,6 +54,10 @@ Route::get('/data-deletion', function () {
 Route::get('/terms-and-condition', function () {
     return view('terms-and-condition');
 })->name('terms');
+
+Route::get('/terms', function () {
+    return view('terms-and-condition');
+});
 
 Route::get('/', function () {
     if (auth()->check()) {
