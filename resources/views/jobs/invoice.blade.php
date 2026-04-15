@@ -240,10 +240,9 @@
             <li class="text-xs">Payment is due upon receipt of invoice.</li>
             <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
             <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
-            <li class="text-xs">Late or pending payments may delay future service appointments.</li>
+            <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>
         </ul>
     </div>
 </div>
 </body>
 </html>
-

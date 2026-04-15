@@ -82,6 +82,7 @@ class Job extends Model
     // Service type constants
     public const TYPE_AC = 'ac';
     public const TYPE_BIKE = 'moto';
+    public const TYPE_IT = 'it';
 
     // Cancellation reason constants
     public const CANCEL_CUSTOMER_REQUEST = 'customer_request';
@@ -636,6 +637,7 @@ class Job extends Model
         return match ($this->job_type) {
             self::TYPE_AC => '#0ea5e9',    // sky blue (AC = cold)
             self::TYPE_BIKE => '#f97316',  // orange (bike = moto)
+            self::TYPE_IT => '#6366f1',    // indigo (IT = micronet)
             default => '#6b7280',
         };
     }

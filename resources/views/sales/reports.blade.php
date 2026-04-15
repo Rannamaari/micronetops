@@ -29,12 +29,13 @@
                     </div>
                     <div>
                         <label for="business_unit" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-                        <select name="business_unit" id="business_unit"
-                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="">All Units</option>
-                            <option value="moto" {{ $businessUnit === 'moto' ? 'selected' : '' }}>Micro Moto</option>
-                            <option value="cool" {{ $businessUnit === 'cool' ? 'selected' : '' }}>Micro Cool</option>
-                        </select>
+	                        <select name="business_unit" id="business_unit"
+	                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+	                            <option value="">All Units</option>
+	                            <option value="moto" {{ $businessUnit === 'moto' ? 'selected' : '' }}>Micro Moto</option>
+	                            <option value="cool" {{ $businessUnit === 'cool' ? 'selected' : '' }}>Micro Cool</option>
+	                            <option value="it" {{ $businessUnit === 'it' ? 'selected' : '' }}>Micronet</option>
+	                        </select>
                     </div>
                     <div>
                         <label for="payment_method" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment</label>
@@ -77,7 +78,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         @foreach($unitBreakdown as $unit => $data)
                             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ $unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</h4>
+	                                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-3">{{ $unit === 'moto' ? 'Micro Moto' : ($unit === 'cool' ? 'Micro Cool' : 'Micronet') }}</h4>
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-gray-500 dark:text-gray-400">Cash</span>
@@ -118,7 +119,7 @@
                                 @foreach($dailySummaries as $summary)
                                     <tr>
                                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{ $summary['date']->format('D, d M') }}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $summary['business_unit'] === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</td>
+	                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $summary['business_unit'] === 'moto' ? 'Micro Moto' : ($summary['business_unit'] === 'cool' ? 'Micro Cool' : 'Micronet') }}</td>
                                         <td class="px-4 py-3 text-center">
                                             @if($summary['payment_method'])
                                                 <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium

@@ -108,31 +108,41 @@
                       @submit.prevent="if (submitJob()) $el.submit()">
                     @csrf
 
-                    {{-- Service Type - Large touch targets --}}
-                    <div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer" @click="jobType = 'moto'">
-                                <input type="radio" name="job_type" value="moto" class="sr-only" x-model="jobType">
-                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
-                                     :class="jobType === 'moto'
-                                         ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
-                                         : 'border-gray-200 dark:border-gray-600'">
-                                    <span class="text-2xl mr-2">🏍️</span>
-                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Moto</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer" @click="jobType = 'ac'">
-                                <input type="radio" name="job_type" value="ac" class="sr-only" x-model="jobType">
-                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
-                                     :class="jobType === 'ac'
-                                         ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
-                                         : 'border-gray-200 dark:border-gray-600'">
-                                    <span class="text-2xl mr-2">❄️</span>
-                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Cool</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
+	                    {{-- Service Type - Large touch targets --}}
+	                    <div>
+	                        <div class="grid grid-cols-3 gap-2">
+	                            <label class="cursor-pointer" @click="jobType = 'moto'">
+	                                <input type="radio" name="job_type" value="moto" class="sr-only" x-model="jobType">
+	                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                                     :class="jobType === 'moto'
+	                                         ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
+	                                         : 'border-gray-200 dark:border-gray-600'">
+	                                    <span class="text-2xl mr-2">🏍️</span>
+	                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Moto</span>
+	                                </div>
+	                            </label>
+	                            <label class="cursor-pointer" @click="jobType = 'ac'">
+	                                <input type="radio" name="job_type" value="ac" class="sr-only" x-model="jobType">
+	                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                                     :class="jobType === 'ac'
+	                                         ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
+	                                         : 'border-gray-200 dark:border-gray-600'">
+	                                    <span class="text-2xl mr-2">❄️</span>
+	                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micro Cool</span>
+	                                </div>
+	                            </label>
+	                            <label class="cursor-pointer" @click="jobType = 'it'">
+	                                <input type="radio" name="job_type" value="it" class="sr-only" x-model="jobType">
+	                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                                     :class="jobType === 'it'
+	                                         ? 'border-indigo-500 bg-indigo-100 dark:bg-indigo-900/30'
+	                                         : 'border-gray-200 dark:border-gray-600'">
+	                                    <span class="text-2xl mr-2">🖥️</span>
+	                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micronet</span>
+	                                </div>
+	                            </label>
+	                        </div>
+	                    </div>
 
                     {{-- Phone - with customer autocomplete --}}
                     <div class="relative" @click.away="showDropdown = false">
@@ -248,7 +258,7 @@
                         <input type="text" name="title"
                                value="{{ old('title') }}"
                                class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="AC not cooling, bike won't start...">
+	                               placeholder="Network down, CCTV offline, device issue...">
                     </div>
 
                     {{-- Location --}}

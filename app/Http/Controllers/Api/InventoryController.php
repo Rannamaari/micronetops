@@ -68,7 +68,7 @@ class InventoryController extends Controller
         try {
             $validated = $request->validate([
                 'name'            => ['required', 'string', 'max:255'],
-                'category'        => ['required', 'in:moto,ac'],
+                'category'        => ['required', 'in:moto,ac,it'],
                 'unit'            => ['nullable', 'string', 'max:20'],
                 'quantity'        => ['nullable', 'integer', 'min:0'],
                 'sell_price'      => ['nullable', 'numeric', 'min:0'],

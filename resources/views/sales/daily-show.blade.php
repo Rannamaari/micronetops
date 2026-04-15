@@ -3,7 +3,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    Sale #{{ $log->id }} — {{ $log->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }} — {{ $log->date->format('D, d M Y') }}
+	                    Sale #{{ $log->id }} — {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }} — {{ $log->date->format('D, d M Y') }}
                 </h2>
                 <div class="flex items-center gap-2 mt-1">
                     <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium

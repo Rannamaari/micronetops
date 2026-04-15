@@ -204,7 +204,7 @@ class JobController extends Controller
     {
         $validated = $request->validate([
             // Required fields for quick creation
-            'job_type' => ['required', Rule::in(['moto', 'ac'])],
+            'job_type' => ['required', Rule::in(['moto', 'ac', 'it'])],
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_name' => ['required', 'string', 'max:100'],
 
@@ -255,7 +255,11 @@ class JobController extends Controller
                 'name' => $validated['customer_name'],
                 'phone' => $validated['customer_phone'],
                 'address' => $validated['location'] ?? null,
-                'category' => $validated['job_type'] === 'ac' ? 'ac' : 'moto',
+                'category' => match ($validated['job_type']) {
+                    'ac' => 'ac',
+                    'it' => 'it',
+                    default => 'moto',
+                },
             ]);
         }
 
@@ -386,6 +390,15 @@ class JobController extends Controller
                 'phone' => '+960 9996210',
                 'email' => 'hello@micronet.mv',
                 'website' => 'cool.micronet.mv',
+            ];
+        } elseif ($job->job_type === 'it') {
+            $brand = [
+                'name' => 'Micronet',
+                'tagline' => 'IT & Technical Services',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'micronet.mv',
             ];
         } else {
             $brand = [
@@ -579,6 +592,15 @@ class JobController extends Controller
                 'email' => 'hello@micronet.mv',
                 'website' => 'cool.micronet.mv',
             ];
+        } elseif ($job->job_type === 'it') {
+            $brand = [
+                'name' => 'Micronet',
+                'tagline' => 'IT & Technical Services',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'micronet.mv',
+            ];
         } else {
             $brand = [
                 'name' => 'Micro Moto Garage',
@@ -678,7 +700,7 @@ class JobController extends Controller
     public function quickCreate(Request $request)
     {
         $validated = $request->validate([
-            'job_type' => ['required', Rule::in(['moto', 'ac'])],
+            'job_type' => ['required', Rule::in(['moto', 'ac', 'it'])],
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_name' => ['required', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:100'],

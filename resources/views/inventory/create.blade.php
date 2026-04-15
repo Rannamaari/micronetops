@@ -90,11 +90,12 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Category Type <span class="text-red-500">*</span>
                             </label>
-                            <select name="category" required
-                                    class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
-                                <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC Service</option>
-                            </select>
+	                            <select name="category" required
+	                                    class="block w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+	                                <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
+	                                <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC Service</option>
+	                                <option value="it" {{ old('category') === 'it' ? 'selected' : '' }}>IT / Micronet</option>
+	                            </select>
                         </div>
 
                         <div>
@@ -307,4 +308,3 @@
         calculateGst();
     </script>
 </x-app-layout>
-

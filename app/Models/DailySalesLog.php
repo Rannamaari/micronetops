@@ -123,8 +123,12 @@ class DailySalesLog extends Model
         }
 
         // --- Create Job from daily sales log ---
-        $unit = $this->business_unit; // 'moto' or 'cool'
-        $jobType = $unit === 'cool' ? 'ac' : 'moto';
+        $unit = $this->business_unit; // 'moto' | 'cool' | 'it'
+        $jobType = match ($unit) {
+            'cool' => 'ac',
+            'it' => 'it',
+            default => 'moto',
+        };
 
         $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
 

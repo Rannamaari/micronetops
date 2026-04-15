@@ -18,11 +18,11 @@ class SalesController extends Controller
 {
     /**
      * POST /api/sales
-     * Create a complete sale for Micro Moto (moto) or Micro Cool (cool).
+     * Create a complete sale for Micro Moto (moto), Micro Cool (cool), or Micronet (it).
      *
      * Body:
      * {
-     *   "business_unit": "moto",          // "moto" = Micro Moto, "cool" = Micro Cool
+     *   "business_unit": "moto",          // "moto" = Micro Moto, "cool" = Micro Cool, "it" = Micronet
      *   "customer_name":  "Ahmed Ali",     // optional (walk-in if omitted)
      *   "customer_phone": "7001234",       // optional, required if customer_name given
      *   "payment_method": "cash",          // "cash" or "transfer"
@@ -41,7 +41,7 @@ class SalesController extends Controller
     {
         try {
             $validated = $request->validate([
-                'business_unit'  => ['required', 'in:moto,cool'],
+                'business_unit'  => ['required', 'in:moto,cool,it'],
                 'customer_name'  => ['nullable', 'string', 'max:255'],
                 'customer_phone' => ['nullable', 'string', 'max:50'],
                 'payment_method' => ['required', 'in:cash,transfer'],
@@ -83,7 +83,11 @@ class SalesController extends Controller
                     ['phone' => $validated['customer_phone']],
                     [
                         'name'     => $validated['customer_name'] ?? 'Unknown',
-                        'category' => $validated['business_unit'] === 'cool' ? 'ac' : 'moto',
+                        'category' => match ($validated['business_unit']) {
+                            'cool' => 'ac',
+                            'it' => 'it',
+                            default => 'moto',
+                        },
                     ]
                 );
             }
@@ -100,7 +104,11 @@ class SalesController extends Controller
 
             // --- Resolve and add lines ---
             $resolvedLines = [];
-            $categoryMap = $validated['business_unit'] === 'cool' ? 'ac' : 'moto';
+            $categoryMap = match ($validated['business_unit']) {
+                'cool' => 'ac',
+                'it' => 'it',
+                default => 'moto',
+            };
 
             foreach ($validated['items'] as $item) {
                 $inventoryItem = null;
@@ -157,7 +165,12 @@ class SalesController extends Controller
             DB::commit();
 
             $totals = $log->fresh('lines')->totals;
-            $unit   = $validated['business_unit'] === 'cool' ? 'Micro Cool' : 'Micro Moto';
+            $unit   = match ($validated['business_unit']) {
+                'moto' => 'Micro Moto',
+                'cool' => 'Micro Cool',
+                'it' => 'Micronet',
+                default => $validated['business_unit'],
+            };
 
             ActivityLog::record('sale.created', "API: Sale #{$log->id} recorded for {$unit} on {$date}", $log, [], $actor?->id, 'api');
 
@@ -235,7 +248,12 @@ class SalesController extends Controller
                 'sale_id'        => $log->id,
                 'date'           => $log->date->format('Y-m-d'),
                 'business_unit'  => $log->business_unit,
-                'unit_label'     => $log->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto',
+                'unit_label'     => match ($log->business_unit) {
+                    'moto' => 'Micro Moto',
+                    'cool' => 'Micro Cool',
+                    'it' => 'Micronet',
+                    default => $log->business_unit,
+                },
                 'customer'       => $log->customer?->name ?? 'Walk-in',
                 'payment_method' => $log->payment_method,
                 'lines_count'    => $log->lines()->count(),
@@ -326,7 +344,12 @@ class SalesController extends Controller
             return [
                 'sale_id'        => $log->id,
                 'business_unit'  => $log->business_unit,
-                'unit_label'     => $log->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto',
+                'unit_label'     => match ($log->business_unit) {
+                    'moto' => 'Micro Moto',
+                    'cool' => 'Micro Cool',
+                    'it' => 'Micronet',
+                    default => $log->business_unit,
+                },
                 'customer'       => $log->customer?->name ?? 'Walk-in',
                 'payment_method' => $log->payment_method,
                 'lines_count'    => $log->lines->count(),

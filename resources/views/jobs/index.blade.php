@@ -181,15 +181,15 @@
                 </button>
 
                 {{-- Active filter chips --}}
-                @if($type)
-                    <a href="{{ route('jobs.index', array_merge(request()->except('type'), [])) }}"
-                       class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full">
-                        {{ $type === 'ac' ? 'AC' : 'Bike' }}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </a>
-                @endif
+	                @if($type)
+	                    <a href="{{ route('jobs.index', array_merge(request()->except('type'), [])) }}"
+	                       class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full">
+	                        {{ $type === 'ac' ? 'AC' : ($type === 'it' ? 'IT' : 'Bike') }}
+	                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+	                        </svg>
+	                    </a>
+	                @endif
             </div>
             @endif
 
@@ -207,10 +207,10 @@
                        class="block bg-white dark:bg-gray-800 rounded-xl p-3 active:bg-gray-50 dark:active:bg-gray-700">
                         <div class="flex items-start gap-3">
                             {{-- Type indicator --}}
-                            <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-                                        {{ $job->job_type === 'ac' ? 'bg-sky-100 dark:bg-sky-900/30' : 'bg-orange-100 dark:bg-orange-900/30' }}">
-                                <span class="text-lg">{{ $job->job_type === 'ac' ? '❄️' : '🏍️' }}</span>
-                            </div>
+	                            <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
+	                                        {{ $job->job_type === 'ac' ? 'bg-sky-100 dark:bg-sky-900/30' : ($job->job_type === 'it' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-orange-100 dark:bg-orange-900/30') }}">
+	                                <span class="text-lg">{{ $job->job_type === 'ac' ? '❄️' : ($job->job_type === 'it' ? '🖥️' : '🏍️') }}</span>
+	                            </div>
 
                             {{-- Content --}}
                             <div class="flex-1 min-w-0">
@@ -326,27 +326,32 @@
                             @endif
                         </div>
 
-                        {{-- Job Type --}}
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
-                            <div class="grid grid-cols-3 gap-2">
-                                <a href="{{ route('jobs.index', array_merge(request()->except('type'), [])) }}"
-                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
-                                          {{ !$type ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
-                                    All
-                                </a>
-                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'ac'])) }}"
-                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
-                                          {{ $type === 'ac' ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
-                                    ❄️ AC
-                                </a>
-                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'moto'])) }}"
-                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
-                                          {{ $type === 'moto' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
-                                    🏍️ Bike
-                                </a>
-                            </div>
-                        </div>
+	                        {{-- Job Type --}}
+	                        <div class="mb-6">
+	                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Type</label>
+	                            <div class="grid grid-cols-2 gap-2">
+	                                <a href="{{ route('jobs.index', array_merge(request()->except('type'), [])) }}"
+	                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
+	                                          {{ !$type ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+	                                    All
+	                                </a>
+	                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'ac'])) }}"
+	                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
+	                                          {{ $type === 'ac' ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+	                                    ❄️ AC
+	                                </a>
+	                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'moto'])) }}"
+	                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
+	                                          {{ $type === 'moto' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+	                                    🏍️ Bike
+	                                </a>
+	                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'it'])) }}"
+	                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
+	                                          {{ $type === 'it' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+	                                    🖥️ IT
+	                                </a>
+	                            </div>
+	                        </div>
 
                         {{-- Priority --}}
                         <div class="mb-6">
@@ -395,7 +400,7 @@
                                 class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
-                                        <span class="w-2 h-8 rounded-full {{ $job->job_type === 'ac' ? 'bg-sky-500' : 'bg-orange-500' }}"></span>
+	                                        <span class="w-2 h-8 rounded-full {{ $job->job_type === 'ac' ? 'bg-sky-500' : ($job->job_type === 'it' ? 'bg-indigo-500' : 'bg-orange-500') }}"></span>
                                         <div>
                                             <div class="font-medium text-gray-900 dark:text-gray-100">
                                                 {{ $job->title ?: 'Job #' . $job->id }}

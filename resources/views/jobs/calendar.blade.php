@@ -303,28 +303,38 @@
             </div>
             <form id="quick-create-form" class="space-y-4">
                 {{-- Job type selection with Alpine.js --}}
-                <div x-data="{ jobType: 'moto' }" class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer" @click="jobType = 'moto'">
-                        <input type="radio" name="quick_job_type" value="moto" class="sr-only" x-model="jobType">
-                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
-                             :class="jobType === 'moto'
-                                 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
-                                 : 'border-gray-200 dark:border-gray-600'">
-                            <span class="text-xl mr-2">🏍️</span>
-                            <span class="font-bold text-gray-900 dark:text-gray-100">Bike</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer" @click="jobType = 'ac'">
-                        <input type="radio" name="quick_job_type" value="ac" class="sr-only" x-model="jobType">
-                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
-                             :class="jobType === 'ac'
-                                 ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
-                                 : 'border-gray-200 dark:border-gray-600'">
-                            <span class="text-xl mr-2">❄️</span>
-                            <span class="font-bold text-gray-900 dark:text-gray-100">AC</span>
-                        </div>
-                    </label>
-                </div>
+	                <div x-data="{ jobType: 'moto' }" class="grid grid-cols-3 gap-3">
+	                    <label class="cursor-pointer" @click="jobType = 'moto'">
+	                        <input type="radio" name="quick_job_type" value="moto" class="sr-only" x-model="jobType">
+	                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                             :class="jobType === 'moto'
+	                                 ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30'
+	                                 : 'border-gray-200 dark:border-gray-600'">
+	                            <span class="text-xl mr-2">🏍️</span>
+	                            <span class="font-bold text-gray-900 dark:text-gray-100">Bike</span>
+	                        </div>
+	                    </label>
+	                    <label class="cursor-pointer" @click="jobType = 'ac'">
+	                        <input type="radio" name="quick_job_type" value="ac" class="sr-only" x-model="jobType">
+	                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                             :class="jobType === 'ac'
+	                                 ? 'border-sky-500 bg-sky-100 dark:bg-sky-900/30'
+	                                 : 'border-gray-200 dark:border-gray-600'">
+	                            <span class="text-xl mr-2">❄️</span>
+	                            <span class="font-bold text-gray-900 dark:text-gray-100">AC</span>
+	                        </div>
+	                    </label>
+	                    <label class="cursor-pointer" @click="jobType = 'it'">
+	                        <input type="radio" name="quick_job_type" value="it" class="sr-only" x-model="jobType">
+	                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                             :class="jobType === 'it'
+	                                 ? 'border-indigo-500 bg-indigo-100 dark:bg-indigo-900/30'
+	                                 : 'border-gray-200 dark:border-gray-600'">
+	                            <span class="text-xl mr-2">🖥️</span>
+	                            <span class="font-bold text-gray-900 dark:text-gray-100">IT</span>
+	                        </div>
+	                    </label>
+	                </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Phone</label>

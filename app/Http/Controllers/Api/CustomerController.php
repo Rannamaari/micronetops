@@ -51,7 +51,7 @@ class CustomerController extends Controller
                 'name'     => ['required', 'string', 'max:255'],
                 'phone'    => ['required', 'string', 'max:50'],
                 'email'    => ['nullable', 'email', 'max:255'],
-                'category' => ['nullable', 'in:moto,ac'],
+                'category' => ['nullable', 'in:moto,ac,it'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
@@ -130,7 +130,7 @@ class CustomerController extends Controller
                 'email'    => ['sometimes', 'nullable', 'email', 'max:255'],
                 'address'  => ['sometimes', 'nullable', 'string', 'max:500'],
                 'notes'    => ['sometimes', 'nullable', 'string'],
-                'category' => ['sometimes', 'in:moto,ac'],
+                'category' => ['sometimes', 'in:moto,ac,it'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Micronet — Trusted IT, Repairs & Technical Services in the Maldives</title>
-    <meta name="description" content="From CCTV installation and networking to air conditioning and motorcycle repairs — Micronet delivers reliable technical solutions for homes and businesses across the Maldives.">
-    <meta name="keywords" content="Micronet, IT support Maldives, CCTV installation Male, networking Maldives, AC repair, motorcycle repair, web development, EasyFix, Micro Moto Garage, Micro Cool, technical services Maldives">
+	    <title>Micronet — Trusted IT, Technical Services & Consultations in the Maldives</title>
+	    <meta name="description" content="From CCTV installation and networking to on-site technical consultations — Micronet delivers reliable IT and technical solutions for homes and businesses across the Maldives.">
+    <meta name="keywords" content="Micronet, IT support Maldives, CCTV installation Male, networking Maldives, IP PBX Maldives, IP PABX Maldives, VoIP Maldives, SIP trunk Maldives, SIP connections, PBX setup, technical consultations, on-site support, web development, EasyFix, technical services Maldives">
     <meta name="author" content="Micronet">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://micronet.mv/">
@@ -16,22 +16,22 @@
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://micronet.mv/">
     <meta property="og:site_name"   content="Micronet">
-    <meta property="og:title"       content="Micronet — Trusted IT, Repairs & Technical Services in the Maldives">
-    <meta property="og:description" content="From CCTV installation and networking to air conditioning and motorcycle repairs — Micronet delivers reliable solutions for homes and businesses across the Maldives.">
+	    <meta property="og:title"       content="Micronet — Trusted IT, Technical Services & Consultations in the Maldives">
+	    <meta property="og:description" content="From CCTV installation and networking to on-site technical consultations — Micronet delivers reliable IT and technical solutions for homes and businesses across the Maldives.">
     <meta property="og:image"       content="https://micronet.mv/ogimage.png">
     <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt"    content="Micronet — IT, Repairs & Technical Services in the Maldives">
+	    <meta property="og:image:alt"    content="Micronet — IT, Technical Services & Consultations in the Maldives">
     <meta property="og:locale"      content="en_US">
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card"        content="summary_large_image">
     <meta name="twitter:site"        content="@@micromotoMV">
     <meta name="twitter:creator"     content="@@micromotoMV">
-    <meta name="twitter:title"       content="Micronet — Trusted IT, Repairs & Technical Services in the Maldives">
-    <meta name="twitter:description" content="From CCTV installation and networking to air conditioning and motorcycle repairs — Micronet delivers reliable solutions across the Maldives.">
+	    <meta name="twitter:title"       content="Micronet — Trusted IT, Technical Services & Consultations in the Maldives">
+	    <meta name="twitter:description" content="From CCTV installation and networking to on-site technical consultations — Micronet delivers reliable IT and technical solutions across the Maldives.">
     <meta name="twitter:image"       content="https://micronet.mv/ogimage.png">
-    <meta name="twitter:image:alt"   content="Micronet — IT & Technical Services">
+	    <meta name="twitter:image:alt"   content="Micronet — IT, Technical Services & Consultations in the Maldives">
 
     <!-- Theme colour (browser chrome on mobile) -->
     <meta name="theme-color" content="#DC2626">
@@ -53,7 +53,7 @@
         "url": "https://micronet.mv",
         "logo": "https://micronet.mv/logo.png",
         "image": "https://micronet.mv/ogimage.png",
-        "description": "Micronet delivers reliable IT support, CCTV installation, networking, AC services, and motorcycle repairs for homes and businesses across the Maldives.",
+	        "description": "Micronet delivers reliable IT support, CCTV installation, networking, IP PBX (VoIP) and SIP setup, on-site technical support, and consultations for homes and businesses across the Maldives.",
         "telephone": "+9609996210",
         "email": "hi@micronet.mv",
         "foundingDate": "2017",
@@ -267,8 +267,8 @@
     <div class="absolute top-1/3 right-0 w-[500px] h-[500px] bg-red-700 opacity-[0.06] rounded-full blur-[80px] pointer-events-none transform translate-x-1/3"></div>
     <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-700 opacity-[0.05] rounded-full blur-[80px] pointer-events-none transform -translate-x-1/3"></div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 lg:py-0 w-full">
-        <div class="grid lg:grid-cols-2 gap-14 items-center">
+	    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 w-full">
+	        <div class="grid lg:grid-cols-2 gap-14 items-center">
 
             <!-- ── Text ── -->
             <div class="text-center lg:text-left">
@@ -279,17 +279,18 @@
                     <span class="text-red-400 text-xs font-semibold uppercase tracking-wider">Serving the Maldives</span>
                 </div>
 
-                <!-- Headline -->
-                <h1 class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-black text-white leading-[1.1] mb-6">
-                    Your Trusted Partner for
-                    <span class="text-red-500"> IT, Repairs &amp;</span>
-                    <span class="text-white"> Technical&nbsp;Services</span>
-                    <span class="block text-gray-400 text-3xl sm:text-4xl lg:text-[2.5rem] mt-2 font-extrabold">in the Maldives</span>
-                </h1>
+	                <!-- Headline -->
+	                <h1 class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-black text-white leading-[1.1] mb-6">
+	                    Your Trusted Partner for
+	                    <span class="text-red-500"> IT,</span>
+	                    <span class="text-white"> Technical&nbsp;Services</span>
+	                    <span class="text-red-500"> &amp; Consultations</span>
+	                    <span class="block text-gray-400 text-3xl sm:text-4xl lg:text-[2.5rem] mt-2 font-extrabold">in the Maldives</span>
+	                </h1>
 
-                <p class="text-gray-400 text-lg sm:text-xl leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-                    From CCTV installation and networking to air conditioning and motorcycle repairs — Micronet delivers reliable solutions for homes and businesses.
-                </p>
+	                <p class="text-gray-400 text-lg sm:text-xl leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
+	                    From CCTV installation and networking to on-site technical support and consultations — Micronet delivers reliable solutions for homes and businesses.
+	                </p>
 
                 <!-- CTAs -->
                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -315,10 +316,10 @@
                         <div class="text-3xl font-black text-white">500+</div>
                         <div class="text-gray-500 text-xs mt-1">Customers Served</div>
                     </div>
-                    <div class="px-8 text-center lg:text-left">
-                        <div class="text-3xl font-black text-white">7+</div>
-                        <div class="text-gray-500 text-xs mt-1">Services Offered</div>
-                    </div>
+	                    <div class="px-8 text-center lg:text-left">
+	                        <div class="text-3xl font-black text-white">8+</div>
+	                        <div class="text-gray-500 text-xs mt-1">Services Offered</div>
+	                    </div>
                     <div class="pl-8 text-center lg:text-left">
                         <div class="text-3xl font-black text-white">5★</div>
                         <div class="text-gray-500 text-xs mt-1">Customer Rating</div>
@@ -422,24 +423,35 @@
                 <p class="text-gray-500 text-sm leading-relaxed">Professional CCTV setup and monitoring for homes, offices, and businesses.</p>
             </div>
 
-            <!-- Networking -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
-                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
-                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Networking & IT Support</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Network setup, troubleshooting, and ongoing IT support for businesses and homes.</p>
-            </div>
+	            <!-- Networking -->
+	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
+	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+	                    </svg>
+	                </div>
+	                <h3 class="text-base font-bold text-gray-900 mb-2">Networking & IT Support</h3>
+	                <p class="text-gray-500 text-sm leading-relaxed">Network setup, troubleshooting, and ongoing IT support for businesses and homes.</p>
+	            </div>
 
-            <!-- Web Dev -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
-                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
-                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                    </svg>
-                </div>
+	            <!-- IP PBX / SIP -->
+	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
+	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+	                    </svg>
+	                </div>
+	                <h3 class="text-base font-bold text-gray-900 mb-2">IP PBX &amp; SIP (VoIP)</h3>
+	                <p class="text-gray-500 text-sm leading-relaxed">IP PBX setup, SIP connections, extensions, and call routing for your office.</p>
+	            </div>
+
+	            <!-- Web Dev -->
+	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
+	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+	                    </svg>
+	                </div>
                 <h3 class="text-base font-bold text-gray-900 mb-2">Website & Web App Development</h3>
                 <p class="text-gray-500 text-sm leading-relaxed">Custom websites and web apps built to grow your business online.</p>
             </div>
@@ -455,28 +467,28 @@
                 <p class="text-gray-500 text-sm leading-relaxed">Laptop, PC, and device repairs with fast turnarounds and reliable diagnostics.</p>
             </div>
 
-            <!-- AC Services -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
-                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
-                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.707.707M18.36 18.36l.707.707M1 12h2M21 12h2M4.22 19.78l.707-.707M18.36 5.64l.707-.707M12 7a5 5 0 110 10A5 5 0 0112 7z"/>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Air Conditioning Services</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">AC installation, servicing, repair, and maintenance by certified technicians.</p>
-            </div>
+	            <!-- Consultations -->
+	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
+	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.707.707M18.36 18.36l.707.707M1 12h2M21 12h2M4.22 19.78l.707-.707M18.36 5.64l.707-.707M12 7a5 5 0 110 10A5 5 0 0112 7z"/>
+	                    </svg>
+	                </div>
+	                <h3 class="text-base font-bold text-gray-900 mb-2">Technical Consultations</h3>
+	                <p class="text-gray-500 text-sm leading-relaxed">On-site assessments, troubleshooting, and practical recommendations you can act on.</p>
+	            </div>
 
-            <!-- Motorcycle -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
-                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
-                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Motorcycle Repair & Maintenance</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Full motorcycle servicing, diagnostics, and repairs at Micro Moto Garage.</p>
-            </div>
+	            <!-- Installations -->
+	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
+	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+	                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+	                    </svg>
+	                </div>
+	                <h3 class="text-base font-bold text-gray-900 mb-2">Installations & Setup</h3>
+	                <p class="text-gray-500 text-sm leading-relaxed">On-site installations, configuration, and handover for homes and businesses.</p>
+	            </div>
 
             <!-- Home Support — spans 2 cols on xl -->
             <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default sm:col-span-2 lg:col-span-1">
@@ -522,9 +534,9 @@
                 <p class="text-red-100 text-lg leading-relaxed mb-4">
                     We started EasyFix because finding reliable help for small repairs in Malé shouldn't be a headache.
                 </p>
-                <p class="text-red-200/80 text-base leading-relaxed mb-9">
-                    Whether it's a leaky tap at 8 PM or an AC that won't cool before guests arrive, we've got you covered.
-                </p>
+	                <p class="text-red-200/80 text-base leading-relaxed mb-9">
+	                    Whether it's a leaky tap at 8 PM or an urgent issue before guests arrive, we've got you covered.
+	                </p>
 
                 <a href="https://easyfix.mv" target="_blank" rel="noopener noreferrer"
                    class="inline-flex items-center bg-white text-red-600 hover:bg-red-50 font-bold px-8 py-4 rounded-2xl text-base transition-all duration-200 shadow-2xl shadow-red-950/40 hover:-translate-y-0.5">
@@ -544,9 +556,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.707.707M18.36 18.36l.707.707M1 12h2M21 12h2M4.22 19.78l.707-.707M18.36 5.64l.707-.707M12 7a5 5 0 110 10A5 5 0 0112 7z"/>
                         </svg>
                     </div>
-                    <div class="font-bold text-sm mb-0.5">AC Repair</div>
-                    <div class="text-red-200 text-xs">Fast cooling solutions</div>
-                </div>
+	                    <div class="font-bold text-sm mb-0.5">Handyman</div>
+	                    <div class="text-red-200 text-xs">Fast home fixes</div>
+	                </div>
 
                 <div class="bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-5 text-white hover:bg-white/15 transition-colors">
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
@@ -921,9 +933,9 @@
             </svg>
         </div>
 
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-5 leading-tight">
-            Need Help With Repairs or<br class="hidden sm:block"> Technical Services?
-        </h2>
+	        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-5 leading-tight">
+	            Need Help With Consultations or<br class="hidden sm:block"> Technical Services?
+	        </h2>
         <p class="text-gray-400 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
             Call us today and let our team take care of the rest. Available for homes and businesses across the Maldives.
         </p>

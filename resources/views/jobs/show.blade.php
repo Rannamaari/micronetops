@@ -34,13 +34,13 @@
             {{-- Job header - Mobile optimized --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
                 {{-- Status & Type bar --}}
-                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700
-                            {{ $job->job_type === 'ac' ? 'bg-sky-50 dark:bg-sky-900/20' : 'bg-orange-50 dark:bg-orange-900/20' }}">
-                    <div class="flex items-center gap-2">
-                        <span class="px-3 py-1 rounded-lg text-sm font-semibold
-                            {{ $job->job_type === 'moto' ? 'bg-orange-500 text-white' : 'bg-sky-500 text-white' }}">
-                            {{ $job->job_type === 'ac' ? 'AC' : 'Bike' }}
-                        </span>
+	                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700
+	                            {{ $job->job_type === 'ac' ? 'bg-sky-50 dark:bg-sky-900/20' : ($job->job_type === 'it' ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-orange-50 dark:bg-orange-900/20') }}">
+	                    <div class="flex items-center gap-2">
+	                        <span class="px-3 py-1 rounded-lg text-sm font-semibold
+	                            {{ $job->job_type === 'moto' ? 'bg-orange-500 text-white' : ($job->job_type === 'ac' ? 'bg-sky-500 text-white' : 'bg-indigo-500 text-white') }}">
+	                            {{ $job->job_type === 'ac' ? 'AC' : ($job->job_type === 'it' ? 'IT' : 'Bike') }}
+	                        </span>
                         @if($job->priority && $job->priority !== 'normal')
                             <span class="px-2 py-1 rounded-lg text-xs font-semibold"
                                   style="background-color: {{ $job->priority_color }}; color: white;">

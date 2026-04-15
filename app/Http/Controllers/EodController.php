@@ -20,7 +20,7 @@ class EodController extends Controller
 
         $date = $request->get('date', now()->toDateString());
 
-        $units = ['moto', 'cool'];
+        $units = ['moto', 'cool', 'it'];
         $unitData = [];
 
         foreach ($units as $unit) {
@@ -52,7 +52,7 @@ class EodController extends Controller
 
         $validated = $request->validate([
             'date' => ['required', 'date'],
-            'business_unit' => ['required', 'in:moto,cool'],
+            'business_unit' => ['required', 'in:moto,cool,it'],
         ]);
 
         $existing = EodReconciliation::forDate($validated['date'])
@@ -142,7 +142,12 @@ class EodController extends Controller
 
         // Record cash on hand into a system cash account per unit (so deposit can transfer out)
         if ($eod->counted_cash > 0) {
-            $cashAccountName = $eod->business_unit === 'moto' ? 'Cash - Micro Moto' : 'Cash - Micro Cool';
+            $cashAccountName = match ($eod->business_unit) {
+                'moto' => 'Cash - Micro Moto',
+                'cool' => 'Cash - Micro Cool',
+                'it' => 'Cash - Micronet',
+                default => 'Cash',
+            };
             $cashAccount = Account::firstOrCreate(
                 ['name' => $cashAccountName],
                 ['type' => Account::TYPE_BUSINESS, 'is_active' => true, 'is_system' => true, 'balance' => 0]
@@ -196,7 +201,12 @@ class EodController extends Controller
 
         $depositAccount = Account::find($validated['account_id']);
 
-        $cashAccountName = $eod->business_unit === 'moto' ? 'Cash - Micro Moto' : 'Cash - Micro Cool';
+        $cashAccountName = match ($eod->business_unit) {
+            'moto' => 'Cash - Micro Moto',
+            'cool' => 'Cash - Micro Cool',
+            'it' => 'Cash - Micronet',
+            default => 'Cash',
+        };
         $cashAccount = Account::firstOrCreate(
             ['name' => $cashAccountName],
             ['type' => Account::TYPE_BUSINESS, 'is_active' => true, 'is_system' => true, 'balance' => 0]

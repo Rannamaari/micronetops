@@ -79,7 +79,7 @@
             @endif
         </div>
         <div style="text-align:right;">
-            <div class="text-xs"><strong>Business Unit:</strong> {{ $log->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</div>
+	            <div class="text-xs"><strong>Business Unit:</strong> {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }}</div>
         </div>
     </div>
 
@@ -180,7 +180,7 @@
             <li class="text-xs">Payment is due upon receipt of invoice.</li>
             <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
             <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
-            <li class="text-xs">Late or pending payments may delay future service appointments.</li>
+            <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>
         </ul>
     </div>
 </div>

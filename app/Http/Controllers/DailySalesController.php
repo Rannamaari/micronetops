@@ -56,7 +56,7 @@ class DailySalesController extends Controller
     {
         $validated = $request->validate([
             'date' => ['required', 'date', 'before_or_equal:today'],
-            'business_unit' => ['required', 'in:moto,cool'],
+            'business_unit' => ['required', 'in:moto,cool,it'],
         ]);
 
         // Mechanics can only create sales for their assigned unit
@@ -88,7 +88,11 @@ class DailySalesController extends Controller
     {
         $dailySalesLog->load('lines.inventoryItem', 'createdByUser', 'submittedByUser', 'customer', 'transferAccount');
 
-        $categoryMap = $dailySalesLog->business_unit === 'moto' ? 'moto' : 'ac';
+        $categoryMap = match ($dailySalesLog->business_unit) {
+            'cool' => 'ac',
+            'it' => 'it',
+            default => 'moto',
+        };
         $inventoryItems = InventoryItem::active()
             ->ofCategory($categoryMap)
             ->orderBy('name')
@@ -193,7 +197,12 @@ class DailySalesController extends Controller
             $validated['payment_method'] === 'transfer' ? (int) $validated['transfer_account_id'] : null
         );
 
-        $unit = $dailySalesLog->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto';
+        $unit = match ($dailySalesLog->business_unit) {
+            'moto' => 'Micro Moto',
+            'cool' => 'Micro Cool',
+            'it' => 'Micronet',
+            default => $dailySalesLog->business_unit,
+        };
         $total = number_format($dailySalesLog->fresh()->totals['grand'] ?? 0, 2);
         ActivityLog::record('sale.submitted', "Sale #{$dailySalesLog->id} submitted — {$unit}, MVR {$total} ({$validated['payment_method']})", $dailySalesLog);
 
@@ -237,7 +246,11 @@ class DailySalesController extends Controller
             'phone' => ['required', 'string', 'max:50'],
         ]);
 
-        $category = $dailySalesLog->business_unit === 'cool' ? 'ac' : 'moto';
+        $category = match ($dailySalesLog->business_unit) {
+            'cool' => 'ac',
+            'it' => 'it',
+            default => 'moto',
+        };
 
         $customer = Customer::firstOrCreate(
             ['phone' => $validated['phone']],
@@ -280,6 +293,15 @@ class DailySalesController extends Controller
                 'phone' => '+960 9996210',
                 'email' => 'hello@micronet.mv',
                 'website' => 'cool.micronet.mv',
+            ];
+        } elseif ($unit === 'it') {
+            $brand = [
+                'name' => 'Micronet',
+                'tagline' => 'IT & Technical Services',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'micronet.mv',
             ];
         } else {
             $brand = [

@@ -3,7 +3,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div class="flex items-center gap-3">
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    End of Day — {{ $eod->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}
+	                    End of Day — {{ $eod->business_unit === 'moto' ? 'Micro Moto' : ($eod->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }}
                 </h2>
                 @if($eod->isDeposited())
                     <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Deposited</span>
