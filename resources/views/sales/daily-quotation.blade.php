@@ -43,16 +43,17 @@
     </div>
 
     <div class="flex justify-between items-start mb-4">
-        <div>
-            <div class="text-lg font-bold">{{ $brand['name'] }}</div>
-            <div class="text-xs">{{ $brand['tagline'] }}</div>
-            <div class="text-xs mt-2">{{ $brand['address'] }}</div>
-            <div class="text-xs">Phone: {{ $brand['phone'] }}</div>
-            @if(isset($brand['email']))
-            <div class="text-xs">Email: {{ $brand['email'] }}</div>
-            @endif
-            <div class="text-xs">Website: {{ $brand['website'] }}</div>
-        </div>
+	        <div>
+	            <div class="text-lg font-bold">{{ $brand['name'] }}</div>
+	            <div class="text-xs">{{ $brand['tagline'] }}</div>
+	            <div class="text-xs mt-2">{{ $brand['address'] }}</div>
+	            <div class="text-xs">Phone: {{ $brand['phone'] }}</div>
+	            @if(isset($brand['email']))
+	            <div class="text-xs">Email: {{ $brand['email'] }}</div>
+	            @endif
+	            <div class="text-xs">GST No: 1063676GST501</div>
+	            <div class="text-xs">Website: {{ $brand['website'] }}</div>
+	        </div>
         <div style="text-align:right;">
             <div class="font-bold">QUOTATION</div>
             <div class="text-xs mt-1">Quotation No: {{ $quotationNumber }}</div>
@@ -68,16 +69,19 @@
         <div class="text-xs font-bold" style="color: #92400e;">Note: This is a quotation, not an invoice. Prices and services are estimates.</div>
     </div>
 
-    <div class="flex justify-between items-start border rounded" style="padding:10px;">
-        <div>
-            <div class="text-sm font-bold mb-1">Bill To</div>
-            @if($log->customer)
-                <div class="text-sm">{{ $log->customer->name }}</div>
-                <div class="text-xs">Phone: {{ $log->customer->phone }}</div>
-            @else
-                <div class="text-sm">Walk-in Customer</div>
-            @endif
-        </div>
+	    <div class="flex justify-between items-start border rounded" style="padding:10px;">
+	        <div>
+	            <div class="text-sm font-bold mb-1">Bill To</div>
+	            @if($log->customer)
+	                <div class="text-sm">{{ $log->customer->name }}</div>
+	                @if($log->customer->gst_number)
+	                    <div class="text-xs">GST No: {{ $log->customer->gst_number }}</div>
+	                @endif
+	                <div class="text-xs">Phone: {{ $log->customer->phone }}</div>
+	            @else
+	                <div class="text-sm">Walk-in Customer</div>
+	            @endif
+	        </div>
         <div style="text-align:right;">
 	            <div class="text-xs"><strong>Business Unit:</strong> {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }}</div>
         </div>

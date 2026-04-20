@@ -207,6 +207,7 @@ class JobController extends Controller
             'job_type' => ['required', Rule::in(['moto', 'ac', 'it'])],
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_name' => ['required', 'string', 'max:100'],
+            'customer_gst_number' => ['nullable', 'string', 'max:50'],
 
             // Scheduling
             'scheduled_at' => ['nullable', 'date'],
@@ -255,6 +256,7 @@ class JobController extends Controller
                 'name' => $validated['customer_name'],
                 'phone' => $validated['customer_phone'],
                 'address' => $validated['location'] ?? null,
+                'gst_number' => $validated['customer_gst_number'] ?? null,
                 'category' => match ($validated['job_type']) {
                     'ac' => 'ac',
                     'it' => 'it',

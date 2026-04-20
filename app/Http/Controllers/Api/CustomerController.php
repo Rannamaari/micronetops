@@ -51,6 +51,7 @@ class CustomerController extends Controller
                 'name'     => ['required', 'string', 'max:255'],
                 'phone'    => ['required', 'string', 'max:50'],
                 'email'    => ['nullable', 'email', 'max:255'],
+                'gst_number' => ['nullable', 'string', 'max:50'],
                 'category' => ['nullable', 'in:moto,ac,it'],
             ]);
         } catch (ValidationException $e) {
@@ -63,7 +64,7 @@ class CustomerController extends Controller
             return response()->json([
                 'created'  => false,
                 'message'  => 'Customer already exists with this phone number.',
-                'data'     => $existing->only(['id', 'name', 'phone', 'email', 'category']),
+                'data'     => $existing->only(['id', 'name', 'phone', 'email', 'gst_number', 'category']),
             ]);
         }
 
@@ -71,13 +72,14 @@ class CustomerController extends Controller
             'name'     => $validated['name'],
             'phone'    => $validated['phone'],
             'email'    => $validated['email'] ?? null,
+            'gst_number' => $validated['gst_number'] ?? null,
             'category' => $validated['category'] ?? 'moto',
         ]);
 
         return response()->json([
             'created' => true,
             'message' => 'Customer created successfully.',
-            'data'    => $customer->only(['id', 'name', 'phone', 'email', 'category']),
+            'data'    => $customer->only(['id', 'name', 'phone', 'email', 'gst_number', 'category']),
         ], 201);
     }
 
@@ -130,6 +132,7 @@ class CustomerController extends Controller
                 'email'    => ['sometimes', 'nullable', 'email', 'max:255'],
                 'address'  => ['sometimes', 'nullable', 'string', 'max:500'],
                 'notes'    => ['sometimes', 'nullable', 'string'],
+                'gst_number' => ['sometimes', 'nullable', 'string', 'max:50'],
                 'category' => ['sometimes', 'in:moto,ac,it'],
             ]);
         } catch (ValidationException $e) {
@@ -140,7 +143,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'message' => 'Customer updated successfully.',
-            'data'    => $customer->fresh()->only(['id', 'name', 'phone', 'email', 'address', 'category', 'notes']),
+            'data'    => $customer->fresh()->only(['id', 'name', 'phone', 'email', 'address', 'gst_number', 'category', 'notes']),
         ]);
     }
 

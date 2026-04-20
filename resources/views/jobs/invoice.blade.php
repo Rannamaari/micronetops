@@ -42,16 +42,17 @@
     </div>
 
     <div class="flex justify-between items-start mb-4">
-        <div>
-            <div class="text-lg font-bold">{{ $brand['name'] }}</div>
-            <div class="text-xs">{{ $brand['tagline'] }}</div>
-            <div class="text-xs mt-2">{{ $brand['address'] }}</div>
-            <div class="text-xs">Phone: {{ $brand['phone'] }}</div>
-            @if(isset($brand['email']))
-            <div class="text-xs">Email: {{ $brand['email'] }}</div>
-            @endif
-            <div class="text-xs">Website: {{ $brand['website'] }}</div>
-        </div>
+	        <div>
+	            <div class="text-lg font-bold">{{ $brand['name'] }}</div>
+	            <div class="text-xs">{{ $brand['tagline'] }}</div>
+	            <div class="text-xs mt-2">{{ $brand['address'] }}</div>
+	            <div class="text-xs">Phone: {{ $brand['phone'] }}</div>
+	            @if(isset($brand['email']))
+	            <div class="text-xs">Email: {{ $brand['email'] }}</div>
+	            @endif
+	            <div class="text-xs">GST No: 1063676GST501</div>
+	            <div class="text-xs">Website: {{ $brand['website'] }}</div>
+	        </div>
         <div style="text-align:right;">
             <div class="font-bold">INVOICE</div>
             <div class="text-xs mt-1">Invoice No: {{ $invoiceNumber }}</div>
@@ -67,15 +68,18 @@
         </div>
     </div>
 
-    <div class="flex justify-between items-start border rounded" style="padding:10px;">
-        <div>
-            <div class="text-sm font-bold mb-1">Bill To</div>
-            <div class="text-sm">{{ $job->customer_name ?? $job->customer?->name }}</div>
-            @if($job->address)
-                <div class="text-xs">{{ $job->address }}</div>
-            @endif
-            <div class="text-xs">Phone: {{ $job->customer_phone ?? $job->customer?->phone }}</div>
-        </div>
+	    <div class="flex justify-between items-start border rounded" style="padding:10px;">
+	        <div>
+	            <div class="text-sm font-bold mb-1">Bill To</div>
+	            <div class="text-sm">{{ $job->customer_name ?? $job->customer?->name }}</div>
+	            @if($job->address)
+	                <div class="text-xs">{{ $job->address }}</div>
+	            @endif
+	            @if($job->customer?->gst_number)
+	                <div class="text-xs">GST No: {{ $job->customer->gst_number }}</div>
+	            @endif
+	            <div class="text-xs">Phone: {{ $job->customer_phone ?? $job->customer?->phone }}</div>
+	        </div>
         <div style="text-align:right;">
             <div class="text-xs mb-1"><strong>Job Type:</strong> {{ strtoupper($job->job_type) }}</div>
             <div class="text-xs mb-1"><strong>Category:</strong> {{ $job->job_category }}</div>

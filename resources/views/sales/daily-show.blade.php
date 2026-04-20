@@ -193,17 +193,19 @@
                     {{-- Inline New Customer Form --}}
                     <div x-show="showNewForm" x-cloak class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                         <h4 class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Create New Customer</h4>
-                        <form method="POST" action="{{ route('sales.daily.create-customer', $log) }}" class="flex flex-col sm:flex-row gap-2">
-                            @csrf
-                            <input type="text" name="name" x-model="newName" placeholder="Customer name" required
-                                   class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
-                            <input type="text" name="phone" x-model="newPhone" placeholder="Phone number" required
-                                   class="flex-1 sm:max-w-[180px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
-                            <div class="flex gap-2">
-                                <button type="submit"
-                                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
-                                    Create & Select
-                                </button>
+	                        <form method="POST" action="{{ route('sales.daily.create-customer', $log) }}" class="flex flex-col sm:flex-row gap-2">
+	                            @csrf
+	                            <input type="text" name="name" x-model="newName" placeholder="Customer name" required
+	                                   class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+	                            <input type="text" name="phone" x-model="newPhone" placeholder="Phone number" required
+	                                   class="flex-1 sm:max-w-[180px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+	                            <input type="text" name="gst_number" placeholder="GST No (optional)"
+	                                   class="flex-1 sm:max-w-[200px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+	                            <div class="flex gap-2">
+	                                <button type="submit"
+	                                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+	                                    Create & Select
+	                                </button>
                                 <button type="button" @click="showNewForm = false"
                                         class="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition">
                                     Cancel

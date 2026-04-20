@@ -48,10 +48,10 @@
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Address (Include road name, house number, etc.)
-                        </label>
+	                    <div>
+	                        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+	                            Address (Include road name, house number, etc.)
+	                        </label>
                         <textarea id="address" name="address" rows="3"
                                   class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm text-sm
                                          focus:border-indigo-500 focus:ring-indigo-500"
@@ -59,12 +59,25 @@
                         @error('address')
                             <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-                    </div>
+	                    </div>
 
-                    <div>
-                        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Notes
-                        </label>
+	                    <div>
+	                        <label for="gst_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+	                            Customer GST No
+	                        </label>
+	                        <input id="gst_number" name="gst_number" type="text" value="{{ old('gst_number', $customer->gst_number) }}"
+	                               class="block w-full rounded-md border-gray-300 shadow-sm text-sm
+	                                      focus:border-indigo-500 focus:ring-indigo-500"
+	                               placeholder="Example: 1063676GST501">
+	                        @error('gst_number')
+	                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+	                        @enderror
+	                    </div>
+
+	                    <div>
+	                        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+	                            Notes
+	                        </label>
                         <textarea id="notes" name="notes" rows="3"
                                   class="block w-full rounded-md border-gray-300 shadow-sm text-sm
                                          focus:border-indigo-500 focus:ring-indigo-500">{{ old('notes', $customer->notes) }}</textarea>
@@ -90,4 +103,3 @@
         </div>
     </div>
 </x-app-layout>
-

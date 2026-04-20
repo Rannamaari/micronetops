@@ -235,10 +235,10 @@
                         @enderror
                     </div>
 
-                    {{-- Name --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
-                        <input type="text" name="customer_name"
+	                    {{-- Name --}}
+	                    <div>
+	                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Name</label>
+	                        <input type="text" name="customer_name"
                                x-model="customerName"
                                :readonly="!!selectedCustomer"
                                class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
@@ -246,11 +246,23 @@
                                    ? 'bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-default'
                                    : 'dark:bg-gray-700'"
                                placeholder="Customer name"
-                               required>
-                        @error('customer_name')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+	                               required>
+	                        @error('customer_name')
+	                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+	                        @enderror
+	                    </div>
+
+	                    {{-- Customer GST No --}}
+	                    <div>
+	                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Customer GST No (optional)</label>
+	                        <input type="text" name="customer_gst_number"
+	                               value="{{ old('customer_gst_number') }}"
+	                               class="block w-full text-lg p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+	                               placeholder="Example: 1063676GST501">
+	                        @error('customer_gst_number')
+	                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+	                        @enderror
+	                    </div>
 
                     {{-- Title / Issue --}}
                     <div>

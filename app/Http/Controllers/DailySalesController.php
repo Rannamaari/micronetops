@@ -244,6 +244,7 @@ class DailySalesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
+            'gst_number' => ['nullable', 'string', 'max:50'],
         ]);
 
         $category = match ($dailySalesLog->business_unit) {
@@ -254,8 +255,13 @@ class DailySalesController extends Controller
 
         $customer = Customer::firstOrCreate(
             ['phone' => $validated['phone']],
-            ['name' => $validated['name'], 'category' => $category]
+            ['name' => $validated['name'], 'category' => $category, 'gst_number' => $validated['gst_number'] ?? null]
         );
+
+        if (!empty($validated['gst_number']) && $customer->gst_number !== $validated['gst_number']) {
+            $customer->gst_number = $validated['gst_number'];
+            $customer->save();
+        }
 
         $dailySalesLog->update(['customer_id' => $customer->id]);
 
