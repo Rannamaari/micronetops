@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice {{ $invoiceNumber }}</title>
+    <title>Tax Invoice {{ $invoiceNumber }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; color: #111827; margin: 0; padding: 20px; }
@@ -54,10 +54,11 @@
 	            <div class="text-xs">Website: {{ $brand['website'] }}</div>
 	        </div>
         <div style="text-align:right;">
-            <div class="font-bold">INVOICE</div>
+            <div class="font-bold">TAX INVOICE</div>
             <div class="text-xs mt-1">Invoice No: {{ $invoiceNumber }}</div>
             <div class="text-xs">Job ID: #{{ $job->id }}</div>
             <div class="text-xs">Date: {{ $job->job_date ? \Carbon\Carbon::parse($job->job_date)->format('Y-m-d') : now()->format('Y-m-d') }}</div>
+            <div class="text-xs">Due: {{ $job->due_date ? $job->due_date->format('Y-m-d') : 'Upon receipt' }}</div>
             <div class="mt-1">
                 @if($job->payment_status === 'paid')
                     <span class="badge-paid">PAID</span>
@@ -106,6 +107,13 @@
         </div>
     @endif
 
+    @if($job->customer_notes)
+        <div class="mt-4">
+            <div class="text-xs font-bold mb-1">Notes</div>
+            <div class="text-xs">{!! nl2br(e($job->customer_notes)) !!}</div>
+        </div>
+    @endif
+
     {{-- Services --}}
     <div class="mt-4">
         <div class="text-sm font-bold mb-1">Services (Labour)</div>
@@ -140,64 +148,62 @@
         </table>
     </div>
 
-    {{-- Parts --}}
-    <div class="mt-4">
-        <div class="text-sm font-bold mb-1">Parts & Materials</div>
-        <table>
-            <thead>
-            <tr>
-                <th>Description</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Unit Price</th>
-                <th class="text-right">Subtotal</th>
-            </tr>
-            </thead>
-            <tbody>
-            @forelse($job->items->where('is_service', false) as $item)
+    @php $partItems = $job->items->where('is_service', false); @endphp
+    @if($partItems->count() > 0)
+        {{-- Parts --}}
+        <div class="mt-4">
+            <div class="text-sm font-bold mb-1">Parts & Materials</div>
+            <table>
+                <thead>
                 <tr>
-                    <td>
-                        {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item' }}
-                        @if($item->item_description)
-                            <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
-                        @endif
-                    </td>
-                    <td class="text-right">{{ $item->quantity }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>
+                    <th>Description</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Subtotal</th>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="4" class="text-xs">No parts listed.</td>
-                </tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                @foreach($partItems as $item)
+                    <tr>
+                        <td>
+                            {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item' }}
+                            @if($item->item_description)
+                                <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
+                            @endif
+                        </td>
+                        <td class="text-right">{{ $item->quantity }}</td>
+                        <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                        <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Totals --}}
+    @php
+        $subtotal = (float) $job->labour_total + (float) $job->travel_charges + (float) $job->parts_total - (float) $job->discount;
+        $gst = (float) ($job->gst_amount ?? 0);
+        $grand = (float) $job->total_amount;
+    @endphp
     <div class="mt-4" style="max-width:300px; margin-left:auto;">
         <table>
             <tbody>
             <tr>
-                <td>Labour</td>
-                <td class="text-right">{{ number_format($job->labour_total, 2) }} MVR</td>
+                <td>Subtotal</td>
+                <td class="text-right">{{ number_format($subtotal, 2) }} MVR</td>
             </tr>
+            @if($gst > 0)
             <tr>
-                <td>Travel</td>
-                <td class="text-right">{{ number_format($job->travel_charges, 2) }} MVR</td>
+                <td>GST (8%)</td>
+                <td class="text-right">{{ number_format($gst, 2) }} MVR</td>
             </tr>
+            @endif
             <tr>
-                <td>Parts</td>
-                <td class="text-right">{{ number_format($job->parts_total, 2) }} MVR</td>
-            </tr>
-            <tr>
-                <td>Discount</td>
-                <td class="text-right">-{{ number_format($job->discount, 2) }} MVR</td>
-            </tr>
-            <tr>
-                <td class="font-bold border-b">Total</td>
+                <td class="font-bold border-b">Grand Total</td>
                 <td class="text-right font-bold border-b">
-                    {{ number_format($job->total_amount, 2) }} MVR
+                    {{ number_format($grand, 2) }} MVR
                 </td>
             </tr>
             <tr>
@@ -241,7 +247,11 @@
 
         <div class="text-sm font-bold mb-2">Payment Terms</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-            <li class="text-xs">Payment is due upon receipt of invoice.</li>
+            @if($job->due_date)
+                <li class="text-xs">Payment is due on or before {{ $job->due_date->format('Y-m-d') }}.</li>
+            @else
+                <li class="text-xs">Payment is due upon receipt of invoice.</li>
+            @endif
             <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
             <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
             <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>

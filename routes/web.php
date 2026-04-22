@@ -129,6 +129,8 @@ Route::middleware('auth')->group(function () {
         Route::post('jobs', [JobController::class, 'store'])->name('jobs.store');
         Route::get('jobs/{job}', [JobController::class, 'show'])->name('jobs.show');
         Route::patch('jobs/{job}', [JobController::class, 'update'])->name('jobs.update');
+        Route::patch('jobs/{job}/due-date', [JobController::class, 'updateDueDate'])->name('jobs.update-due-date');
+        Route::patch('jobs/{job}/customer-notes', [JobController::class, 'updateCustomerNotes'])->name('jobs.update-customer-notes');
 
         // Calendar view & API
         Route::get('jobs-calendar', [JobController::class, 'calendar'])->name('jobs.calendar');
@@ -154,7 +156,10 @@ Route::middleware('auth')->group(function () {
         Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
         Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
         Route::post('sales/daily/{dailySalesLog}/set-customer', [DailySalesController::class, 'setCustomer'])->name('sales.daily.set-customer');
+        Route::patch('sales/daily/{dailySalesLog}/due-date', [DailySalesController::class, 'updateDueDate'])->name('sales.daily.update-due-date');
+        Route::patch('sales/daily/{dailySalesLog}/notes', [DailySalesController::class, 'updateNotes'])->name('sales.daily.update-notes');
         Route::post('sales/daily/{dailySalesLog}/create-customer', [DailySalesController::class, 'createAndSetCustomer'])->name('sales.daily.create-customer');
+        Route::post('sales/daily/{dailySalesLog}/convert-invoice', [DailySalesController::class, 'convertToInvoice'])->name('sales.daily.convert-invoice');
         Route::post('sales/daily/{dailySalesLog}/submit', [DailySalesController::class, 'submit'])->name('sales.daily.submit');
         Route::get('sales/daily/{dailySalesLog}/quotation', [DailySalesController::class, 'quotation'])->name('sales.daily.quotation');
         Route::post('sales/daily/{dailySalesLog}/reopen', [DailySalesController::class, 'reopen'])->name('sales.daily.reopen');

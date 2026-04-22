@@ -20,7 +20,7 @@ class EodController extends Controller
 
         $date = $request->get('date', now()->toDateString());
 
-        $units = ['moto', 'cool', 'it'];
+        $units = ['moto', 'cool', 'it', 'easyfix'];
         $unitData = [];
 
         foreach ($units as $unit) {
@@ -52,7 +52,7 @@ class EodController extends Controller
 
         $validated = $request->validate([
             'date' => ['required', 'date'],
-            'business_unit' => ['required', 'in:moto,cool,it'],
+            'business_unit' => ['required', 'in:moto,cool,it,easyfix'],
         ]);
 
         $existing = EodReconciliation::forDate($validated['date'])

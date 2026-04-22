@@ -12,6 +12,7 @@ class DailySalesLog extends Model
 
     protected $fillable = [
         'date',
+        'due_date',
         'business_unit',
         'status',
         'created_by',
@@ -27,6 +28,7 @@ class DailySalesLog extends Model
 
     protected $casts = [
         'date' => 'date',
+        'due_date' => 'date',
         'submitted_at' => 'datetime',
         'cash_tendered' => 'decimal:2',
     ];
@@ -96,6 +98,90 @@ class DailySalesLog extends Model
         return $this->status === 'submitted';
     }
 
+    public function createOrUpdateInvoiceJob(bool $markPaid, ?string $paymentMethod = null): Job
+    {
+        $this->loadMissing('lines');
+
+        $unit = $this->business_unit; // 'moto' | 'cool' | 'it' | 'easyfix'
+        $jobType = match ($unit) {
+            'cool' => 'ac',
+            'it' => 'it',
+            'easyfix' => 'easyfix',
+            default => 'moto',
+        };
+
+        $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
+
+        $job = $this->job_id ? Job::find($this->job_id) : null;
+
+        if ($job) {
+            $job->payments()->delete();
+            $job->items()->delete();
+
+            $job->fill([
+                'job_date'       => $this->date,
+                'due_date'       => $this->due_date,
+                'job_type'       => $jobType,
+                'job_category'   => 'general',
+                'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
+                'customer_id'    => $customer?->id,
+                'customer_name'  => $customer?->name ?? 'Walk-in',
+                'customer_phone' => $customer?->phone,
+                'customer_email' => $customer?->email,
+                'customer_notes' => $this->notes,
+                'status'         => 'completed',
+                'payment_status' => $markPaid ? 'paid' : 'unpaid',
+                'priority'       => 'normal',
+                'completed_at'   => now(),
+            ]);
+            $job->save();
+        } else {
+            $job = Job::create([
+                'job_date'       => $this->date,
+                'due_date'       => $this->due_date,
+                'job_type'       => $jobType,
+                'job_category'   => 'general',
+                'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
+                'customer_id'    => $customer?->id,
+                'customer_name'  => $customer?->name ?? 'Walk-in',
+                'customer_phone' => $customer?->phone,
+                'customer_email' => $customer?->email,
+                'customer_notes' => $this->notes,
+                'status'         => 'completed',
+                'payment_status' => $markPaid ? 'paid' : 'unpaid',
+                'priority'       => 'normal',
+                'completed_at'   => now(),
+            ]);
+        }
+
+        foreach ($this->lines as $line) {
+            JobItem::create([
+                'job_id'            => $job->id,
+                'inventory_item_id' => $line->inventory_item_id,
+                'item_name'         => $line->description,
+                'is_service'        => !$line->is_stock_item,
+                'quantity'          => $line->qty,
+                'unit_price'        => $line->unit_price,
+                'subtotal'          => $line->line_total,
+                'is_gst_applicable' => (bool) $line->is_gst_applicable,
+            ]);
+        }
+
+        if ($markPaid) {
+            $totals = $this->totals;
+            Payment::create([
+                'job_id' => $job->id,
+                'amount' => $totals['grand'],
+                'method' => $paymentMethod ?? 'cash',
+                'status' => 'completed',
+            ]);
+        }
+
+        $job->recalculateTotals();
+
+        return $job;
+    }
+
     public function submit(string $paymentMethod, ?float $cashTendered = null, ?int $transferAccountId = null): void
     {
         // --- Set payment method on all lines (for reports compatibility) ---
@@ -122,53 +208,8 @@ class DailySalesLog extends Model
             }
         }
 
-        // --- Create Job from daily sales log ---
-        $unit = $this->business_unit; // 'moto' | 'cool' | 'it'
-        $jobType = match ($unit) {
-            'cool' => 'ac',
-            'it' => 'it',
-            default => 'moto',
-        };
-
-        $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
-
-        $job = Job::create([
-            'job_date'       => $this->date,
-            'job_type'       => $jobType,
-            'job_category'   => 'general',
-            'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
-            'customer_id'    => $customer?->id,
-            'customer_name'  => $customer?->name ?? 'Walk-in',
-            'customer_phone' => $customer?->phone,
-            'customer_email' => $customer?->email,
-            'status'         => 'completed',
-            'payment_status' => 'paid',
-            'priority'       => 'normal',
-            'completed_at'   => now(),
-        ]);
-
-        foreach ($this->lines as $line) {
-            JobItem::create([
-                'job_id'            => $job->id,
-                'inventory_item_id' => $line->inventory_item_id,
-                'item_name'         => $line->description,
-                'is_service'        => !$line->is_stock_item,
-                'quantity'          => $line->qty,
-                'unit_price'        => $line->unit_price,
-                'subtotal'          => $line->line_total + $line->gst_amount,
-            ]);
-        }
-
-        // Create payment BEFORE recalculateTotals so updatePaymentStatus sees it
-        $totals = $this->totals;
-        Payment::create([
-            'job_id' => $job->id,
-            'amount' => $totals['grand'],
-            'method' => $paymentMethod,
-            'status' => 'completed',
-        ]);
-
-        $job->recalculateTotals();
+        // --- Create/update invoice job from daily sales log ---
+        $job = $this->createOrUpdateInvoiceJob(true, $paymentMethod);
 
         $this->update([
             'status' => 'submitted',
@@ -184,6 +225,7 @@ class DailySalesLog extends Model
         if ($paymentMethod === 'transfer' && $transferAccountId) {
             $account = Account::find($transferAccountId);
             if ($account) {
+                $totals = $this->totals;
                 $account->balance += $totals['grand'];
                 $account->save();
 

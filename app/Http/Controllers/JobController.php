@@ -204,7 +204,7 @@ class JobController extends Controller
     {
         $validated = $request->validate([
             // Required fields for quick creation
-            'job_type' => ['required', Rule::in(['moto', 'ac', 'it'])],
+            'job_type' => ['required', Rule::in(['moto', 'ac', 'it', 'easyfix'])],
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_name' => ['required', 'string', 'max:100'],
             'customer_gst_number' => ['nullable', 'string', 'max:50'],
@@ -212,10 +212,12 @@ class JobController extends Controller
             // Scheduling
             'scheduled_at' => ['nullable', 'date'],
             'scheduled_end_at' => ['nullable', 'date', 'after_or_equal:scheduled_at'],
+            'due_date' => ['nullable', 'date'],
 
             // Job details
             'title' => ['nullable', 'string', 'max:100'],
             'problem_description' => ['nullable', 'string'],
+            'customer_notes' => ['nullable', 'string', 'max:2000'],
             'location' => ['nullable', 'string', 'max:255'],
             'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
 
@@ -260,6 +262,7 @@ class JobController extends Controller
                 'category' => match ($validated['job_type']) {
                     'ac' => 'ac',
                     'it' => 'it',
+                    'easyfix' => 'easyfix',
                     default => 'moto',
                 },
             ]);
@@ -276,6 +279,7 @@ class JobController extends Controller
             'title' => $validated['title'] ?? null,
             'scheduled_at' => $validated['scheduled_at'] ?? null,
             'scheduled_end_at' => $validated['scheduled_end_at'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
             'location' => $validated['location'] ?? $validated['address'] ?? null,
             'priority' => $validated['priority'] ?? Job::PRIORITY_NORMAL,
 
@@ -298,6 +302,7 @@ class JobController extends Controller
             'address' => $validated['address'] ?? $customer?->address ?? $validated['location'],
             'pickup_location' => $validated['pickup_location'] ?? null,
             'problem_description' => $validated['problem_description'] ?? null,
+            'customer_notes' => $validated['customer_notes'] ?? null,
 
             'status' => $status,
             'payment_status' => 'unpaid',
@@ -305,6 +310,7 @@ class JobController extends Controller
             'parts_total' => 0,
             'travel_charges' => 0,
             'discount' => 0,
+            'gst_amount' => 0,
             'total_amount' => 0,
         ]);
 
@@ -377,6 +383,39 @@ class JobController extends Controller
     }
 
     /**
+     * Update invoice due date.
+     * Null due_date means "Due upon receipt".
+     */
+    public function updateDueDate(Request $request, Job $job)
+    {
+        $validated = $request->validate([
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $job->due_date = $validated['due_date'] ?? null;
+        $job->save();
+
+        $label = $job->due_date ? $job->due_date->format('Y-m-d') : 'Due upon receipt';
+        ActivityLog::record('job.due_date_updated', "Job #{$job->id} invoice due date → {$label}", $job);
+
+        return back()->with('success', 'Invoice due date updated.');
+    }
+
+    public function updateCustomerNotes(Request $request, Job $job)
+    {
+        $validated = $request->validate([
+            'customer_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $job->customer_notes = $validated['customer_notes'] ?? null;
+        $job->save();
+
+        ActivityLog::record('job.customer_notes_updated', "Job #{$job->id} customer notes updated", $job);
+
+        return back()->with('success', 'Customer notes updated.');
+    }
+
+    /**
      * Show invoice for a job.
      */
     public function invoice(Job $job)
@@ -401,6 +440,15 @@ class JobController extends Controller
                 'phone' => '+960 9996210',
                 'email' => 'hello@micronet.mv',
                 'website' => 'micronet.mv',
+            ];
+        } elseif ($job->job_type === 'easyfix') {
+            $brand = [
+                'name' => 'Micronet - Easy Fix',
+                'tagline' => 'Handyman Services in Greater Male Area',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'easyfix.mv',
             ];
         } else {
             $brand = [
@@ -603,6 +651,15 @@ class JobController extends Controller
                 'email' => 'hello@micronet.mv',
                 'website' => 'micronet.mv',
             ];
+        } elseif ($job->job_type === 'easyfix') {
+            $brand = [
+                'name' => 'Micronet - Easy Fix',
+                'tagline' => 'Handyman Services in Greater Male Area',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'easyfix.mv',
+            ];
         } else {
             $brand = [
                 'name' => 'Micro Moto Garage',
@@ -702,11 +759,12 @@ class JobController extends Controller
     public function quickCreate(Request $request)
     {
         $validated = $request->validate([
-            'job_type' => ['required', Rule::in(['moto', 'ac', 'it'])],
+            'job_type' => ['required', Rule::in(['moto', 'ac', 'it', 'easyfix'])],
             'customer_phone' => ['required', 'string', 'max:20'],
             'customer_name' => ['required', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:100'],
             'scheduled_at' => ['required', 'date'],
+            'due_date' => ['nullable', 'date'],
             'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
         ]);
 
@@ -718,6 +776,7 @@ class JobController extends Controller
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
             'scheduled_at' => $validated['scheduled_at'],
+            'due_date' => $validated['due_date'] ?? null,
             'priority' => $validated['priority'] ?? Job::PRIORITY_NORMAL,
             'status' => Job::STATUS_SCHEDULED,
             'payment_status' => 'unpaid',

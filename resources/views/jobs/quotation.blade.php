@@ -57,15 +57,11 @@
             <div class="text-xs mt-1">Quotation No: {{ $quotationNumber }}</div>
             <div class="text-xs">Job ID: #{{ $job->id }}</div>
             <div class="text-xs">Date: {{ $job->job_date ? \Carbon\Carbon::parse($job->job_date)->format('Y-m-d') : now()->format('Y-m-d') }}</div>
+            <div class="text-xs">Due: {{ $job->due_date ? $job->due_date->format('Y-m-d') : 'Upon receipt' }}</div>
             <div class="mt-1">
                 <span class="badge-pending">QUOTATION</span>
             </div>
         </div>
-    </div>
-
-    <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 8px; margin-bottom: 10px; border-radius: 4px;">
-        <div class="text-xs font-bold" style="color: #92400e;">Note: This is a quotation, not an invoice. Prices and services are estimates.</div>
-    </div>
     </div>
 
 	    <div class="flex justify-between items-start border rounded" style="padding:10px;">
@@ -106,6 +102,13 @@
         </div>
     @endif
 
+    @if($job->customer_notes)
+        <div class="mt-4">
+            <div class="text-xs font-bold mb-1">Notes</div>
+            <div class="text-xs">{!! nl2br(e($job->customer_notes)) !!}</div>
+        </div>
+    @endif
+
     {{-- Services --}}
     <div class="mt-4">
         <div class="text-sm font-bold mb-1">Services (Labour)</div>
@@ -140,39 +143,38 @@
         </table>
     </div>
 
-    {{-- Parts --}}
-    <div class="mt-4">
-        <div class="text-sm font-bold mb-1">Parts & Materials</div>
-        <table>
-            <thead>
-            <tr>
-                <th>Description</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Unit Price</th>
-                <th class="text-right">Subtotal</th>
-            </tr>
-            </thead>
-            <tbody>
-            @forelse($job->items->where('is_service', false) as $item)
+    @php $partItems = $job->items->where('is_service', false); @endphp
+    @if($partItems->count() > 0)
+        {{-- Parts --}}
+        <div class="mt-4">
+            <div class="text-sm font-bold mb-1">Parts & Materials</div>
+            <table>
+                <thead>
                 <tr>
-                    <td>
-                        {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item' }}
-                        @if($item->item_description)
-                            <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
-                        @endif
-                    </td>
-                    <td class="text-right">{{ $item->quantity }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>
+                    <th>Description</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Subtotal</th>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="4" class="text-xs">No parts listed.</td>
-                </tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                @foreach($partItems as $item)
+                    <tr>
+                        <td>
+                            {{ $item->item_name ?? $item->inventoryItem?->name ?? 'Item' }}
+                            @if($item->item_description)
+                                <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
+                            @endif
+                        </td>
+                        <td class="text-right">{{ $item->quantity }}</td>
+                        <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                        <td class="text-right">{{ number_format($item->subtotal, 2) }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Totals --}}
     <div class="mt-4" style="max-width:300px; margin-left:auto;">
@@ -216,35 +218,15 @@
         Thank you for choosing {{ $brand['name'] }}.
     </div>
 
-    {{-- Payment Details Footer --}}
+    {{-- Footer Terms --}}
     <div class="mt-6" style="border-top: 2px solid #e5e7eb; padding-top: 15px;">
-        <div class="text-sm font-bold mb-2">Payment Details</div>
-        <div class="text-xs mb-1">
-            <strong>Bank Transfer:</strong>
-            @if($job->job_type === 'ac')
-                7730000785866
-            @else
-                7730000140010
-            @endif
-        </div>
-        <div class="text-xs mb-1">
-            <strong>Account Name:</strong>
-            @if($job->job_type === 'ac')
-                Hussain M. Ibrahim
-            @else
-                Micronet
-            @endif
-        </div>
-        <div class="text-xs mb-3">
-            After payment, please WhatsApp the receipt to <strong>9996210</strong> for confirmation.
-        </div>
-
-        <div class="text-sm font-bold mb-2">Payment Terms</div>
+        <div class="text-sm font-bold mb-2">Terms and Conditions</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-            <li class="text-xs">Payment is due upon receipt of invoice.</li>
-            <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
-            <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
-            <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>
+            <li class="text-xs">This quotation is an estimate and is not a tax invoice.</li>
+            <li class="text-xs">Prices, availability, and scope are subject to change until confirmed in writing.</li>
+            <li class="text-xs">Any third-party licenses, subscriptions, or hardware are charged separately unless stated otherwise.</li>
+            <li class="text-xs">Work will be scheduled once the quotation is approved.</li>
+            <li class="text-xs">If additional work is required beyond the quoted scope, we will notify you before proceeding.</li>
         </ul>
     </div>
 </div>

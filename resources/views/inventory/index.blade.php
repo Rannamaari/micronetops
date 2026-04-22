@@ -69,6 +69,7 @@
 	                            <option value="moto" {{ $categoryType === 'moto' ? 'selected' : '' }}>Motorcycle</option>
 	                            <option value="ac" {{ $categoryType === 'ac' ? 'selected' : '' }}>AC Service</option>
 	                            <option value="it" {{ $categoryType === 'it' ? 'selected' : '' }}>IT / Micronet</option>
+	                            <option value="easyfix" {{ $categoryType === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
 	                        </select>
                     </div>
 

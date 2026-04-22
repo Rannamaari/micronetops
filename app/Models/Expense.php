@@ -11,6 +11,8 @@ class Expense extends Model
 
     public const UNIT_MOTO = 'moto';
     public const UNIT_AC = 'ac';
+    public const UNIT_IT = 'it';
+    public const UNIT_EASYFIX = 'easyfix';
     public const UNIT_SHARED = 'shared';
 
     protected $fillable = [
@@ -65,8 +67,10 @@ class Expense extends Model
     public static function getBusinessUnits(): array
     {
         return [
-            self::UNIT_MOTO => 'Moto',
-            self::UNIT_AC => 'AC',
+            self::UNIT_MOTO => 'Micro Moto',
+            self::UNIT_AC => 'Micro Cool',
+            self::UNIT_IT => 'Micronet',
+            self::UNIT_EASYFIX => 'Micronet - Easy Fix',
             self::UNIT_SHARED => 'Shared',
         ];
     }

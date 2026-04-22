@@ -59,15 +59,19 @@
             <div class="text-xs mt-1">Quotation No: {{ $quotationNumber }}</div>
             <div class="text-xs">Sale #{{ $log->id }}</div>
             <div class="text-xs">Date: {{ $log->date->format('Y-m-d') }}</div>
+            <div class="text-xs">Due: {{ $log->due_date ? $log->due_date->format('Y-m-d') : 'Upon receipt' }}</div>
             <div class="mt-1">
                 <span class="badge-pending">QUOTATION</span>
             </div>
         </div>
     </div>
 
-    <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 8px; margin-bottom: 10px; border-radius: 4px;">
-        <div class="text-xs font-bold" style="color: #92400e;">Note: This is a quotation, not an invoice. Prices and services are estimates.</div>
-    </div>
+    @if($log->notes)
+        <div class="mt-2" style="border: 1px solid #e5e7eb; padding: 8px; border-radius: 4px;">
+            <div class="text-xs font-bold mb-1">Notes</div>
+            <div class="text-xs">{!! nl2br(e($log->notes)) !!}</div>
+        </div>
+    @endif
 
 	    <div class="flex justify-between items-start border rounded" style="padding:10px;">
 	        <div>
@@ -83,7 +87,7 @@
 	            @endif
 	        </div>
         <div style="text-align:right;">
-	            <div class="text-xs"><strong>Business Unit:</strong> {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }}</div>
+	            <div class="text-xs"><strong>Business Unit:</strong> {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : ($log->business_unit === 'easyfix' ? 'Micronet - Easy Fix' : 'Micronet')) }}</div>
         </div>
     </div>
 
@@ -156,35 +160,15 @@
         Thank you for choosing {{ $brand['name'] }}.
     </div>
 
-    {{-- Payment Details Footer --}}
+    {{-- Footer Terms --}}
     <div class="mt-6" style="border-top: 2px solid #e5e7eb; padding-top: 15px;">
-        <div class="text-sm font-bold mb-2">Payment Details</div>
-        <div class="text-xs mb-1">
-            <strong>Bank Transfer:</strong>
-            @if($log->business_unit === 'cool')
-                7730000785866
-            @else
-                7730000140010
-            @endif
-        </div>
-        <div class="text-xs mb-1">
-            <strong>Account Name:</strong>
-            @if($log->business_unit === 'cool')
-                Hussain M. Ibrahim
-            @else
-                Micronet
-            @endif
-        </div>
-        <div class="text-xs mb-3">
-            After payment, please WhatsApp the receipt to <strong>9996210</strong> for confirmation.
-        </div>
-
-        <div class="text-sm font-bold mb-2">Payment Terms</div>
+        <div class="text-sm font-bold mb-2">Terms and Conditions</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-            <li class="text-xs">Payment is due upon receipt of invoice.</li>
-            <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
-            <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
-            <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>
+            <li class="text-xs">This quotation is an estimate and is not a tax invoice.</li>
+            <li class="text-xs">Prices, availability, and scope are subject to change until confirmed in writing.</li>
+            <li class="text-xs">Any third-party licenses, subscriptions, or hardware are charged separately unless stated otherwise.</li>
+            <li class="text-xs">Work will be scheduled once the quotation is approved.</li>
+            <li class="text-xs">If additional work is required beyond the quoted scope, we will notify you before proceeding.</li>
         </ul>
     </div>
 </div>

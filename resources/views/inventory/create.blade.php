@@ -95,6 +95,7 @@
 	                                <option value="moto" {{ old('category') === 'moto' ? 'selected' : '' }}>Motorcycle</option>
 	                                <option value="ac" {{ old('category') === 'ac' ? 'selected' : '' }}>AC Service</option>
 	                                <option value="it" {{ old('category') === 'it' ? 'selected' : '' }}>IT / Micronet</option>
+	                                <option value="easyfix" {{ old('category') === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
 	                            </select>
                         </div>
 

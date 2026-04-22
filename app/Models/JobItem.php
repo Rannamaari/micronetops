@@ -15,6 +15,7 @@ class JobItem extends Model
         'item_name',
         'item_description',
         'is_service',
+        'is_gst_applicable',
         'quantity',
         'unit_price',
         'subtotal',
@@ -22,6 +23,7 @@ class JobItem extends Model
 
     protected $casts = [
         'is_service' => 'boolean',
+        'is_gst_applicable' => 'boolean',
         'unit_price' => 'decimal:2',
         'subtotal'   => 'decimal:2',
     ];

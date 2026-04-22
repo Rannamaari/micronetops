@@ -35,11 +35,11 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
                 {{-- Status & Type bar --}}
 	                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700
-	                            {{ $job->job_type === 'ac' ? 'bg-sky-50 dark:bg-sky-900/20' : ($job->job_type === 'it' ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-orange-50 dark:bg-orange-900/20') }}">
+	                            {{ $job->job_type === 'ac' ? 'bg-sky-50 dark:bg-sky-900/20' : ($job->job_type === 'it' ? 'bg-indigo-50 dark:bg-indigo-900/20' : ($job->job_type === 'easyfix' ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-orange-50 dark:bg-orange-900/20')) }}">
 	                    <div class="flex items-center gap-2">
 	                        <span class="px-3 py-1 rounded-lg text-sm font-semibold
-	                            {{ $job->job_type === 'moto' ? 'bg-orange-500 text-white' : ($job->job_type === 'ac' ? 'bg-sky-500 text-white' : 'bg-indigo-500 text-white') }}">
-	                            {{ $job->job_type === 'ac' ? 'AC' : ($job->job_type === 'it' ? 'IT' : 'Bike') }}
+	                            {{ $job->job_type === 'moto' ? 'bg-orange-500 text-white' : ($job->job_type === 'ac' ? 'bg-sky-500 text-white' : ($job->job_type === 'easyfix' ? 'bg-emerald-600 text-white' : 'bg-indigo-500 text-white')) }}">
+	                            {{ $job->job_type === 'ac' ? 'AC' : ($job->job_type === 'it' ? 'IT' : ($job->job_type === 'easyfix' ? 'Easy Fix' : 'Bike')) }}
 	                        </span>
                         @if($job->priority && $job->priority !== 'normal')
                             <span class="px-2 py-1 rounded-lg text-xs font-semibold"
@@ -358,6 +358,23 @@
                         </div>
                     </div>
                 @endif
+
+                <div class="mt-4">
+                    <form method="POST" action="{{ route('jobs.update-customer-notes', $job) }}" class="space-y-2">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Customer notes (shown on invoice/quotation)</label>
+                            <textarea name="customer_notes" rows="3"
+                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                      placeholder="Add notes the customer should see...">{{ old('customer_notes', $job->customer_notes) }}</textarea>
+                        </div>
+                        <button type="submit"
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-indigo-600 border border-transparent rounded-xl sm:rounded-lg font-semibold text-sm text-white hover:bg-indigo-700 active:bg-indigo-800">
+                            Save Customer Notes
+                        </button>
+                    </form>
+                </div>
             </div>
 
             {{-- Charges: labour (read-only), travel, discount --}}
@@ -881,6 +898,34 @@
                         </span>
                     </div>
                 </div>
+
+                <div class="px-4 pb-3">
+                    <form method="POST" action="{{ route('jobs.update-due-date', $job) }}" class="flex flex-col sm:flex-row gap-2 items-end">
+                        @csrf
+                        @method('PATCH')
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Invoice due date</label>
+                            <input type="date"
+                                   name="due_date"
+                                   value="{{ $job->due_date ? $job->due_date->format('Y-m-d') : '' }}"
+                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500" />
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Leave blank for “Due upon receipt”.</div>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button type="submit"
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-3 bg-indigo-600 rounded-xl font-semibold text-sm text-white hover:bg-indigo-700 active:bg-indigo-800">
+                                Save
+                            </button>
+                            <button type="submit"
+                                    name="due_date"
+                                    value=""
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl font-semibold text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 active:bg-gray-300">
+                                Due upon receipt
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
 
                 {{-- Action buttons --}}
                 <div class="px-4 pb-4 pt-2 flex flex-col sm:flex-row gap-2">

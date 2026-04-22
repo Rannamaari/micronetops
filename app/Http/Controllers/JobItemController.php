@@ -49,6 +49,7 @@ class JobItemController extends Controller
             'item_name'         => $inventoryItem->name,
             'item_description'  => $itemDescription ?: null,
             'is_service'        => $inventoryItem->is_service,
+            'is_gst_applicable' => (bool) $inventoryItem->has_gst,
             'quantity'          => $qty,
             'unit_price'        => $unitPrice,
             'subtotal'          => $subtotal,

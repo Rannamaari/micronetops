@@ -18,11 +18,11 @@ class SalesController extends Controller
 {
     /**
      * POST /api/sales
-     * Create a complete sale for Micro Moto (moto), Micro Cool (cool), or Micronet (it).
+     * Create a complete sale for Micro Moto (moto), Micro Cool (cool), Micronet (it), or Micronet - Easy Fix (easyfix).
      *
      * Body:
      * {
-     *   "business_unit": "moto",          // "moto" = Micro Moto, "cool" = Micro Cool, "it" = Micronet
+     *   "business_unit": "moto",          // "moto" = Micro Moto, "cool" = Micro Cool, "it" = Micronet, "easyfix" = Micronet - Easy Fix
      *   "customer_name":  "Ahmed Ali",     // optional (walk-in if omitted)
      *   "customer_phone": "7001234",       // optional, required if customer_name given
      *   "payment_method": "cash",          // "cash" or "transfer"
@@ -41,7 +41,7 @@ class SalesController extends Controller
     {
         try {
             $validated = $request->validate([
-                'business_unit'  => ['required', 'in:moto,cool,it'],
+                'business_unit'  => ['required', 'in:moto,cool,it,easyfix'],
                 'customer_name'  => ['nullable', 'string', 'max:255'],
                 'customer_phone' => ['nullable', 'string', 'max:50'],
                 'payment_method' => ['required', 'in:cash,transfer'],
@@ -86,6 +86,7 @@ class SalesController extends Controller
                         'category' => match ($validated['business_unit']) {
                             'cool' => 'ac',
                             'it' => 'it',
+                            'easyfix' => 'easyfix',
                             default => 'moto',
                         },
                     ]
@@ -107,6 +108,7 @@ class SalesController extends Controller
             $categoryMap = match ($validated['business_unit']) {
                 'cool' => 'ac',
                 'it' => 'it',
+                'easyfix' => 'easyfix',
                 default => 'moto',
             };
 
@@ -252,6 +254,7 @@ class SalesController extends Controller
                     'moto' => 'Micro Moto',
                     'cool' => 'Micro Cool',
                     'it' => 'Micronet',
+                    'easyfix' => 'Micronet - Easy Fix',
                     default => $log->business_unit,
                 },
                 'customer'       => $log->customer?->name ?? 'Walk-in',
@@ -348,6 +351,7 @@ class SalesController extends Controller
                     'moto' => 'Micro Moto',
                     'cool' => 'Micro Cool',
                     'it' => 'Micronet',
+                    'easyfix' => 'Micronet - Easy Fix',
                     default => $log->business_unit,
                 },
                 'customer'       => $log->customer?->name ?? 'Walk-in',

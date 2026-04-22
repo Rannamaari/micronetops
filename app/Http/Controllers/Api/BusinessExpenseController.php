@@ -123,7 +123,7 @@ class BusinessExpenseController extends Controller
      * GET /api/expenses
      * List expenses filtered by type, unit, or period.
      *
-     * Query: ?type=cogs|operating  &business_unit=moto|ac|shared  &period=today|week|month
+     * Query: ?type=cogs|operating  &business_unit=moto|ac|it|easyfix|shared  &period=today|week|month
      */
     public function index(Request $request): JsonResponse
     {
@@ -178,7 +178,7 @@ class BusinessExpenseController extends Controller
      *   "vendor":        "Anam Traders",      // vendor name — found or created
      *   "vendor_phone":  "7001234",           // required only if vendor is new
      *   "account":       "Cash",              // account name to debit
-     *   "business_unit": "moto",             // "moto", "ac", or "shared"
+     *   "business_unit": "moto",             // "moto", "ac", "it", "easyfix", or "shared"
      *   "amount":        1500,
      *   "incurred_at":   "2026-03-07",        // defaults to today
      *   "reference":     "INV-001",
@@ -208,7 +208,7 @@ class BusinessExpenseController extends Controller
                 'vendor_phone'  => ['nullable', 'string', 'max:50'],
                 'vendor_contact'=> ['nullable', 'string', 'max:255'],
                 'account'       => ['required', 'string', 'max:255'],
-                'business_unit' => ['required', 'in:moto,ac,shared'],
+                'business_unit' => ['required', 'in:moto,ac,it,easyfix,shared'],
                 'amount'        => ['required', 'numeric', 'min:0.01'],
                 'incurred_at'   => ['nullable', 'date'],
                 'reference'     => ['nullable', 'string', 'max:255'],
@@ -347,7 +347,12 @@ class BusinessExpenseController extends Controller
 
     private function applyItems(Expense $expense, array $validated): void
     {
-        $categoryMap = $validated['business_unit'] === 'ac' ? 'ac' : 'moto';
+        $categoryMap = match ($validated['business_unit']) {
+            'ac' => 'ac',
+            'it' => 'it',
+            'easyfix' => 'easyfix',
+            default => 'moto',
+        };
 
         foreach ($validated['items'] as $row) {
             $quantity = (float) ($row['quantity'] ?? 0);

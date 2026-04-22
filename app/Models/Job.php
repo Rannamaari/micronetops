@@ -83,6 +83,7 @@ class Job extends Model
     public const TYPE_AC = 'ac';
     public const TYPE_BIKE = 'moto';
     public const TYPE_IT = 'it';
+    public const TYPE_EASYFIX = 'easyfix';
 
     // Cancellation reason constants
     public const CANCEL_CUSTOMER_REQUEST = 'customer_request';
@@ -144,6 +145,7 @@ class Job extends Model
 
     protected $fillable = [
         'job_date',
+        'due_date',
         'job_type',
         'job_category',
         'title',
@@ -162,10 +164,12 @@ class Job extends Model
         'payment_status',
         'problem_description',
         'internal_notes',
+        'customer_notes',
         'labour_total',
         'parts_total',
         'travel_charges',
         'discount',
+        'gst_amount',
         'total_amount',
         'scheduled_at',
         'scheduled_end_at',
@@ -179,10 +183,12 @@ class Job extends Model
 
     protected $casts = [
         'job_date'          => 'date',
+        'due_date'          => 'date',
         'labour_total'      => 'decimal:2',
         'parts_total'       => 'decimal:2',
         'travel_charges'    => 'decimal:2',
         'discount'          => 'decimal:2',
+        'gst_amount'        => 'decimal:2',
         'total_amount'      => 'decimal:2',
         'updated_at'        => 'datetime',
         'scheduled_at'      => 'datetime',
@@ -342,6 +348,8 @@ class Job extends Model
 
     public function recalculateTotals(): void
     {
+        $GST_RATE = 0.08;
+
         // Sum parts (non-service items)
         $partsTotal = $this->items()
             ->where('is_service', false)
@@ -355,10 +363,30 @@ class Job extends Model
         $this->parts_total  = $partsTotal;
         $this->labour_total = $labourTotal;
 
-        $this->total_amount = $labourTotal
+        $subtotal = $labourTotal
             + $this->travel_charges
             + $partsTotal
             - $this->discount;
+
+        // GST base:
+        // - Any job item explicitly marked GST-applicable
+        // - OR inventory items with GST enabled (default behavior)
+        // (Custom items without inventory_item_id are treated as non-GST unless explicitly marked.)
+        $gstBase = $this->items()
+            ->where(function ($q) {
+                $q->where('is_gst_applicable', true)
+                    ->orWhereHas('inventoryItem', function ($iq) {
+                        $iq->where('has_gst', true);
+                    });
+            })
+            ->sum('subtotal');
+
+        // Apply discount to GST base first (simple rule; avoids over-charging GST when discount exists).
+        $gstBaseAfterDiscount = max(0, (float) $gstBase - (float) $this->discount);
+        $gstAmount = round($gstBaseAfterDiscount * $GST_RATE, 2);
+
+        $this->gst_amount = $gstAmount;
+        $this->total_amount = $subtotal + $gstAmount;
 
         $this->save();
 
@@ -638,6 +666,7 @@ class Job extends Model
             self::TYPE_AC => '#0ea5e9',    // sky blue (AC = cold)
             self::TYPE_BIKE => '#f97316',  // orange (bike = moto)
             self::TYPE_IT => '#6366f1',    // indigo (IT = micronet)
+            self::TYPE_EASYFIX => '#10b981', // emerald (Easy Fix)
             default => '#6b7280',
         };
     }

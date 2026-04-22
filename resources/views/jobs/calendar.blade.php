@@ -303,7 +303,7 @@
             </div>
             <form id="quick-create-form" class="space-y-4">
                 {{-- Job type selection with Alpine.js --}}
-	                <div x-data="{ jobType: 'moto' }" class="grid grid-cols-3 gap-3">
+	                <div x-data="{ jobType: 'moto' }" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 	                    <label class="cursor-pointer" @click="jobType = 'moto'">
 	                        <input type="radio" name="quick_job_type" value="moto" class="sr-only" x-model="jobType">
 	                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
@@ -332,6 +332,16 @@
 	                                 : 'border-gray-200 dark:border-gray-600'">
 	                            <span class="text-xl mr-2">🖥️</span>
 	                            <span class="font-bold text-gray-900 dark:text-gray-100">IT</span>
+	                        </div>
+	                    </label>
+	                    <label class="cursor-pointer" @click="jobType = 'easyfix'">
+	                        <input type="radio" name="quick_job_type" value="easyfix" class="sr-only" x-model="jobType">
+	                        <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                             :class="jobType === 'easyfix'
+	                                 ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30'
+	                                 : 'border-gray-200 dark:border-gray-600'">
+	                            <span class="text-xl mr-2">🛠️</span>
+	                            <span class="font-bold text-gray-900 dark:text-gray-100">Easy Fix</span>
 	                        </div>
 	                    </label>
 	                </div>

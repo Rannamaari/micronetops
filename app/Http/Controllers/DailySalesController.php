@@ -56,7 +56,7 @@ class DailySalesController extends Controller
     {
         $validated = $request->validate([
             'date' => ['required', 'date', 'before_or_equal:today'],
-            'business_unit' => ['required', 'in:moto,cool,it'],
+            'business_unit' => ['required', 'in:moto,cool,it,easyfix'],
         ]);
 
         // Mechanics can only create sales for their assigned unit
@@ -91,6 +91,7 @@ class DailySalesController extends Controller
         $categoryMap = match ($dailySalesLog->business_unit) {
             'cool' => 'ac',
             'it' => 'it',
+            'easyfix' => 'easyfix',
             default => 'moto',
         };
         $inventoryItems = InventoryItem::active()
@@ -113,6 +114,45 @@ class DailySalesController extends Controller
             'accounts' => $accounts,
             'accountTransaction' => $accountTransaction,
         ]);
+    }
+
+    public function updateDueDate(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if ($dailySalesLog->isSubmitted()) {
+            return back()->with('error', 'Cannot change due date on a submitted sale.');
+        }
+
+        $validated = $request->validate([
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $dailySalesLog->update([
+            'due_date' => $validated['due_date'] ?? null,
+        ]);
+
+        $label = $dailySalesLog->due_date ? $dailySalesLog->due_date->format('Y-m-d') : 'Due upon receipt';
+        ActivityLog::record('sale.due_date_updated', "Sale #{$dailySalesLog->id} due date → {$label}", $dailySalesLog);
+
+        return back()->with('success', 'Due date updated.');
+    }
+
+    public function updateNotes(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if ($dailySalesLog->isSubmitted()) {
+            return back()->with('error', 'Cannot change notes on a submitted sale.');
+        }
+
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $dailySalesLog->update([
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        ActivityLog::record('sale.notes_updated', "Sale #{$dailySalesLog->id} notes updated", $dailySalesLog);
+
+        return back()->with('success', 'Notes updated.');
     }
 
     public function addLine(Request $request, DailySalesLog $dailySalesLog)
@@ -201,6 +241,7 @@ class DailySalesController extends Controller
             'moto' => 'Micro Moto',
             'cool' => 'Micro Cool',
             'it' => 'Micronet',
+            'easyfix' => 'Micronet - Easy Fix',
             default => $dailySalesLog->business_unit,
         };
         $total = number_format($dailySalesLog->fresh()->totals['grand'] ?? 0, 2);
@@ -250,6 +291,7 @@ class DailySalesController extends Controller
         $category = match ($dailySalesLog->business_unit) {
             'cool' => 'ac',
             'it' => 'it',
+            'easyfix' => 'easyfix',
             default => 'moto',
         };
 
@@ -309,6 +351,15 @@ class DailySalesController extends Controller
                 'email' => 'hello@micronet.mv',
                 'website' => 'micronet.mv',
             ];
+        } elseif ($unit === 'easyfix') {
+            $brand = [
+                'name' => 'Micronet - Easy Fix',
+                'tagline' => 'Handyman Services in Greater Male Area',
+                'address' => 'Janavaree Hingun, Near Dharubaaruge',
+                'phone' => '+960 9996210',
+                'email' => 'hello@micronet.mv',
+                'website' => 'easyfix.mv',
+            ];
         } else {
             $brand = [
                 'name' => 'Micro Moto Garage',
@@ -327,6 +378,28 @@ class DailySalesController extends Controller
             'brand' => $brand,
             'quotationNumber' => $quotationNumber,
         ]);
+    }
+
+    public function convertToInvoice(DailySalesLog $dailySalesLog)
+    {
+        if ($dailySalesLog->isSubmitted()) {
+            if ($dailySalesLog->job_id) {
+                return redirect()->route('jobs.invoice', $dailySalesLog->job_id);
+            }
+            return back()->with('error', 'This sale is already submitted, but no invoice job was found.');
+        }
+
+        $dailySalesLog->load('lines');
+        if ($dailySalesLog->lines->isEmpty()) {
+            return back()->with('error', 'Add at least one line item before creating an invoice.');
+        }
+
+        $job = $dailySalesLog->createOrUpdateInvoiceJob(false);
+        $dailySalesLog->update(['job_id' => $job->id]);
+
+        ActivityLog::record('sale.invoice_created', "Invoice created for sale #{$dailySalesLog->id}", $dailySalesLog);
+
+        return redirect()->route('jobs.invoice', $job->id);
     }
 
     public function reports(Request $request)

@@ -18,8 +18,10 @@ class InventoryPurchaseController extends Controller
         }
 
         $businessUnits = [
-            'moto' => 'Moto',
-            'ac' => 'AC',
+            'moto' => 'Micro Moto',
+            'ac' => 'Micro Cool',
+            'it' => 'Micronet',
+            'easyfix' => 'Micronet - Easy Fix',
             'shared' => 'Shared',
         ];
 
@@ -37,7 +39,7 @@ class InventoryPurchaseController extends Controller
             'quantity' => ['required', 'integer', 'min:1'],
             'unit_cost' => ['required', 'numeric', 'min:0'],
             'purchased_at' => ['required', 'date'],
-            'business_unit' => ['required', 'in:moto,ac,shared'],
+            'business_unit' => ['required', 'in:moto,ac,it,easyfix,shared'],
             'vendor' => ['nullable', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],

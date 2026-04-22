@@ -70,6 +70,7 @@
 	                                <option value="moto" {{ old('category', $inventoryItem->category) === 'moto' ? 'selected' : '' }}>Motorcycle</option>
 	                                <option value="ac" {{ old('category', $inventoryItem->category) === 'ac' ? 'selected' : '' }}>AC Service</option>
 	                                <option value="it" {{ old('category', $inventoryItem->category) === 'it' ? 'selected' : '' }}>IT / Micronet</option>
+	                                <option value="easyfix" {{ old('category', $inventoryItem->category) === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
 	                            </select>
                         </div>
 

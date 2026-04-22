@@ -44,6 +44,7 @@
 	                            <option value="moto" {{ ($businessUnit ?? '') === 'moto' ? 'selected' : '' }}>Moto</option>
 	                            <option value="cool" {{ ($businessUnit ?? '') === 'cool' ? 'selected' : '' }}>Cool</option>
 	                            <option value="it" {{ ($businessUnit ?? '') === 'it' ? 'selected' : '' }}>Micronet</option>
+	                            <option value="easyfix" {{ ($businessUnit ?? '') === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
 	                        </select>
                     </div>
                     <button type="submit"
@@ -91,6 +92,18 @@
 	                            </button>
 	                        </form>
 	                    @endif
+	                    @if(!Auth::user()->allowedBusinessUnit())
+	                        <form method="POST" action="{{ route('sales.daily.open') }}">
+	                            @csrf
+	                            <input type="hidden" name="date" value="{{ $date }}">
+	                            <input type="hidden" name="business_unit" value="easyfix">
+	                            <button type="submit"
+	                                    class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+	                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+	                                New Sale (Easy Fix)
+	                            </button>
+	                        </form>
+	                    @endif
 	                </div>
                 @endif
             </div>
@@ -129,8 +142,8 @@
                                         <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">#{{ $log->id }}</td>
                                         <td class="px-4 py-3">
 	                                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
-	                                                {{ $log->business_unit === 'moto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ($log->business_unit === 'cool' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200') }}">
-	                                                {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : 'Micronet') }}
+	                                                {{ $log->business_unit === 'moto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ($log->business_unit === 'cool' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' : ($log->business_unit === 'easyfix' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200')) }}">
+	                                                {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : ($log->business_unit === 'easyfix' ? 'Easy Fix' : 'Micronet')) }}
 	                                            </span>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
@@ -188,8 +201,8 @@
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">#{{ $log->id }}</span>
 	                                            <span class="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium
-	                                                {{ $log->business_unit === 'moto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ($log->business_unit === 'cool' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200') }}">
-	                                                {{ $log->business_unit === 'moto' ? 'Moto' : ($log->business_unit === 'cool' ? 'Cool' : 'IT') }}
+	                                                {{ $log->business_unit === 'moto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ($log->business_unit === 'cool' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' : ($log->business_unit === 'easyfix' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200')) }}">
+	                                                {{ $log->business_unit === 'moto' ? 'Moto' : ($log->business_unit === 'cool' ? 'Cool' : ($log->business_unit === 'easyfix' ? 'Fix' : 'IT')) }}
 	                                            </span>
                                             <span class="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium
                                                 {{ $log->status === 'submitted' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }}">

@@ -184,7 +184,7 @@
 	                @if($type)
 	                    <a href="{{ route('jobs.index', array_merge(request()->except('type'), [])) }}"
 	                       class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full">
-	                        {{ $type === 'ac' ? 'AC' : ($type === 'it' ? 'IT' : 'Bike') }}
+	                        {{ $type === 'ac' ? 'AC' : ($type === 'it' ? 'IT' : ($type === 'easyfix' ? 'Easy Fix' : 'Bike')) }}
 	                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 	                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
 	                        </svg>
@@ -208,8 +208,8 @@
                         <div class="flex items-start gap-3">
                             {{-- Type indicator --}}
 	                            <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-	                                        {{ $job->job_type === 'ac' ? 'bg-sky-100 dark:bg-sky-900/30' : ($job->job_type === 'it' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-orange-100 dark:bg-orange-900/30') }}">
-	                                <span class="text-lg">{{ $job->job_type === 'ac' ? '❄️' : ($job->job_type === 'it' ? '🖥️' : '🏍️') }}</span>
+	                                        {{ $job->job_type === 'ac' ? 'bg-sky-100 dark:bg-sky-900/30' : ($job->job_type === 'it' ? 'bg-indigo-100 dark:bg-indigo-900/30' : ($job->job_type === 'easyfix' ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-orange-100 dark:bg-orange-900/30')) }}">
+	                                <span class="text-lg">{{ $job->job_type === 'ac' ? '❄️' : ($job->job_type === 'it' ? '🖥️' : ($job->job_type === 'easyfix' ? '🛠️' : '🏍️')) }}</span>
 	                            </div>
 
                             {{-- Content --}}
@@ -350,6 +350,11 @@
 	                                          {{ $type === 'it' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
 	                                    🖥️ IT
 	                                </a>
+	                                <a href="{{ route('jobs.index', array_merge(request()->all(), ['type' => 'easyfix'])) }}"
+	                                   class="px-4 py-3 text-center rounded-xl text-sm font-medium
+	                                          {{ $type === 'easyfix' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
+	                                    🛠️ Easy Fix
+	                                </a>
 	                            </div>
 	                        </div>
 
@@ -400,7 +405,7 @@
                                 class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-2">
-	                                        <span class="w-2 h-8 rounded-full {{ $job->job_type === 'ac' ? 'bg-sky-500' : ($job->job_type === 'it' ? 'bg-indigo-500' : 'bg-orange-500') }}"></span>
+	                                        <span class="w-2 h-8 rounded-full {{ $job->job_type === 'ac' ? 'bg-sky-500' : ($job->job_type === 'it' ? 'bg-indigo-500' : ($job->job_type === 'easyfix' ? 'bg-emerald-500' : 'bg-orange-500')) }}"></span>
                                         <div>
                                             <div class="font-medium text-gray-900 dark:text-gray-100">
                                                 {{ $job->title ?: 'Job #' . $job->id }}

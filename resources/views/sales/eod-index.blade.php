@@ -43,17 +43,18 @@
                 </form>
             </div>
 
-            {{-- Unit Cards --}}
+	        {{-- Unit Cards --}}
             @php
-	                $unitLabels = ['moto' => 'Micro Moto', 'cool' => 'Micro Cool', 'it' => 'Micronet'];
+	                $unitLabels = ['moto' => 'Micro Moto', 'cool' => 'Micro Cool', 'it' => 'Micronet', 'easyfix' => 'Micronet - Easy Fix'];
 	                $unitColors = [
 	                    'moto' => ['bg' => 'bg-orange-50 dark:bg-orange-900/20', 'border' => 'border-orange-200 dark:border-orange-800', 'badge' => 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'],
 	                    'cool' => ['bg' => 'bg-cyan-50 dark:bg-cyan-900/20', 'border' => 'border-cyan-200 dark:border-cyan-800', 'badge' => 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200'],
 	                    'it' => ['bg' => 'bg-indigo-50 dark:bg-indigo-900/20', 'border' => 'border-indigo-200 dark:border-indigo-800', 'badge' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200'],
+	                    'easyfix' => ['bg' => 'bg-emerald-50 dark:bg-emerald-900/20', 'border' => 'border-emerald-200 dark:border-emerald-800', 'badge' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'],
 	                ];
             @endphp
 
-	            @foreach(['moto', 'cool', 'it'] as $unit)
+	            @foreach(['moto', 'cool', 'it', 'easyfix'] as $unit)
                 @php
                     $data = $unitData[$unit];
                     $eod = $data['eod'];

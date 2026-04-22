@@ -110,7 +110,7 @@
 
 	                    {{-- Service Type - Large touch targets --}}
 	                    <div>
-	                        <div class="grid grid-cols-3 gap-2">
+	                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
 	                            <label class="cursor-pointer" @click="jobType = 'moto'">
 	                                <input type="radio" name="job_type" value="moto" class="sr-only" x-model="jobType">
 	                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
@@ -139,6 +139,16 @@
 	                                         : 'border-gray-200 dark:border-gray-600'">
 	                                    <span class="text-2xl mr-2">🖥️</span>
 	                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Micronet</span>
+	                                </div>
+	                            </label>
+	                            <label class="cursor-pointer" @click="jobType = 'easyfix'">
+	                                <input type="radio" name="job_type" value="easyfix" class="sr-only" x-model="jobType">
+	                                <div class="flex items-center justify-center p-4 border-2 rounded-xl transition-all"
+	                                     :class="jobType === 'easyfix'
+	                                         ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30'
+	                                         : 'border-gray-200 dark:border-gray-600'">
+	                                    <span class="text-2xl mr-2">🛠️</span>
+	                                    <span class="font-bold text-lg text-gray-900 dark:text-gray-100">Easy Fix</span>
 	                                </div>
 	                            </label>
 	                        </div>
@@ -280,6 +290,24 @@
                                x-model="customerAddress"
                                class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500"
                                placeholder="Hulhumale Phase 2, Flat 101...">
+                    </div>
+
+                    {{-- Invoice Due Date --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Invoice due date (optional)</label>
+                        <input type="date" name="due_date"
+                               value="{{ old('due_date') }}"
+                               class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Leave blank for “Due upon receipt”.</div>
+                    </div>
+
+                    {{-- Customer Notes (visible on invoice/quotation) --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Customer notes (optional)</label>
+                        <textarea name="customer_notes" rows="3"
+                                  class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                  placeholder="Add any notes the customer should see on the quotation/invoice...">{{ old('customer_notes') }}</textarea>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Shown on printed quotation/invoice only when filled.</div>
                     </div>
 
                     {{-- Schedule & Priority - Collapsible --}}
