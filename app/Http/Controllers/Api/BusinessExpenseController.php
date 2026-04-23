@@ -22,6 +22,13 @@ use Illuminate\Validation\ValidationException;
 
 class BusinessExpenseController extends Controller
 {
+    public function businessUnits(): JsonResponse
+    {
+        return response()->json([
+            'data' => \App\Models\Expense::getBusinessUnits(),
+        ]);
+    }
+
     /**
      * GET /api/expenses/categories
      * List expense categories, optionally filtered by type.
@@ -174,10 +181,13 @@ class BusinessExpenseController extends Controller
      * Body:
      * {
      *   "type":          "cogs",              // "cogs" or "operating"
-     *   "category":      "Parts Purchase",    // category name (matched by name/type)
-     *   "vendor":        "Anam Traders",      // vendor name — found or created
+     *   "category_id":   12,                  // optional (recommended) exact category
+     *   "category":      "Parts Purchase",    // category name (fallback if category_id not provided)
+     *   "vendor_id":     5,                   // optional (recommended) exact vendor
+     *   "vendor":        "Anam Traders",      // vendor name — found or created (fallback if vendor_id not provided)
      *   "vendor_phone":  "7001234",           // required only if vendor is new
-     *   "account":       "Cash",              // account name to debit
+     *   "account_id":    2,                   // optional (recommended) exact account
+     *   "account":       "Cash",              // account name to debit (fallback if account_id not provided)
      *   "business_unit": "moto",             // "moto", "ac", "it", "easyfix", or "shared"
      *   "amount":        1500,
      *   "incurred_at":   "2026-03-07",        // defaults to today
@@ -188,6 +198,7 @@ class BusinessExpenseController extends Controller
      *   "items": [
      *     {
      *       "identifier":  "BP001",          // SKU or name of existing item (optional)
+     *       "inventory_item_id": 123,        // optional (recommended) exact inventory item
      *       "name":        "Brake Pad Gen2", // new item name if not in inventory
      *       "sku":         "BP002",          // required for new items
      *       "quantity":    10,
@@ -203,27 +214,42 @@ class BusinessExpenseController extends Controller
         try {
             $validated = $request->validate([
                 'type'          => ['required', 'in:cogs,operating,other'],
-                'category'      => ['required', 'string', 'max:255'],
-                'vendor'        => ['required', 'string', 'max:255'],
+                'category_id'   => ['nullable', 'integer', 'exists:expense_categories,id'],
+                'category'      => ['nullable', 'string', 'max:255'],
+                'vendor_id'     => ['nullable', 'integer', 'exists:vendors,id'],
+                'vendor'        => ['nullable', 'string', 'max:255'],
                 'vendor_phone'  => ['nullable', 'string', 'max:50'],
                 'vendor_contact'=> ['nullable', 'string', 'max:255'],
-                'account'       => ['required', 'string', 'max:255'],
+                'account_id'    => ['nullable', 'integer', 'exists:accounts,id'],
+                'account'       => ['nullable', 'string', 'max:255'],
                 'business_unit' => ['required', 'in:moto,ac,it,easyfix,shared'],
                 'amount'        => ['required', 'numeric', 'min:0.01'],
                 'incurred_at'   => ['nullable', 'date'],
                 'reference'     => ['nullable', 'string', 'max:255'],
                 'notes'         => ['nullable', 'string', 'max:1000'],
                 'items'         => ['nullable', 'array'],
+                'items.*.inventory_item_id' => ['nullable', 'integer', 'exists:inventory_items,id'],
                 'items.*.identifier' => ['nullable', 'string', 'max:255'],
                 'items.*.name'       => ['nullable', 'string', 'max:255'],
                 'items.*.sku'        => ['nullable', 'string', 'max:255'],
-                'items.*.quantity'   => ['required_with:items.*.name', 'nullable', 'numeric', 'min:0.01'],
-                'items.*.unit_cost'  => ['required_with:items.*.name', 'nullable', 'numeric', 'min:0'],
+                'items.*.quantity'   => ['required_with:items.*.name,items.*.inventory_item_id,items.*.identifier', 'nullable', 'numeric', 'min:0.01'],
+                'items.*.unit_cost'  => ['required_with:items.*.name,items.*.inventory_item_id,items.*.identifier', 'nullable', 'numeric', 'min:0'],
                 'items.*.sell_price' => ['nullable', 'numeric', 'min:0'],
                 'items.*.unit'       => ['nullable', 'string', 'max:50'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        // Require one of category_id/category (for bot correctness, ids are preferred).
+        if (empty($validated['category_id']) && empty($validated['category'])) {
+            return response()->json(['error' => 'Provide either "category_id" or "category".'], 422);
+        }
+        if (empty($validated['vendor_id']) && empty($validated['vendor'])) {
+            return response()->json(['error' => 'Provide either "vendor_id" or "vendor".'], 422);
+        }
+        if (empty($validated['account_id']) && empty($validated['account'])) {
+            return response()->json(['error' => 'Provide either "account_id" or "account".'], 422);
         }
 
         // COGS must have items
@@ -232,11 +258,16 @@ class BusinessExpenseController extends Controller
         }
 
         // --- Resolve category ---
-        $category = ExpenseCategory::where('is_active', true)
-            ->where('type', $validated['type'])
-            ->whereRaw('lower(name) like ?', ['%' . strtolower($validated['category']) . '%'])
-            ->first()
-            ?? ExpenseCategory::where('is_active', true)->where('type', $validated['type'])->first();
+        $category = null;
+        if (!empty($validated['category_id'])) {
+            $category = ExpenseCategory::where('is_active', true)->find($validated['category_id']);
+        } elseif (!empty($validated['category'])) {
+            $category = ExpenseCategory::where('is_active', true)
+                ->where('type', $validated['type'])
+                ->whereRaw('lower(name) like ?', ['%' . strtolower($validated['category']) . '%'])
+                ->first()
+                ?? ExpenseCategory::where('is_active', true)->where('type', $validated['type'])->first();
+        }
 
         if (!$category) {
             return response()->json([
@@ -244,28 +275,49 @@ class BusinessExpenseController extends Controller
             ], 404);
         }
 
-        // --- Resolve or create vendor ---
-        $vendor = Vendor::whereRaw('lower(name) like ?', ['%' . strtolower($validated['vendor']) . '%'])
-            ->where('is_active', true)->first();
+        if ($category->type !== $validated['type']) {
+            return response()->json([
+                'error' => "Category type mismatch. Category #{$category->id} is \"{$category->type}\", but you sent \"{$validated['type']}\".",
+            ], 422);
+        }
 
-        if (!$vendor) {
-            $vendor = Vendor::create([
-                'name'         => $validated['vendor'],
-                'phone'        => $validated['vendor_phone'] ?? '',
-                'contact_name' => $validated['vendor_contact'] ?? null,
-                'is_active'    => true,
-            ]);
+        // --- Resolve or create vendor ---
+        $vendorCreated = false;
+        if (!empty($validated['vendor_id'])) {
+            $vendor = Vendor::where('is_active', true)->find($validated['vendor_id']);
+            if (!$vendor) {
+                return response()->json(['error' => "Vendor #{$validated['vendor_id']} not found or inactive."], 404);
+            }
+        } else {
+            $vendor = Vendor::whereRaw('lower(name) like ?', ['%' . strtolower($validated['vendor']) . '%'])
+                ->where('is_active', true)->first();
+
+            if (!$vendor) {
+                $vendor = Vendor::create([
+                    'name'         => $validated['vendor'],
+                    'phone'        => $validated['vendor_phone'] ?? '',
+                    'contact_name' => $validated['vendor_contact'] ?? null,
+                    'is_active'    => true,
+                ]);
+                $vendorCreated = true;
+            }
         }
 
         // --- Resolve account ---
-        $account = Account::where('is_active', true)
-            ->where('is_system', false)
-            ->whereRaw('lower(name) like ?', ['%' . strtolower($validated['account']) . '%'])
-            ->first();
+        if (!empty($validated['account_id'])) {
+            $account = Account::where('is_active', true)->where('is_system', false)->find($validated['account_id']);
+        } else {
+            $account = Account::where('is_active', true)
+                ->where('is_system', false)
+                ->whereRaw('lower(name) like ?', ['%' . strtolower($validated['account']) . '%'])
+                ->first();
+        }
 
         if (!$account) {
             return response()->json([
-                'error' => "Account \"{$validated['account']}\" not found. Check GET /api/expenses/accounts for available accounts.",
+                'error' => !empty($validated['account_id'])
+                    ? "Account #{$validated['account_id']} not found. Check GET /api/expenses/accounts for available accounts."
+                    : "Account \"{$validated['account']}\" not found. Check GET /api/expenses/accounts for available accounts.",
             ], 404);
         }
 
@@ -325,8 +377,6 @@ class BusinessExpenseController extends Controller
             return response()->json(['error' => 'Expense could not be saved.', 'details' => $e->getMessage()], 500);
         }
 
-        $vendorCreated = $vendor->wasRecentlyCreated;
-
         ActivityLog::record('expense.created', "API: {$category->type} expense #{$expense->id} recorded — {$category->name}, MVR {$amount} from {$account->name}", $expense, [], null, 'api');
 
         return response()->json([
@@ -361,7 +411,10 @@ class BusinessExpenseController extends Controller
 
             // Resolve or create inventory item
             $item = null;
-            if (!empty($row['identifier'])) {
+            if (!empty($row['inventory_item_id'])) {
+                $item = InventoryItem::find((int) $row['inventory_item_id']);
+            }
+            if (!$item && !empty($row['identifier'])) {
                 $item = InventoryItem::where('sku', $row['identifier'])->first()
                     ?? InventoryItem::whereRaw('lower(name) like ?', ['%' . strtolower($row['identifier']) . '%'])->first();
             }

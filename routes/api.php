@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\BusinessExpenseController;
+use App\Http\Controllers\Api\BotHelperController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FaultTicketController;
+use App\Http\Controllers\Api\HrAttendanceController;
+use App\Http\Controllers\Api\HrEmployeeController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\SalesController;
@@ -19,6 +22,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('api.token')->group(function () {
+
+    // --- Bot Helper (cached lookups) ---
+    Route::get('/bot/bootstrap', [BotHelperController::class, 'bootstrap']);
 
     // --- Dashboard ---
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -71,9 +77,25 @@ Route::middleware('api.token')->group(function () {
         Route::post('/',            [BusinessExpenseController::class, 'store']);
         Route::delete('/{id}',      [BusinessExpenseController::class, 'destroy']);
         Route::get('/categories',   [BusinessExpenseController::class, 'categories']);
+        Route::get('/business-units',[BusinessExpenseController::class, 'businessUnits']);
         Route::get('/vendors',      [BusinessExpenseController::class, 'vendors']);
         Route::post('/vendors',     [BusinessExpenseController::class, 'createVendor']);
         Route::get('/accounts',     [BusinessExpenseController::class, 'accounts']);
+    });
+
+    // --- HR (Employees + Attendance) ---
+    Route::prefix('hr')->group(function () {
+        // Employees
+        Route::get('/employees',        [HrEmployeeController::class, 'index']);
+        Route::post('/employees',       [HrEmployeeController::class, 'store']);
+        Route::get('/employees/{id}',   [HrEmployeeController::class, 'show']);
+        Route::patch('/employees/{id}', [HrEmployeeController::class, 'update']);
+        Route::delete('/employees/{id}',[HrEmployeeController::class, 'destroy']);
+
+        // Attendance
+        Route::get('/attendance',       [HrAttendanceController::class, 'index']); // by date or month
+        Route::post('/attendance',      [HrAttendanceController::class, 'mark']);  // mark single day
+        Route::post('/attendance/mark-all-present', [HrAttendanceController::class, 'markAllPresent']); // bulk
     });
 
     // --- Petty Cash ---
