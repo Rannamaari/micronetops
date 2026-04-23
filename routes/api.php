@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BusinessExpenseController;
+use App\Http\Controllers\Api\JobController as ApiJobController;
 use App\Http\Controllers\Api\BotHelperController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
@@ -53,6 +54,16 @@ Route::middleware('api.token')->group(function () {
         Route::post('/',          [SalesController::class, 'store']);
         Route::get('/today',      [SalesController::class, 'today']);
         Route::delete('/{id}',    [SalesController::class, 'destroy']);
+    });
+
+    // --- Jobs (create jobs + quotation/invoice for bot) ---
+    Route::prefix('jobs')->group(function () {
+        Route::post('/',                [ApiJobController::class, 'store']);
+        Route::get('/{id}',             [ApiJobController::class, 'show']);
+        Route::post('/{id}/items',      [ApiJobController::class, 'addItem']);
+        Route::delete('/{id}/items/{itemId}', [ApiJobController::class, 'removeItem']);
+        Route::get('/{id}/quotation',   [ApiJobController::class, 'quotationHtml']);
+        Route::get('/{id}/invoice',     [ApiJobController::class, 'invoiceHtml']);
     });
 
     // --- Fault Tickets ---
