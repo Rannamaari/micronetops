@@ -127,6 +127,12 @@ Route::middleware('auth')->group(function () {
         Route::get('sms', [SmsController::class, 'index'])
             ->middleware('operations')
             ->name('sms.index');
+        Route::get('sms/customers/search', [SmsController::class, 'searchCustomers'])
+            ->middleware('operations')
+            ->name('sms.customers.search');
+        Route::get('sms/customers/all', [SmsController::class, 'allCustomers'])
+            ->middleware('operations')
+            ->name('sms.customers.all');
         Route::post('sms/send', [SmsController::class, 'send'])
             ->middleware('operations')
             ->name('sms.send');

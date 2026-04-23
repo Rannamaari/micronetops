@@ -24,6 +24,55 @@ class SmsController extends Controller
         ]);
     }
 
+    /**
+     * GET /sms/customers/search?q=...
+     * Lightweight search for the SMS picker (session-auth).
+     */
+    public function searchCustomers(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json([
+                'total' => 0,
+                'data' => [],
+            ]);
+        }
+
+        $s = mb_strtolower($q);
+        $customers = Customer::query()
+            ->where(function ($query) use ($s) {
+                $query->whereRaw('lower(name) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(phone) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(email) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(address) like ?', ["%{$s}%"]);
+            })
+            ->orderBy('name')
+            ->limit(30)
+            ->get(['id', 'name', 'phone', 'email', 'address']);
+
+        return response()->json([
+            'total' => $customers->count(),
+            'data' => $customers,
+        ]);
+    }
+
+    /**
+     * GET /sms/customers/all
+     * Returns a full list of customers for the "All Customers" SMS audience.
+     */
+    public function allCustomers(): \Illuminate\Http\JsonResponse
+    {
+        $customers = Customer::query()
+            ->orderBy('name')
+            ->limit(2000)
+            ->get(['id', 'name', 'phone', 'email', 'address']);
+
+        return response()->json([
+            'total' => $customers->count(),
+            'data' => $customers,
+        ]);
+    }
+
     public function send(Request $request, DhiraaguSmsClient $sms)
     {
         $validated = $request->validate([
@@ -31,6 +80,7 @@ class SmsController extends Controller
             'source' => ['nullable', 'string', 'max:50'],
             'content' => ['required', 'string', 'max:1000'],
             'numbers' => ['nullable', 'string', 'max:50000'],
+            'exclude_customer_ids' => ['nullable', 'string', 'max:50000'],
         ]);
 
         $content = trim((string) $validated['content']);
@@ -51,7 +101,19 @@ class SmsController extends Controller
                 }
             }
         } else {
-            foreach (Customer::query()->select('phone')->cursor() as $customer) {
+            $excludedIds = [];
+            $excludeRaw = trim((string) ($validated['exclude_customer_ids'] ?? ''));
+            if ($excludeRaw !== '') {
+                foreach (preg_split('/[\\s,;]+/', $excludeRaw) ?: [] as $p) {
+                    $id = (int) trim((string) $p);
+                    if ($id > 0) $excludedIds[$id] = true;
+                }
+            }
+
+            foreach (Customer::query()->select('id', 'phone')->cursor() as $customer) {
+                if (!empty($excludedIds[(int) $customer->id])) {
+                    continue;
+                }
                 foreach ($this->extractPhoneTokens((string) $customer->phone) as $token) {
                     $n = $this->normalizeDestination($token);
                     if ($n) {
@@ -167,4 +229,3 @@ class SmsController extends Controller
         return null;
     }
 }
-

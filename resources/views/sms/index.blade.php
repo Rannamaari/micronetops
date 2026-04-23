@@ -27,7 +27,8 @@
             @endif
 
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 mb-6"
-                 x-data="{ audience: '{{ old('audience', 'manual') }}' }">
+                 x-data="smsPage('{{ route('sms.customers.all') }}', '{{ route('sms.customers.search') }}')"
+                 x-init="init()">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
                     Send SMS
                 </div>
@@ -70,13 +71,143 @@
                         </div>
                     </div>
 
+                    <div x-show="audience === 'all_customers'" x-cloak class="space-y-3">
+                        <div class="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">All Customers</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        Included: <span class="font-semibold" x-text="includedCount()"></span>
+                                        , Excluded: <span class="font-semibold" x-text="excludedIds.length"></span>
+                                        <template x-if="allLoading">
+                                            <span class="ml-2">Loading...</span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <input type="text"
+                                           x-model="allFilter"
+                                           class="w-full sm:w-72 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Filter customers...">
+                                    <button type="button"
+                                            @click="excludedIds = []"
+                                            class="px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
+                                        Reset Exclusions
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 max-h-72 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                <template x-for="c in filteredAllCustomers()" :key="c.id">
+                                    <div class="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="c.name"></div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="c.phone"></div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <template x-if="isExcluded(c.id)">
+                                                <span class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200">Excluded</span>
+                                            </template>
+                                            <button type="button"
+                                                    @click="toggleExclude(c.id)"
+                                                    class="px-3 py-1.5 rounded-md text-xs font-semibold border"
+                                                    :class="isExcluded(c.id) ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800'">
+                                                <span x-text="isExcluded(c.id) ? 'Add back' : 'Remove'"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="!allLoading && allCustomers.length === 0">
+                                    <div class="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">No customers found.</div>
+                                </template>
+                            </div>
+
+                            <input type="hidden" name="exclude_customer_ids" :value="excludeIdsValue()">
+                            @error('exclude_customer_ids')
+                                <div class="text-xs text-red-600 mt-2">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div x-show="audience === 'manual'" x-cloak>
-                        <label for="numbers" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Numbers</label>
-                        <textarea id="numbers" name="numbers" rows="4"
-                                  class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="Example:\n9607777777\n9608888888\nor\n7777777 / 8888888">{{ old('numbers') }}</textarea>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Separate numbers with new lines, commas, or slashes. 7-digit numbers will be prefixed with 960 automatically.
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                 x-data="smsCustomerPicker('{{ route('sms.customers.search') }}')"
+                                 x-init="init()">
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Pick Customers</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Click a result to add</div>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <input type="text"
+                                           x-model="q"
+                                           @input.debounce.250ms="search()"
+                                           class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Search customers by name/phone...">
+                                    <button type="button"
+                                            @click="clearAll()"
+                                            class="px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
+                                        Clear
+                                    </button>
+                                </div>
+
+                                <div class="mt-3">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Selected recipients</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(r, idx) in selected" :key="r.number">
+                                            <span class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200">
+                                                <span x-text="r.label"></span>
+                                                <span class="text-indigo-600/70 dark:text-indigo-300/70" x-text="r.number"></span>
+                                                <button type="button" class="text-indigo-700 dark:text-indigo-200 hover:opacity-70" @click="remove(idx)">x</button>
+                                            </span>
+                                        </template>
+                                        <template x-if="selected.length === 0">
+                                            <span class="text-xs text-gray-400 dark:text-gray-500">None selected</span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Results</div>
+                                    <div class="max-h-56 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                        <template x-for="c in results" :key="c.id">
+                                            <button type="button"
+                                                    @click="addCustomer(c)"
+                                                    class="w-full text-left px-3 py-2 border-b border-gray-100 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/10">
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <div class="min-w-0">
+                                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="c.name"></div>
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="c.phone"></div>
+                                                    </div>
+                                                    <div class="text-xs text-gray-400 dark:text-gray-500" x-text="'#' + c.id"></div>
+                                                </div>
+                                            </button>
+                                        </template>
+                                        <template x-if="loading">
+                                            <div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Searching...</div>
+                                        </template>
+                                        <template x-if="!loading && q.length > 0 && results.length === 0">
+                                            <div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">No matches</div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <input type="hidden" name="numbers" :value="numbersValue()">
+                            </div>
+
+                            <div>
+                                <label for="numbers_textarea" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Numbers (optional)</label>
+                                <textarea id="numbers_textarea" rows="8"
+                                          x-ref="manualNumbers"
+                                          @input="window.__smsPickerSync?.()"
+                                          class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="You can still paste numbers here...&#10;Example:&#10;9607777777&#10;7777777 / 8888888">{{ old('numbers') }}</textarea>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    The system will auto-prefix <code class="px-1 rounded bg-gray-100 dark:bg-gray-800">960</code> for 7-digit numbers.
+                                </div>
+                            </div>
                         </div>
                         @error('numbers')
                             <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
@@ -158,3 +289,187 @@
     </div>
 </x-app-layout>
 
+<script>
+function smsPage(allUrl, searchUrl) {
+    return {
+        audience: '{{ old('audience', 'manual') }}',
+        allUrl,
+        searchUrl,
+        allCustomers: [],
+        allLoading: false,
+        allFilter: '',
+        excludedIds: [],
+        init() {
+            // Restore exclusions if validation failed (optional, simple).
+            const oldExcluded = @json(old('exclude_customer_ids', ''));
+            if (oldExcluded) {
+                for (const p of String(oldExcluded).split(/[\s,;]+/)) {
+                    const t = p.trim();
+                    if (t && !this.excludedIds.includes(t)) this.excludedIds.push(t);
+                }
+            }
+            this.$watch('audience', (val) => {
+                if (val === 'all_customers') this.loadAllCustomers();
+            });
+            if (this.audience === 'all_customers') {
+                this.loadAllCustomers();
+            }
+        },
+        async loadAllCustomers() {
+            if (this.allLoading || this.allCustomers.length > 0) return;
+            this.allLoading = true;
+            try {
+                const res = await fetch(this.allUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                const json = await res.json();
+                this.allCustomers = Array.isArray(json.data) ? json.data : [];
+            } catch (e) {
+                this.allCustomers = [];
+            } finally {
+                this.allLoading = false;
+            }
+        },
+        isExcluded(id) {
+            return this.excludedIds.includes(String(id));
+        },
+        toggleExclude(id) {
+            const key = String(id);
+            const idx = this.excludedIds.indexOf(key);
+            if (idx >= 0) this.excludedIds.splice(idx, 1);
+            else this.excludedIds.push(key);
+        },
+        excludeIdsValue() {
+            return this.excludedIds.join(',');
+        },
+        includedCount() {
+            return Math.max(0, this.allCustomers.length - this.excludedIds.length);
+        },
+        filteredAllCustomers() {
+            const f = (this.allFilter || '').trim().toLowerCase();
+            if (!f) return this.allCustomers;
+            return this.allCustomers.filter(c => {
+                const name = String(c.name || '').toLowerCase();
+                const phone = String(c.phone || '').toLowerCase();
+                const email = String(c.email || '').toLowerCase();
+                return name.includes(f) || phone.includes(f) || email.includes(f);
+            });
+        }
+    }
+}
+
+function smsCustomerPicker(searchUrl) {
+    return {
+        q: '',
+        results: [],
+        loading: false,
+        selected: [],
+        init() {
+            // Keep a global hook so the manual textarea can trigger sync without tight coupling.
+            window.__smsPickerSync = () => this.syncFromManualTextarea();
+            this.syncFromManualTextarea();
+        },
+        async search() {
+            const query = (this.q || '').trim();
+            if (!query) {
+                this.results = [];
+                return;
+            }
+            this.loading = true;
+            try {
+                const res = await fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                const json = await res.json();
+                this.results = Array.isArray(json.data) ? json.data : [];
+            } catch (e) {
+                this.results = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+        clearAll() {
+            this.selected = [];
+            this.q = '';
+            this.results = [];
+            this.syncToManualTextarea();
+        },
+        remove(idx) {
+            this.selected.splice(idx, 1);
+            this.syncToManualTextarea();
+        },
+        addCustomer(c) {
+            const tokens = this.extractPhoneTokens(String(c.phone || ''));
+            for (const t of tokens) {
+                const n = this.normalizeDestination(t);
+                if (!n) continue;
+                if (!this.selected.find(x => x.number === n)) {
+                    this.selected.push({ number: n, label: (c.name || 'Customer') });
+                }
+            }
+            this.syncToManualTextarea();
+        },
+        numbersValue() {
+            // Hidden input for the form submit: selected + manual textarea extras, normalized.
+            const selectedNums = this.selected.map(x => x.number);
+            const manual = this.getManualTextareaValue();
+            const manualNums = [];
+            for (const t of this.extractPhoneTokens(manual)) {
+                const n = this.normalizeDestination(t);
+                if (n) manualNums.push(n);
+            }
+            const all = Array.from(new Set(selectedNums.concat(manualNums)));
+            return all.join('\n');
+        },
+        getManualTextareaValue() {
+            const el = this.$refs.manualNumbers;
+            return el ? String(el.value || '') : '';
+        },
+        syncToManualTextarea() {
+            // Put selected recipients into the manual textarea (so user can see/edit).
+            const el = this.$refs.manualNumbers;
+            if (!el) return;
+            const current = el.value || '';
+            const manualNums = [];
+            for (const t of this.extractPhoneTokens(String(current))) {
+                const n = this.normalizeDestination(t);
+                if (n) manualNums.push(n);
+            }
+            const merged = Array.from(new Set(this.selected.map(x => x.number).concat(manualNums)));
+            el.value = merged.join('\n');
+        },
+        syncFromManualTextarea() {
+            // When the user pastes numbers, keep the chips list roughly aligned.
+            const el = this.$refs.manualNumbers;
+            if (!el) return;
+            const nums = [];
+            for (const t of this.extractPhoneTokens(String(el.value || ''))) {
+                const n = this.normalizeDestination(t);
+                if (n) nums.push(n);
+            }
+            const uniq = Array.from(new Set(nums));
+            // Keep existing labels if present; fallback label.
+            const next = [];
+            for (const n of uniq) {
+                const existing = this.selected.find(x => x.number === n);
+                next.push(existing || { number: n, label: 'Manual' });
+            }
+            this.selected = next;
+        },
+        extractPhoneTokens(raw) {
+            const s = (raw || '').trim();
+            if (!s) return [];
+            return s.split(/[\n,;\/|]+/).map(x => x.trim()).filter(Boolean);
+        },
+        normalizeDestination(token) {
+            let digits = String(token || '').replace(/\D+/g, '');
+            if (!digits) return null;
+            if (digits.length === 7) digits = '960' + digits;
+            if (digits.length === 10 && digits.startsWith('960')) return digits;
+            return null;
+        }
+    }
+}
+</script>
