@@ -48,6 +48,12 @@
                         </a>
                     @endif
 
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('sms.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sms.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            SMS
+                        </a>
+                    @endif
+
                     <a href="{{ route('faults.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('faults.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                         Faults
                     </a>
@@ -242,6 +248,10 @@
                             @endif
                         </div>
                     </div>
+                @endif
+
+                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                    <a href="{{ route('sms.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('sms.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">SMS</a>
                 @endif
 
                 @if(Auth::user()->canCreateExpenses())

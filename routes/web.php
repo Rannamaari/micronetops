@@ -31,6 +31,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RoadWorthinessReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemController;
+use App\Http\Controllers\SmsController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +120,16 @@ Route::middleware('auth')->group(function () {
         Route::get('reports/low-inventory', [ReportsController::class, 'lowInventory'])->name('reports.low-inventory');
         Route::get('reports/sales-trends', [ReportsController::class, 'salesTrends'])->name('reports.sales-trends');
         Route::get('reports/inventory-overview', [ReportsController::class, 'inventoryOverview'])->name('reports.inventory-overview');
+    });
+
+    // SMS - Admin and Manager only (Operations)
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('sms', [SmsController::class, 'index'])
+            ->middleware('operations')
+            ->name('sms.index');
+        Route::post('sms/send', [SmsController::class, 'send'])
+            ->middleware('operations')
+            ->name('sms.send');
     });
 
     // Jobs - Admin, Manager, Moto Mechanic, AC Mechanic
