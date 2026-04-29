@@ -17,7 +17,7 @@
                     @endif
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <a href="{{ route('sales.daily.index', ['date' => $log->date->toDateString()]) }}"
                    class="inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -30,33 +30,6 @@
 	                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
 	                        Quotation
 	                    </a>
-                        <form method="POST" action="{{ route('sales.daily.update-due-date', $log) }}" class="flex flex-wrap items-end gap-2 w-full sm:w-auto">
-                            @csrf
-                            @method('PATCH')
-                            <div class="w-full sm:w-auto">
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Due date</div>
-                                <input type="date" name="due_date" value="{{ $log->due_date ? $log->due_date->format('Y-m-d') : '' }}"
-                                       class="w-full sm:w-auto rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-2 py-1.5">
-                            </div>
-                            <button type="submit"
-                                    class="inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
-                                Save Due Date
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('sales.daily.update-notes', $log) }}" class="w-full">
-                            @csrf
-                            @method('PATCH')
-                            <div class="w-full mt-2">
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Customer notes (shown on quotation/invoice)</div>
-                                <textarea name="notes" rows="2"
-                                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2"
-                                          placeholder="Add notes the customer should see...">{{ old('notes', $log->notes) }}</textarea>
-                            </div>
-                            <button type="submit"
-                                    class="mt-2 inline-flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
-                                Save Notes
-                            </button>
-                        </form>
 	                    @if($log->job_id)
 	                        <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
 	                           class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
@@ -64,10 +37,10 @@
 	                            Print Invoice
 	                        </a>
 	                    @else
-	                        <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank">
+	                        <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full sm:w-auto">
 	                            @csrf
 	                            <button type="submit"
-	                                    class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+	                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
 	                                Convert to Invoice
 	                            </button>
@@ -125,6 +98,42 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
+                </div>
+            @endif
+
+            {{-- Draft actions (mobile friendly): due date + customer notes --}}
+            @if(!$log->isSubmitted())
+                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <form method="POST" action="{{ route('sales.daily.update-due-date', $log) }}" class="flex flex-col sm:flex-row sm:items-end gap-2">
+                            @csrf
+                            @method('PATCH')
+                            <div class="flex-1">
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Due date</div>
+                                <input type="date" name="due_date" value="{{ $log->due_date ? $log->due_date->format('Y-m-d') : '' }}"
+                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-2 py-2">
+                            </div>
+                            <button type="submit"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                                Save Due Date
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ route('sales.daily.update-notes', $log) }}" class="flex flex-col gap-2">
+                            @csrf
+                            @method('PATCH')
+                            <div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Customer notes (shown on quotation/invoice)</div>
+                                <textarea name="notes" rows="2"
+                                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2"
+                                          placeholder="Add notes the customer should see...">{{ old('notes', $log->notes) }}</textarea>
+                            </div>
+                            <button type="submit"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                                Save Notes
+                            </button>
+                        </form>
+                    </div>
                 </div>
             @endif
 
