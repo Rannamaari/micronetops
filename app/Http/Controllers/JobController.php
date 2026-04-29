@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Job;
+use App\Models\DailySalesLog;
 use App\Models\Customer;
 use App\Models\Vehicle;
 use App\Models\AcUnit;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class JobController extends Controller
@@ -324,9 +326,28 @@ class JobController extends Controller
 
         ActivityLog::record('job.created', "Job #{$job->id} created for customer '{$job->customer_name}'", $job);
 
+        // Create a linked draft Daily Sales log (single entry point for quotation/invoice + line items).
+        $unit = match ($job->job_type) {
+            'ac' => 'cool',
+            'it' => 'it',
+            'easyfix' => 'easyfix',
+            default => 'moto',
+        };
+
+        $sale = DailySalesLog::create([
+            'date' => $job->job_date ?? now()->toDateString(),
+            'due_date' => $job->due_date,
+            'business_unit' => $unit,
+            'created_by' => Auth::id(),
+            'status' => 'draft',
+            'customer_id' => $customer?->id,
+            'notes' => $job->customer_notes,
+            'job_id' => $job->id,
+        ]);
+
         return redirect()
-            ->route('jobs.show', $job)
-            ->with('success', 'Job created successfully.');
+            ->route('sales.daily.show', $sale)
+            ->with('success', 'Job created. Continue in Daily Sales to add items and generate quotation/invoice.');
     }
 
     /**
