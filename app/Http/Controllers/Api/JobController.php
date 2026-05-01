@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class JobController extends Controller
 {
+    private const CUSTOMER_PHONE_RULES = ['nullable', 'string', 'max:50', 'regex:/^[0-9\\s,;\\/|()+-]+$/'];
+
     /**
      * POST /api/jobs
      * Create a job for a customer (bot-friendly).
@@ -46,7 +48,7 @@ class JobController extends Controller
                 'job_type' => ['required', Rule::in(['moto', 'ac', 'it', 'easyfix'])],
                 'customer_id' => ['nullable', 'exists:customers,id'],
                 'customer_name' => ['nullable', 'string', 'max:255'],
-                'customer_phone' => ['nullable', 'string', 'max:50'],
+                'customer_phone' => self::CUSTOMER_PHONE_RULES,
                 'customer_gst_number' => ['nullable', 'string', 'max:50'],
                 'title' => ['nullable', 'string', 'max:100'],
                 'problem_description' => ['nullable', 'string'],
@@ -56,6 +58,8 @@ class JobController extends Controller
                 'scheduled_at' => ['nullable', 'date'],
                 'scheduled_end_at' => ['nullable', 'date', 'after_or_equal:scheduled_at'],
                 'due_date' => ['nullable', 'date'],
+            ], [
+                'customer_phone.regex' => 'Customer phone can contain digits and common separators only. Letters are not allowed.',
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);

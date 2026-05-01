@@ -78,10 +78,18 @@
 	            <div class="text-sm font-bold mb-1">Bill To</div>
 	            @if($log->customer)
 	                <div class="text-sm">{{ $log->customer->name }}</div>
-	                @if($log->customer->gst_number)
+                    @if($log->customer_address_text)
+                        <div class="text-xs">{{ $log->customer_address_text }}</div>
+                    @endif
+	            @if($log->customer->gst_number)
 	                    <div class="text-xs">GST No: {{ $log->customer->gst_number }}</div>
 	                @endif
 	                <div class="text-xs">Phone: {{ $log->customer->phone }}</div>
+                    @if(($log->approval_method ?? 'not_applicable') === 'po' && $log->po_number)
+                        <div class="text-xs">PO No: {{ $log->po_number }}</div>
+                    @elseif(($log->approval_method ?? 'not_applicable') === 'signed_copy')
+                        <div class="text-xs">Approval: Signed copy via WhatsApp</div>
+                    @endif
 	            @else
 	                <div class="text-sm">Walk-in Customer</div>
 	            @endif
@@ -111,6 +119,11 @@
                         {{ $line->description }}
                         @if($line->note)
                             <div class="text-xs" style="color: #6b7280;">{{ $line->note }}</div>
+                        @endif
+                        @if($line->warranty_value && $line->warranty_unit)
+                            <div class="text-xs" style="color: #047857;">
+                                Proposed warranty: {{ $line->warranty_value }} {{ $line->warranty_value == 1 ? rtrim($line->warranty_unit, 's') : $line->warranty_unit }}
+                            </div>
                         @endif
                     </td>
                     <td class="text-right">{{ $line->qty }}</td>
@@ -165,6 +178,8 @@
         <div class="text-sm font-bold mb-2">Terms and Conditions</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
             <li class="text-xs">This quotation is an estimate and is not a tax invoice.</li>
+            <li class="text-xs">This quotation is valid for {{ $log->quotation_validity_days ?? 3 }} day{{ (($log->quotation_validity_days ?? 3) == 1) ? '' : 's' }} from the quotation date unless otherwise stated.</li>
+            <li class="text-xs">To approve this quotation, please issue a Purchase Order referencing this quotation number, or share a signed copy via WhatsApp if a PO cannot be provided.</li>
             <li class="text-xs">Prices, availability, and scope are subject to change until confirmed in writing.</li>
             <li class="text-xs">Any third-party licenses, subscriptions, or hardware are charged separately unless stated otherwise.</li>
             <li class="text-xs">Work will be scheduled once the quotation is approved.</li>

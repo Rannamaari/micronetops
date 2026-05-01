@@ -14,6 +14,8 @@ class JobItem extends Model
         'inventory_item_id',
         'item_name',
         'item_description',
+        'warranty_value',
+        'warranty_unit',
         'is_service',
         'is_gst_applicable',
         'quantity',
@@ -24,6 +26,7 @@ class JobItem extends Model
     protected $casts = [
         'is_service' => 'boolean',
         'is_gst_applicable' => 'boolean',
+        'warranty_value' => 'integer',
         'unit_price' => 'decimal:2',
         'subtotal'   => 'decimal:2',
     ];

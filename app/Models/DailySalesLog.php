@@ -10,9 +10,16 @@ class DailySalesLog extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_QUOTATION = 'quotation';
+    public const STATUS_INVOICED = 'invoiced';
+    public const STATUS_PARTIAL_PAID = 'partial_paid';
+    public const STATUS_PAID = 'paid';
+
     protected $fillable = [
         'date',
         'due_date',
+        'quotation_validity_days',
         'business_unit',
         'status',
         'created_by',
@@ -21,6 +28,10 @@ class DailySalesLog extends Model
         'notes',
         'job_id',
         'customer_id',
+        'customer_address_id',
+        'customer_address_text',
+        'po_number',
+        'approval_method',
         'payment_method',
         'cash_tendered',
         'transfer_account_id',
@@ -29,6 +40,7 @@ class DailySalesLog extends Model
     protected $casts = [
         'date' => 'date',
         'due_date' => 'date',
+        'quotation_validity_days' => 'integer',
         'submitted_at' => 'datetime',
         'cash_tendered' => 'decimal:2',
     ];
@@ -68,6 +80,11 @@ class DailySalesLog extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function customerAddress()
+    {
+        return $this->belongsTo(CustomerAddress::class);
+    }
+
     public function transferAccount()
     {
         return $this->belongsTo(Account::class, 'transfer_account_id');
@@ -85,22 +102,163 @@ class DailySalesLog extends Model
 
     public function scopeDraft($query)
     {
-        return $query->where('status', 'draft');
+        return $query->where('status', self::STATUS_DRAFT);
     }
 
     public function scopeSubmitted($query)
     {
-        return $query->where('status', 'submitted');
+        return $query->whereIn('status', [
+            'submitted',
+            self::STATUS_INVOICED,
+            self::STATUS_PARTIAL_PAID,
+            self::STATUS_PAID,
+        ]);
     }
 
     public function isSubmitted(): bool
     {
-        return $this->status === 'submitted';
+        return in_array($this->status, ['submitted', self::STATUS_PARTIAL_PAID, self::STATUS_PAID], true);
+    }
+
+    public function isInvoiceStage(): bool
+    {
+        return in_array($this->status, [
+            'submitted',
+            self::STATUS_INVOICED,
+            self::STATUS_PARTIAL_PAID,
+            self::STATUS_PAID,
+        ], true);
+    }
+
+    public function canEditQuotation(): bool
+    {
+        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_QUOTATION], true);
+    }
+
+    public function isApprovalReady(): bool
+    {
+        return in_array(($this->approval_method ?? 'not_applicable'), ['signed_copy', 'not_applicable'], true)
+            || !blank($this->po_number);
+    }
+
+    public function isReadyForInvoice(): bool
+    {
+        return (bool) $this->customer_id
+            && $this->isApprovalReady()
+            && $this->lines()->exists();
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_QUOTATION => 'Quotation',
+            self::STATUS_INVOICED => 'Invoiced',
+            self::STATUS_PARTIAL_PAID => 'Partial Paid',
+            self::STATUS_PAID => 'Paid',
+            'submitted' => 'Paid',
+            default => str($this->status)->replace('_', ' ')->title()->toString(),
+        };
+    }
+
+    public function syncWorkflowStatus(?Job $job = null): string
+    {
+        $job ??= $this->job_id ? Job::find($this->job_id) : null;
+
+        if ($job) {
+            $newStatus = match ($job->payment_status) {
+                'paid' => self::STATUS_PAID,
+                'partial' => self::STATUS_PARTIAL_PAID,
+                default => self::STATUS_INVOICED,
+            };
+        } else {
+            $newStatus = $this->lines()->exists() ? self::STATUS_QUOTATION : self::STATUS_DRAFT;
+        }
+
+        $attributes = ['status' => $newStatus];
+
+        if (in_array($newStatus, [self::STATUS_DRAFT, self::STATUS_QUOTATION], true)) {
+            $attributes['submitted_at'] = null;
+            $attributes['submitted_by'] = null;
+        } elseif (in_array($newStatus, [self::STATUS_PARTIAL_PAID, self::STATUS_PAID], true) && !$this->submitted_at) {
+            $attributes['submitted_at'] = now();
+            $attributes['submitted_by'] = Auth::id();
+        }
+
+        $dirty = false;
+        foreach ($attributes as $key => $value) {
+            if ($this->getAttribute($key) != $value) {
+                $dirty = true;
+                break;
+            }
+        }
+
+        if ($dirty) {
+            $this->forceFill($attributes)->save();
+        }
+
+        return $newStatus;
+    }
+
+    public function syncLinkedDraftJob(): ?Job
+    {
+        if ($this->isInvoiceStage() || !$this->job_id) {
+            return null;
+        }
+
+        $this->loadMissing('lines', 'customer', 'customerAddress');
+
+        $job = Job::find($this->job_id);
+        if (!$job) {
+            return null;
+        }
+
+        $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
+        $addressText = $this->customer_address_text ?: $this->customerAddress?->address ?: $customer?->address;
+
+        $job->fill([
+            'job_date'       => $this->date,
+            'due_date'       => $this->due_date,
+            'quotation_validity_days' => $this->quotation_validity_days ?: 3,
+            'customer_id'    => $customer?->id,
+            'customer_address_id' => $this->customer_address_id,
+            'customer_name'  => $customer?->name ?? 'Walk-in',
+            'customer_phone' => $customer?->phone,
+            'customer_email' => $customer?->email,
+            'address'        => $addressText,
+            'location'       => $addressText,
+            'customer_notes' => $this->notes,
+            'po_number'      => $this->po_number,
+            'approval_method' => $this->approval_method ?: 'not_applicable',
+        ]);
+        $job->save();
+
+        $job->items()->delete();
+
+        foreach ($this->lines as $line) {
+            JobItem::create([
+                'job_id'            => $job->id,
+                'inventory_item_id' => $line->inventory_item_id,
+                'item_name'         => $line->description ?: ($line->inventoryItem?->name ?? ($line->is_stock_item ? 'Item' : 'Service')),
+                'item_description'  => $line->note ?: null,
+                'warranty_value'    => $line->warranty_value,
+                'warranty_unit'     => $line->warranty_unit,
+                'is_service'        => !$line->is_stock_item,
+                'quantity'          => $line->qty,
+                'unit_price'        => $line->unit_price,
+                'subtotal'          => $line->line_total,
+                'is_gst_applicable' => (bool) $line->is_gst_applicable,
+            ]);
+        }
+
+        $job->recalculateTotals();
+
+        return $job->fresh(['items.inventoryItem', 'payments']);
     }
 
     public function createOrUpdateInvoiceJob(bool $markPaid, ?string $paymentMethod = null): Job
     {
-        $this->loadMissing('lines');
+        $this->loadMissing('lines', 'customerAddress');
 
         $unit = $this->business_unit; // 'moto' | 'cool' | 'it' | 'easyfix'
         $jobType = match ($unit) {
@@ -111,6 +269,7 @@ class DailySalesLog extends Model
         };
 
         $customer = $this->customer_id ? Customer::find($this->customer_id) : null;
+        $addressText = $this->customer_address_text ?: $this->customerAddress?->address ?: $customer?->address;
 
         $job = $this->job_id ? Job::find($this->job_id) : null;
 
@@ -121,14 +280,20 @@ class DailySalesLog extends Model
             $job->fill([
                 'job_date'       => $this->date,
                 'due_date'       => $this->due_date,
+                'quotation_validity_days' => $this->quotation_validity_days ?: 3,
                 'job_type'       => $jobType,
                 'job_category'   => 'general',
                 'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
                 'customer_id'    => $customer?->id,
+                'customer_address_id' => $this->customer_address_id,
                 'customer_name'  => $customer?->name ?? 'Walk-in',
                 'customer_phone' => $customer?->phone,
                 'customer_email' => $customer?->email,
+                'address'        => $addressText,
+                'location'       => $addressText,
                 'customer_notes' => $this->notes,
+                'po_number'      => $this->po_number,
+                'approval_method' => $this->approval_method ?: 'not_applicable',
                 'status'         => 'completed',
                 'payment_status' => $markPaid ? 'paid' : 'unpaid',
                 'priority'       => 'normal',
@@ -139,14 +304,20 @@ class DailySalesLog extends Model
             $job = Job::create([
                 'job_date'       => $this->date,
                 'due_date'       => $this->due_date,
+                'quotation_validity_days' => $this->quotation_validity_days ?: 3,
                 'job_type'       => $jobType,
                 'job_category'   => 'general',
                 'title'          => 'Daily Sales — ' . $this->date->format('d M Y'),
                 'customer_id'    => $customer?->id,
+                'customer_address_id' => $this->customer_address_id,
                 'customer_name'  => $customer?->name ?? 'Walk-in',
                 'customer_phone' => $customer?->phone,
                 'customer_email' => $customer?->email,
+                'address'        => $addressText,
+                'location'       => $addressText,
                 'customer_notes' => $this->notes,
+                'po_number'      => $this->po_number,
+                'approval_method' => $this->approval_method ?: 'not_applicable',
                 'status'         => 'completed',
                 'payment_status' => $markPaid ? 'paid' : 'unpaid',
                 'priority'       => 'normal',
@@ -158,7 +329,10 @@ class DailySalesLog extends Model
             JobItem::create([
                 'job_id'            => $job->id,
                 'inventory_item_id' => $line->inventory_item_id,
-                'item_name'         => $line->description,
+                'item_name'         => $line->description ?: ($line->inventoryItem?->name ?? ($line->is_stock_item ? 'Item' : 'Service')),
+                'item_description'  => $line->note ?: null,
+                'warranty_value'    => $line->warranty_value,
+                'warranty_unit'     => $line->warranty_unit,
                 'is_service'        => !$line->is_stock_item,
                 'quantity'          => $line->qty,
                 'unit_price'        => $line->unit_price,
@@ -212,7 +386,7 @@ class DailySalesLog extends Model
         $job = $this->createOrUpdateInvoiceJob(true, $paymentMethod);
 
         $this->update([
-            'status' => 'submitted',
+            'status' => self::STATUS_PAID,
             'submitted_at' => now(),
             'submitted_by' => Auth::id(),
             'job_id' => $job->id,
@@ -281,7 +455,7 @@ class DailySalesLog extends Model
         }
 
         $this->update([
-            'status' => 'draft',
+            'status' => $this->lines()->exists() ? self::STATUS_QUOTATION : self::STATUS_DRAFT,
             'submitted_at' => null,
             'submitted_by' => null,
             'job_id' => null,

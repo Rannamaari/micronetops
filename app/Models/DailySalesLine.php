@@ -19,6 +19,8 @@ class DailySalesLine extends Model
         'line_total',
         'is_stock_item',
         'note',
+        'warranty_value',
+        'warranty_unit',
         'is_gst_applicable',
         'gst_amount',
     ];
@@ -27,6 +29,7 @@ class DailySalesLine extends Model
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
         'is_stock_item' => 'boolean',
+        'warranty_value' => 'integer',
         'is_gst_applicable' => 'boolean',
         'gst_amount' => 'decimal:2',
     ];

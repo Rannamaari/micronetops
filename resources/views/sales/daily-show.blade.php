@@ -1,14 +1,30 @@
 <x-app-layout>
+    @php
+        $screen = $screen ?? 'builder';
+        $workflowCustomerReady = (bool) $log->customer_id;
+        $workflowApprovalReady = $log->isApprovalReady();
+        $workflowItemsReady = $log->lines->isNotEmpty();
+        $workflowInvoiceReady = $log->isReadyForInvoice();
+        $stepTwoHasErrors = $errors->has('approval_method')
+            || $errors->has('po_number')
+            || $errors->has('quotation_validity_days')
+            || $errors->has('notes')
+            || $errors->has('due_date');
+    @endphp
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                <h2 class="font-semibold text-lg sm:text-xl text-gray-800 dark:text-gray-200 leading-tight">
 	                    Sale #{{ $log->id }} — {{ $log->business_unit === 'moto' ? 'Micro Moto' : ($log->business_unit === 'cool' ? 'Micro Cool' : ($log->business_unit === 'easyfix' ? 'Micronet - Easy Fix' : 'Micronet')) }} — {{ $log->date->format('D, d M Y') }}
                 </h2>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex items-center gap-2 mt-1 flex-wrap">
                     <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium
-                        {{ $log->isSubmitted() ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }}">
-                        {{ ucfirst($log->status) }}
+                        {{ $log->status === \App\Models\DailySalesLog::STATUS_DRAFT ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                        {{ $log->status === \App\Models\DailySalesLog::STATUS_QUOTATION ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : '' }}
+                        {{ $log->status === \App\Models\DailySalesLog::STATUS_INVOICED ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : '' }}
+                        {{ $log->status === \App\Models\DailySalesLog::STATUS_PARTIAL_PAID ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                        {{ in_array($log->status, ['submitted', \App\Models\DailySalesLog::STATUS_PAID], true) ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}">
+                        {{ $log->status_label }}
                     </span>
                     @if($log->submittedByUser)
                         <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -17,49 +33,89 @@
                     @endif
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div class="flex items-center gap-2 w-full overflow-x-auto sm:w-auto sm:flex-wrap pb-1 sm:pb-0">
                 <a href="{{ route('sales.daily.index', ['date' => $log->date->toDateString()]) }}"
-                   class="inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
+                   class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back
                 </a>
 
-                @if(!$log->isSubmitted())
+                @if($log->canEditQuotation())
 	                    <a href="{{ route('sales.daily.quotation', $log) }}" target="_blank"
-	                       class="inline-flex items-center gap-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">
+	                       class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">
 	                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-	                        Quotation
+	                        Preview Quotation
 	                    </a>
+                        <a href="{{ route('sales.daily.quotation-builder', $log) }}"
+                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 {{ $screen === 'builder' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
+                            Builder
+                        </a>
+                        <a href="{{ route('sales.daily.invoice-workflow', $log) }}"
+                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 {{ $screen === 'invoice' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
+                            Invoice
+                        </a>
 	                    @if($log->job_id)
 	                        <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-	                           class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+		                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-	                            Print Invoice
+	                            Preview Invoice
 	                        </a>
 	                    @else
-	                        <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full sm:w-auto">
-	                            @csrf
-	                            <button type="submit"
-	                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-	                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-	                                Convert to Invoice
-	                            </button>
-	                        </form>
+                            <div class="w-full sm:w-auto">
+	                            <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full sm:w-auto">
+	                                @csrf
+	                                <button type="submit"
+                                            {{ $workflowInvoiceReady ? '' : 'disabled' }}
+	                                    class="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
+	                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+	                                    Create Invoice
+	                                </button>
+	                            </form>
+                                @unless($workflowInvoiceReady)
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Complete customer, approval, and item details first.</p>
+                                @endunless
+                            </div>
 	                    @endif
+	                @elseif($log->status === \App\Models\DailySalesLog::STATUS_INVOICED)
+                        <a href="{{ route('sales.daily.invoice-workflow', $log) }}"
+                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 text-sm font-medium rounded-lg transition">
+                            Invoice
+                        </a>
+                        @if($log->job_id)
+                            <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
+                               class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                Preview Invoice
+                            </a>
+                        @endif
+                        <a href="#submit-sale-panel"
+                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Submit Sale
+                        </a>
+                        @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                            <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this invoice back to quotation stage? Stock movements will be reversed.')">
+                                @csrf
+                                <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    Reopen
+                                </button>
+                            </form>
+                        @endif
 	                @else
 	                    <form method="POST" action="{{ route('sales.daily.open') }}">
 	                        @csrf
 	                        <input type="hidden" name="date" value="{{ $log->date->toDateString() }}">
 	                        <input type="hidden" name="business_unit" value="{{ $log->business_unit }}">
                         <button type="submit"
-                                class="inline-flex items-center gap-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                                class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             New Sale
                         </button>
                     </form>
                     @if($log->job_id)
                         <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-                           class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             Print Invoice
                         </a>
@@ -67,7 +123,7 @@
                     @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                         <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this sale? Stock movements will be reversed.')">
                             @csrf
-                            <button type="submit" class="inline-flex items-center gap-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
+                            <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Reopen
                             </button>
@@ -101,44 +157,41 @@
                 </div>
             @endif
 
-            {{-- Draft actions (mobile friendly): due date + customer notes --}}
-            @if(!$log->isSubmitted())
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <form method="POST" action="{{ route('sales.daily.update-due-date', $log) }}" class="flex flex-col sm:flex-row sm:items-end gap-2">
-                            @csrf
-                            @method('PATCH')
-                            <div class="flex-1">
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Due date</div>
-                                <input type="date" name="due_date" value="{{ $log->due_date ? $log->due_date->format('Y-m-d') : '' }}"
-                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-2 py-2">
-                            </div>
-                            <button type="submit"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
-                                Save Due Date
-                            </button>
-                        </form>
-
-                        <form method="POST" action="{{ route('sales.daily.update-notes', $log) }}" class="flex flex-col gap-2">
-                            @csrf
-                            @method('PATCH')
-                            <div>
-                                <div class="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Customer notes (shown on quotation/invoice)</div>
-                                <textarea name="notes" rows="2"
-                                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-3 py-2"
-                                          placeholder="Add notes the customer should see...">{{ old('notes', $log->notes) }}</textarea>
-                            </div>
-                            <button type="submit"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
-                                Save Notes
-                            </button>
-                        </form>
+            @if($log->canEditQuotation() && $screen === 'builder')
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                    <div class="rounded-2xl border {{ $workflowCustomerReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowCustomerReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 1</div>
+                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Customer & Address</div>
+                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $workflowCustomerReady ? ($log->customer?->name . ($log->customer_address_text ? ' · address selected' : ' · no address yet')) : 'Select the customer and the correct service address.' }}
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border {{ $workflowApprovalReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowApprovalReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 2</div>
+                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Quotation Setup</div>
+                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            {{ ($log->approval_method ?? 'not_applicable') === 'signed_copy' ? 'Signed-copy approval selected.' : (($log->approval_method ?? 'not_applicable') === 'po' ? ($log->po_number ? 'PO ready: ' . $log->po_number : 'PO selected - add PO number.') : 'Optional - leave as not applicable unless needed.') }}
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border {{ $workflowItemsReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowItemsReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 3</div>
+                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Build Quotation</div>
+                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $workflowItemsReady ? $log->lines->count() . ' item(s) added. Review and preview the quotation.' : 'Add items, notes, warranty, and pricing lines.' }}
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border {{ $workflowInvoiceReady ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowInvoiceReady ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}">Step 4</div>
+                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Invoice Creation</div>
+                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $workflowInvoiceReady ? 'Ready to create or preview the invoice.' : 'Complete steps 1 to 3 before converting to invoice.' }}
+                        </div>
                     </div>
                 </div>
             @endif
 
-            {{-- Customer Picker --}}
-            @if(!$log->isSubmitted())
+            {{-- Step 1: Customer --}}
+            @if($log->canEditQuotation() && $screen === 'builder')
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6"
                      x-data="{
                         phone: '',
@@ -149,7 +202,12 @@
                         showNewForm: false,
                         newName: '',
                         newPhone: '',
-                        selectedCustomer: {{ $log->customer ? Js::from(['id' => $log->customer->id, 'name' => $log->customer->name, 'phone' => $log->customer->phone]) : 'null' }},
+                        newAddress: '',
+                        selectedCustomer: {{ $log->customer ? Js::from([
+                            'id' => $log->customer->id,
+                            'name' => $log->customer->name,
+                            'phone' => $log->customer->phone,
+                        ]) : 'null' }},
                         debounceTimer: null,
                         searchCustomers() {
                             clearTimeout(this.debounceTimer);
@@ -169,11 +227,16 @@
                             }, 300);
                         },
                         selectCustomer(c) {
-                            this.selectedCustomer = { id: c.id, name: c.name, phone: c.phone };
+                            this.selectedCustomer = {
+                                id: c.id,
+                                name: c.name,
+                                phone: c.phone,
+                            };
                             this.showDropdown = false;
                             this.phone = '';
                             this.searched = false;
                             this.$refs.customerIdInput.value = c.id;
+                            this.$refs.customerAddressIdInput.value = '';
                             this.$refs.customerForm.submit();
                         },
                         clearCustomer() {
@@ -185,9 +248,14 @@
                             this.showNewForm = true;
                             this.newPhone = this.phone;
                             this.newName = '';
+                            this.newAddress = '';
                         }
                      }">
-                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Customer</h3>
+                    <div class="mb-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Step 1</div>
+                        <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Customer, Address, and Approval Target</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choose the customer first, then lock the correct address before building the quotation.</p>
+                    </div>
 
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         {{-- Current selection --}}
@@ -242,17 +310,52 @@
                         </div>
                     </div>
 
+                    @if($log->customer && $log->customer->addresses->isNotEmpty())
+                        @php
+                            $selectedSaleAddressId = $log->customer_address_id
+                                ?? optional($log->customer->addresses->firstWhere('is_default', true))->id
+                                ?? optional($log->customer->addresses->first())->id;
+                            $selectedSaleAddress = $log->customer->addresses->firstWhere('id', $selectedSaleAddressId);
+                        @endphp
+                        <form class="mt-3" method="POST" action="{{ route('sales.daily.set-customer', $log) }}">
+                            @csrf
+                            <input type="hidden" name="customer_id" value="{{ $log->customer->id }}">
+                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Address for this Sale</label>
+                            <select name="customer_address_id"
+                                    onchange="this.form.submit()"
+                                    class="w-full sm:max-w-xl rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                @foreach($log->customer->addresses as $address)
+                                    <option value="{{ $address->id }}" {{ (string) $selectedSaleAddressId === (string) $address->id ? 'selected' : '' }}>
+                                        {{ $address->label }} - {{ $address->address }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if($selectedSaleAddress?->address)
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $selectedSaleAddress->address }}</p>
+                            @elseif($log->customer_address_text)
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $log->customer_address_text }}</p>
+                            @endif
+                            @error('customer_address_id')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </form>
+                    @endif
+
                     {{-- Inline New Customer Form --}}
                     <div x-show="showNewForm" x-cloak class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                         <h4 class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Create New Customer</h4>
-	                        <form method="POST" action="{{ route('sales.daily.create-customer', $log) }}" class="flex flex-col sm:flex-row gap-2">
+	                        <form method="POST" action="{{ route('sales.daily.create-customer', $log) }}" class="flex flex-col gap-2">
 	                            @csrf
-	                            <input type="text" name="name" x-model="newName" placeholder="Customer name" required
-	                                   class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
-	                            <input type="text" name="phone" x-model="newPhone" placeholder="Phone number" required
-	                                   class="flex-1 sm:max-w-[180px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
-	                            <input type="text" name="gst_number" placeholder="GST No (optional)"
-	                                   class="flex-1 sm:max-w-[200px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                                <div class="flex flex-col sm:flex-row gap-2">
+	                                <input type="text" name="name" x-model="newName" placeholder="Customer name" required
+	                                       class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+	                                <input type="text" name="phone" x-model="newPhone" placeholder="Phone number" required
+	                                       class="flex-1 sm:max-w-[180px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+	                                <input type="text" name="gst_number" placeholder="GST No (optional)"
+	                                       class="flex-1 sm:max-w-[200px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                                </div>
+                                <textarea name="address" x-model="newAddress" rows="2" placeholder="Address (optional)"
+                                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"></textarea>
 	                            <div class="flex gap-2">
 	                                <button type="submit"
 	                                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
@@ -270,10 +373,12 @@
                     <form x-ref="customerForm" method="POST" action="{{ route('sales.daily.set-customer', $log) }}" class="hidden">
                         @csrf
                         <input type="hidden" name="customer_id" x-ref="customerIdInput" value="">
+                        <input type="hidden" name="customer_address_id" x-ref="customerAddressIdInput" value="">
                     </form>
                     <form x-ref="clearForm" method="POST" action="{{ route('sales.daily.set-customer', $log) }}" class="hidden">
                         @csrf
                         <input type="hidden" name="customer_id" value="">
+                        <input type="hidden" name="customer_address_id" value="">
                     </form>
                 </div>
             @else
@@ -285,6 +390,9 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             {{ $log->customer->name }} ({{ $log->customer->phone }})
                         </span>
+                        @if($log->customer_address_text)
+                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $log->customer_address_text }}</div>
+                        @endif
                     @else
                         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -294,8 +402,144 @@
                 </div>
             @endif
 
+            {{-- Step 2: Quotation settings --}}
+            @if($log->canEditQuotation() && $screen === 'builder')
+                <div x-data="{ open: {{ $stepTwoHasErrors ? 'true' : 'false' }} }"
+                     class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <button type="button"
+                            @click="open = !open"
+                            class="w-full flex items-start justify-between gap-4 p-4 sm:p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Step 2 · Optional</div>
+                            <h3 class="mt-1 text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Quotation Settings</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Expand only if you need to add due dates, validity, approval method, or customer notes.</p>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400" x-text="open ? 'Hide details' : 'Edit if needed'"></span>
+                            <svg class="w-5 h-5 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </button>
+
+                    <div x-show="open" x-collapse class="px-4 pb-4 sm:px-5 sm:pb-5 border-t border-gray-100 dark:border-gray-700">
+                        <div class="pt-4 grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+                        <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-4 sm:p-5 space-y-4">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Dates & Validity</h4>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Define when the invoice is due and how long this quotation should remain valid.</p>
+                            </div>
+
+                            <form method="POST" action="{{ route('sales.daily.update-due-date', $log) }}" class="space-y-3">
+                                @csrf
+                                @method('PATCH')
+                                <div>
+                                    <label for="due-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Invoice Due Date</label>
+                                    <input id="due-date" type="date" name="due_date" value="{{ $log->due_date ? $log->due_date->format('Y-m-d') : '' }}"
+                                           class="w-full h-12 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Leave blank if payment is due upon receipt.</p>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                        Save Due Date
+                                    </button>
+                                </div>
+                            </form>
+
+                            <form method="POST" action="{{ route('sales.daily.update-quotation-validity', $log) }}" class="space-y-3">
+                                @csrf
+                                @method('PATCH')
+                                <div>
+                                    <label for="quotation-validity-days" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quotation Validity (Days)</label>
+                                    <input id="quotation-validity-days" type="number" name="quotation_validity_days"
+                                           value="{{ old('quotation_validity_days', $log->quotation_validity_days ?? 3) }}"
+                                           min="1" max="365"
+                                           class="w-full h-12 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                           placeholder="3">
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Default validity is 3 days unless you set a different period here.</p>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                        Save Validity
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-4 sm:p-5 space-y-4">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Approval & Customer Notes</h4>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Capture the customer’s approval path and any note that should appear on the quotation or invoice.</p>
+                            </div>
+
+                            <form method="POST" action="{{ route('sales.daily.update-approval-method', $log) }}" class="space-y-4"
+                                  x-data="{ approvalMethod: {{ Js::from(old('approval_method', $log->approval_method ?? 'not_applicable')) }} }">
+                                @csrf
+                                @method('PATCH')
+                                <div>
+                                    <label for="approval-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Approval Method</label>
+                                    <select id="approval-method" name="approval_method" x-model="approvalMethod"
+                                            class="w-full h-12 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="not_applicable">Not applicable</option>
+                                        <option value="po">Purchase Order (PO)</option>
+                                        <option value="signed_copy">Signed copy via WhatsApp</option>
+                                    </select>
+                                    @error('approval_method')
+                                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="po-number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PO Number</label>
+                                    <input id="po-number" type="text" name="po_number"
+                                           value="{{ old('po_number', $log->po_number) }}"
+                                           :disabled="approvalMethod !== 'po'"
+                                           :class="approvalMethod !== 'po' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-700' : ''"
+                                           class="w-full h-12 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                           placeholder="Enter purchase order number">
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" x-text="approvalMethod === 'po' ? 'Required before converting this quotation into an invoice.' : (approvalMethod === 'signed_copy' ? 'PO number is not required when approval is by signed copy.' : 'You can leave this section unchanged unless the customer needs a specific approval path.')"></p>
+                                    @error('po_number')
+                                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                        Save Approval
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <form method="POST" action="{{ route('sales.daily.update-notes', $log) }}" class="space-y-3">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div>
+                                        <label for="customer-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Notes</label>
+                                        <textarea id="customer-notes" name="notes" rows="5"
+                                                  class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 py-3 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                  placeholder="Add any message, scope note, or commercial detail the customer should see on the quotation/invoice...">{{ old('notes', $log->notes) }}</textarea>
+                                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">These notes are printed on the quotation and invoice.</p>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                            Save Notes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Add Line Form --}}
-            @if(!$log->isSubmitted())
+            @if($log->canEditQuotation() && $screen === 'builder')
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6"
                      x-data="{
                         mode: 'item',
@@ -305,6 +549,8 @@
                         qty: 1,
                         note: '',
                         isGst: false,
+                        warrantyValue: '',
+                        warrantyUnit: '',
                         items: {{ Js::from($inventoryItems->map(fn($i) => ['id' => $i->id, 'name' => $i->name, 'sell_price' => $i->sell_price, 'is_service' => $i->is_service, 'quantity' => $i->quantity])) }},
                         search: '',
                         showDropdown: false,
@@ -332,9 +578,18 @@
                         },
                         get lineTotal() {
                             return (this.lineSubtotal + this.gstAmount).toFixed(2);
+                        },
+                        resetWarrantyIfNeeded() {
+                            if (!this.warrantyUnit) {
+                                this.warrantyValue = '';
+                            }
                         }
                      }">
-                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">Add Sale Line</h3>
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Step 3</div>
+                        <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Build the Quotation</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add inventory or custom lines, set pricing, notes, GST, and warranty, then review the quotation preview.</p>
+                    </div>
 
                     {{-- Mode toggle --}}
                     <div class="flex gap-2 mb-4">
@@ -412,6 +667,25 @@
                                 <input type="hidden" name="is_gst_applicable" :value="isGst ? 1 : 0">
                             </div>
 
+                            {{-- Warranty --}}
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warranty</label>
+                                <input type="number" name="warranty_value" x-model="warrantyValue" min="1" placeholder="30"
+                                       :disabled="!warrantyUnit"
+                                       :class="!warrantyUnit ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border-gray-200 dark:border-gray-700' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600'"
+                                       class="w-full rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 disabled:focus:ring-0 disabled:focus:border-gray-200 text-sm">
+                            </div>
+
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Warranty Unit</label>
+                                <select name="warranty_unit" x-model="warrantyUnit" @change="resetWarrantyIfNeeded()"
+                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <option value="">No warranty</option>
+                                    <option value="days">Days</option>
+                                    <option value="months">Months</option>
+                                </select>
+                            </div>
+
                             {{-- Line Total Preview --}}
                             <div class="lg:col-span-1">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total</label>
@@ -447,6 +721,7 @@
                                 <input type="text" name="note" placeholder="Optional note for this line..."
                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             </div>
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">If warranty applies, enter the duration and select days or months.</p>
                         </div>
                     </form>
                 </div>
@@ -475,7 +750,7 @@
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
-                                    @if(!$log->isSubmitted())
+                                    @if($log->canEditQuotation())
                                         <th class="px-4 py-3 w-16"></th>
                                     @endif
                                 </tr>
@@ -495,6 +770,11 @@
                                             @if($line->note)
                                                 <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $line->note }}</div>
                                             @endif
+                                            @if($line->warranty_value && $line->warranty_unit)
+                                                <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                    Warranty: {{ $line->warranty_value }} {{ $line->warranty_value == 1 ? rtrim($line->warranty_unit, 's') : $line->warranty_unit }}
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300">{{ $line->qty }}</td>
                                         <td class="px-4 py-3 text-right text-sm text-gray-700 dark:text-gray-300">{{ number_format($line->unit_price, 2) }}</td>
@@ -506,7 +786,7 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{{ number_format($line->line_total + $line->gst_amount, 2) }}</td>
-                                        @if(!$log->isSubmitted())
+                                        @if($log->canEditQuotation())
                                             <td class="px-4 py-3 text-center">
                                                 <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
                                                     @csrf
@@ -551,10 +831,15 @@
                                         @if($line->note)
                                             <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ $line->note }}</div>
                                         @endif
+                                        @if($line->warranty_value && $line->warranty_unit)
+                                            <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                Warranty: {{ $line->warranty_value }} {{ $line->warranty_value == 1 ? rtrim($line->warranty_unit, 's') : $line->warranty_unit }}
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
                                         <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ number_format($line->line_total + $line->gst_amount, 2) }}</span>
-                                        @if(!$log->isSubmitted())
+                                        @if($log->canEditQuotation())
                                             <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
                                                 @csrf
                                                 @method('DELETE')
@@ -571,10 +856,17 @@
                 @endif
             </div>
 
-            {{-- Running Totals --}}
+            {{-- Step 4: Totals / invoice / payment --}}
             @if($log->lines->isNotEmpty())
                 @php $totals = $log->totals; @endphp
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
+                    <div class="mb-4">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $log->isSubmitted() ? 'Completed Sale' : 'Step 4' }}</div>
+                        <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $log->isSubmitted() ? 'Invoice and Payment Summary' : ($screen === 'invoice' ? 'Invoice Conversion and Payment' : 'Invoice Creation and Payment') }}</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            {{ $log->isSubmitted() ? 'Review the final totals, invoice state, and payment/account trail.' : ($screen === 'invoice' ? 'Convert the approved quotation to an invoice, then capture payment and submission here.' : 'Once the quotation is approved, review totals and convert or submit from this section.') }}
+                        </p>
+                    </div>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
                             <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Subtotal</p>
@@ -668,8 +960,44 @@
                     </div>
                 @endif
 
-                {{-- Submit Sale Panel (draft only) --}}
-                @if(!$log->isSubmitted())
+	                {{-- Submit Sale Panel (invoice ready / unpaid only) --}}
+	                @if(!$log->isSubmitted() && $screen === 'invoice')
+	                    <div id="submit-sale-panel" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 border border-indigo-100 dark:border-indigo-900/40 mb-4">
+	                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+	                            <div>
+	                                <div class="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">Invoice Workflow</div>
+	                                <div class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $log->job_id ? 'Invoice created - ready to collect payment' : 'Convert the approved quotation' }}</div>
+	                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $log->job_id ? 'The invoice is already created. Use Submit Sale below to mark it paid and finish the sale.' : 'Make sure customer, address, items, approval method, and PO/signed-copy approval are all ready before creating the invoice.' }}</div>
+	                            </div>
+	                            <div class="flex flex-wrap gap-2">
+	                                @if($log->canEditQuotation())
+    	                                <a href="{{ route('sales.daily.quotation-builder', $log) }}"
+    	                                   class="inline-flex items-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium rounded-lg transition">
+    	                                    Back to Builder
+    	                                </a>
+                                    @endif
+	                                @if(!$log->job_id)
+	                                    <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank">
+	                                        @csrf
+	                                        <button type="submit"
+                                                    {{ $workflowInvoiceReady ? '' : 'disabled' }}
+	                                                class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
+	                                            Create Invoice
+	                                        </button>
+	                                    </form>
+	                                @else
+	                                    <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
+	                                       class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+	                                        Preview Invoice
+	                                    </a>
+	                                @endif
+	                            </div>
+                                @unless($log->job_id || $workflowInvoiceReady)
+                                    <p class="text-sm text-amber-600 dark:text-amber-400">Finish customer, approval, and line items before creating the invoice.</p>
+                                @endunless
+	                        </div>
+	                    </div>
+
                     <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6"
                          x-data="{
                             showPanel: false,
@@ -771,7 +1099,7 @@
                             </form>
                         </div>
                     </div>
-                @endif
+            @endif
             @endif
         </div>
     </div>

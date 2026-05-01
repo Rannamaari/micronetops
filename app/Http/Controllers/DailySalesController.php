@@ -20,16 +20,52 @@ class DailySalesController extends Controller
     {
         $date = $request->get('date', now()->toDateString());
         $businessUnit = $request->get('business_unit');
+        $search = trim((string) $request->get('search', ''));
+        $status = $request->get('status', '');
 
-        $query = DailySalesLog::forDate($date);
+        $query = DailySalesLog::query()
+            ->leftJoin('customers', 'daily_sales_logs.customer_id', '=', 'customers.id')
+            ->leftJoin('jobs', 'daily_sales_logs.job_id', '=', 'jobs.id')
+            ->select('daily_sales_logs.*');
+
+        if ($search === '') {
+            $query->forDate($date);
+        }
 
         if ($businessUnit) {
             $query->forUnit($businessUnit);
         }
 
-        $logs = $query->with('lines', 'createdByUser', 'customer')->get();
+        if ($status !== '' && $status !== 'all') {
+            $query->where('daily_sales_logs.status', $status);
+        }
 
-        return view('sales.daily-index', compact('date', 'logs', 'businessUnit'));
+        if ($search !== '') {
+            $normalizedSearch = mb_strtolower($search);
+            preg_match('/\d+/', $search, $billMatches);
+            $billSearch = $billMatches[0] ?? null;
+
+            $query->where(function ($q) use ($search, $normalizedSearch, $billSearch) {
+                if ($billSearch !== null) {
+                    $q->orWhere('daily_sales_logs.id', (int) $billSearch)
+                        ->orWhereRaw('CAST(daily_sales_logs.id AS TEXT) LIKE ?', ['%' . $billSearch . '%'])
+                        ->orWhere('jobs.id', (int) $billSearch)
+                        ->orWhereRaw('CAST(jobs.id AS TEXT) LIKE ?', ['%' . $billSearch . '%']);
+                }
+
+                $q->orWhereRaw('LOWER(customers.name) LIKE ?', ['%' . $normalizedSearch . '%'])
+                    ->orWhere('customers.phone', 'like', '%' . $search . '%')
+                    ->orWhereRaw('LOWER(jobs.customer_name) LIKE ?', ['%' . $normalizedSearch . '%'])
+                    ->orWhere('jobs.customer_phone', 'like', '%' . $search . '%');
+            });
+        }
+
+        $logs = $query->with('lines', 'createdByUser', 'customer')
+            ->orderByDesc('daily_sales_logs.created_at')
+            ->orderByDesc('daily_sales_logs.id')
+            ->get();
+
+        return view('sales.daily-index', compact('date', 'logs', 'businessUnit', 'search', 'status'));
     }
 
     public function destroy(DailySalesLog $dailySalesLog)
@@ -38,8 +74,8 @@ class DailySalesController extends Controller
             abort(403);
         }
 
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot delete a submitted sale. Reopen it first.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot delete an invoiced or paid sale. Reopen it first.');
         }
 
         $id = $dailySalesLog->id;
@@ -78,7 +114,8 @@ class DailySalesController extends Controller
             'date' => $validated['date'],
             'business_unit' => $validated['business_unit'],
             'created_by' => Auth::id(),
-            'status' => 'draft',
+            'status' => DailySalesLog::STATUS_DRAFT,
+            'approval_method' => 'not_applicable',
         ]);
 
         return redirect()->route('sales.daily.show', $log);
@@ -86,7 +123,37 @@ class DailySalesController extends Controller
 
     public function show(DailySalesLog $dailySalesLog)
     {
-        $dailySalesLog->load('lines.inventoryItem', 'createdByUser', 'submittedByUser', 'customer', 'transferAccount');
+        return redirect()->route(
+            $dailySalesLog->isInvoiceStage() ? 'sales.daily.invoice-workflow' : 'sales.daily.quotation-builder',
+            $dailySalesLog
+        );
+    }
+
+    public function quotationBuilder(DailySalesLog $dailySalesLog)
+    {
+        if ($dailySalesLog->isInvoiceStage()) {
+            return redirect()->route('sales.daily.invoice-workflow', $dailySalesLog);
+        }
+
+        return view('sales.daily-show', $this->buildShowViewData($dailySalesLog, 'builder'));
+    }
+
+    public function invoiceWorkflow(DailySalesLog $dailySalesLog)
+    {
+        return view('sales.daily-show', $this->buildShowViewData($dailySalesLog, 'invoice'));
+    }
+
+    private function buildShowViewData(DailySalesLog $dailySalesLog, string $screen): array
+    {
+        if ($dailySalesLog->job_id) {
+            $dailySalesLog->syncWorkflowStatus($dailySalesLog->job);
+            $dailySalesLog->refresh();
+        } else {
+            $dailySalesLog->syncWorkflowStatus();
+            $dailySalesLog->refresh();
+        }
+
+        $dailySalesLog->load('lines.inventoryItem', 'createdByUser', 'submittedByUser', 'customer.addresses', 'customerAddress', 'transferAccount');
 
         $categoryMap = match ($dailySalesLog->business_unit) {
             'cool' => 'ac',
@@ -108,18 +175,19 @@ class DailySalesController extends Controller
                 ->first();
         }
 
-        return view('sales.daily-show', [
+        return [
             'log' => $dailySalesLog,
             'inventoryItems' => $inventoryItems,
             'accounts' => $accounts,
             'accountTransaction' => $accountTransaction,
-        ]);
+            'screen' => $screen,
+        ];
     }
 
     public function updateDueDate(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot change due date on a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change due date after the quotation has been converted to an invoice.');
         }
 
         $validated = $request->validate([
@@ -130,16 +198,43 @@ class DailySalesController extends Controller
             'due_date' => $validated['due_date'] ?? null,
         ]);
 
+        $dailySalesLog->syncLinkedDraftJob();
+
         $label = $dailySalesLog->due_date ? $dailySalesLog->due_date->format('Y-m-d') : 'Due upon receipt';
         ActivityLog::record('sale.due_date_updated', "Sale #{$dailySalesLog->id} due date → {$label}", $dailySalesLog);
 
         return back()->with('success', 'Due date updated.');
     }
 
+    public function updateQuotationValidity(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change quotation validity after the quotation has been converted to an invoice.');
+        }
+
+        $validated = $request->validate([
+            'quotation_validity_days' => ['required', 'integer', 'min:1', 'max:365'],
+        ]);
+
+        $dailySalesLog->update([
+            'quotation_validity_days' => $validated['quotation_validity_days'],
+        ]);
+
+        $dailySalesLog->syncLinkedDraftJob();
+
+        ActivityLog::record(
+            'sale.quotation_validity_updated',
+            "Sale #{$dailySalesLog->id} quotation validity → {$validated['quotation_validity_days']} day(s)",
+            $dailySalesLog
+        );
+
+        return back()->with('success', 'Quotation validity updated.');
+    }
+
     public function updateNotes(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot change notes on a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change notes after the quotation has been converted to an invoice.');
         }
 
         $validated = $request->validate([
@@ -150,15 +245,71 @@ class DailySalesController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        $dailySalesLog->syncLinkedDraftJob();
+
         ActivityLog::record('sale.notes_updated', "Sale #{$dailySalesLog->id} notes updated", $dailySalesLog);
 
         return back()->with('success', 'Notes updated.');
     }
 
+    public function updatePoNumber(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change PO number after the quotation has been converted to an invoice.');
+        }
+
+        $validated = $request->validate([
+            'po_number' => ['required', 'string', 'max:100'],
+        ]);
+
+        $dailySalesLog->update([
+            'po_number' => trim((string) $validated['po_number']),
+        ]);
+
+        $dailySalesLog->syncLinkedDraftJob();
+
+        ActivityLog::record(
+            'sale.po_number_updated',
+            "Sale #{$dailySalesLog->id} PO number updated",
+            $dailySalesLog
+        );
+
+        return back()->with('success', 'PO number saved.');
+    }
+
+    public function updateApprovalMethod(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change approval method after the quotation has been converted to an invoice.');
+        }
+
+        $validated = $request->validate([
+            'approval_method' => ['required', 'in:po,signed_copy,not_applicable'],
+            'po_number' => ['nullable', 'string', 'max:100', 'required_if:approval_method,po'],
+        ]);
+
+        $dailySalesLog->update([
+            'approval_method' => $validated['approval_method'],
+            'po_number' => $validated['approval_method'] === 'po'
+                ? trim((string) ($validated['po_number'] ?? $dailySalesLog->po_number))
+                : null,
+        ]);
+
+        $dailySalesLog->syncLinkedDraftJob();
+
+        ActivityLog::record(
+            'sale.approval_method_updated',
+            "Sale #{$dailySalesLog->id} approval method → {$validated['approval_method']}",
+            $dailySalesLog
+        );
+
+        return back()->with('success', 'Approval method updated.');
+    }
+
     public function addLine(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot add lines to a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot add lines after the quotation has been converted to an invoice.');
         }
 
         $validated = $request->validate([
@@ -167,6 +318,8 @@ class DailySalesController extends Controller
             'qty' => ['required', 'integer', 'min:1'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string', 'max:1000'],
+            'warranty_value' => ['nullable', 'integer', 'min:1', 'required_with:warranty_unit'],
+            'warranty_unit' => ['nullable', 'in:days,months', 'required_with:warranty_value'],
             'is_gst_applicable' => ['nullable', 'boolean'],
         ]);
 
@@ -194,17 +347,22 @@ class DailySalesController extends Controller
             'line_total' => $lineTotal,
             'is_stock_item' => $isStockItem,
             'note' => $validated['note'] ?? null,
+            'warranty_value' => $validated['warranty_value'] ?? null,
+            'warranty_unit' => $validated['warranty_unit'] ?? null,
             'is_gst_applicable' => $isGst,
             'gst_amount' => $gstAmount,
         ]);
+
+        $dailySalesLog->syncWorkflowStatus();
+        $dailySalesLog->syncLinkedDraftJob();
 
         return back()->with('success', 'Line added.');
     }
 
     public function removeLine(DailySalesLog $dailySalesLog, DailySalesLine $line)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot remove lines from a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot remove lines after the quotation has been converted to an invoice.');
         }
 
         if ($line->daily_sales_log_id !== $dailySalesLog->id) {
@@ -213,13 +371,16 @@ class DailySalesController extends Controller
 
         $line->delete();
 
+        $dailySalesLog->syncWorkflowStatus();
+        $dailySalesLog->syncLinkedDraftJob();
+
         return back()->with('success', 'Line removed.');
     }
 
     public function submit(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Sale is already submitted.');
+        if ($dailySalesLog->status === DailySalesLog::STATUS_PARTIAL_PAID || $dailySalesLog->status === DailySalesLog::STATUS_PAID) {
+            return back()->with('error', 'Payment has already been recorded for this invoice.');
         }
 
         $dailySalesLog->load('lines.inventoryItem');
@@ -256,8 +417,8 @@ class DailySalesController extends Controller
             abort(403);
         }
 
-        if (!$dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Sale is not submitted.');
+        if (!$dailySalesLog->isInvoiceStage()) {
+            return back()->with('error', 'This sale is still in quotation stage.');
         }
 
         $eod = EodReconciliation::where('date', $dailySalesLog->date)
@@ -278,14 +439,17 @@ class DailySalesController extends Controller
 
     public function createAndSetCustomer(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot change customer on a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change customer after the quotation has been converted to an invoice.');
         }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:50', 'regex:/^[0-9\\s,;\\/|()+-]+$/'],
             'gst_number' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:500'],
+        ], [
+            'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
         ]);
 
         $category = match ($dailySalesLog->business_unit) {
@@ -305,22 +469,68 @@ class DailySalesController extends Controller
             $customer->save();
         }
 
-        $dailySalesLog->update(['customer_id' => $customer->id]);
+        $address = null;
+        if (!empty($validated['address'])) {
+            $address = $customer->addresses()
+                ->where('address', $validated['address'])
+                ->orderByDesc('is_default')
+                ->first();
+
+            if (!$address) {
+                $address = $customer->addresses()->create([
+                    'label' => 'Primary',
+                    'address' => $validated['address'],
+                    'is_default' => !$customer->addresses()->exists(),
+                ]);
+            }
+
+            if ($address->is_default) {
+                $customer->update(['address' => $address->address]);
+            }
+        }
+
+        $dailySalesLog->update([
+            'customer_id' => $customer->id,
+            'customer_address_id' => $address?->id,
+            'customer_address_text' => $address?->address,
+        ]);
+        $dailySalesLog->syncLinkedDraftJob();
 
         return back()->with('success', 'Customer "' . $customer->name . '" created and assigned.');
     }
 
     public function setCustomer(Request $request, DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
-            return back()->with('error', 'Cannot change customer on a submitted sale.');
+        if (!$dailySalesLog->canEditQuotation()) {
+            return back()->with('error', 'Cannot change customer after the quotation has been converted to an invoice.');
         }
 
         $validated = $request->validate([
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'customer_address_id' => ['nullable', 'exists:customer_addresses,id'],
         ]);
 
-        $dailySalesLog->update(['customer_id' => $validated['customer_id']]);
+        $customer = !empty($validated['customer_id']) ? Customer::with('addresses')->find($validated['customer_id']) : null;
+        $address = null;
+
+        if ($customer && !empty($validated['customer_address_id'])) {
+            $address = $customer->addresses->firstWhere('id', (int) $validated['customer_address_id']);
+
+            if (!$address) {
+                return back()->withErrors([
+                    'customer_address_id' => 'Selected address does not belong to this customer.',
+                ])->withInput();
+            }
+        } elseif ($customer) {
+            $address = $customer->addresses->firstWhere('is_default', true) ?? $customer->addresses->first();
+        }
+
+        $dailySalesLog->update([
+            'customer_id' => $validated['customer_id'],
+            'customer_address_id' => $address?->id,
+            'customer_address_text' => $address?->address ?? $customer?->address,
+        ]);
+        $dailySalesLog->syncLinkedDraftJob();
 
         $message = $validated['customer_id'] ? 'Customer assigned.' : 'Customer cleared — will use Walk-in.';
 
@@ -382,20 +592,31 @@ class DailySalesController extends Controller
 
     public function convertToInvoice(DailySalesLog $dailySalesLog)
     {
-        if ($dailySalesLog->isSubmitted()) {
+        if ($dailySalesLog->isInvoiceStage()) {
             if ($dailySalesLog->job_id) {
                 return redirect()->route('jobs.invoice', $dailySalesLog->job_id);
             }
-            return back()->with('error', 'This sale is already submitted, but no invoice job was found.');
+            return back()->with('error', 'This sale is already in invoice stage, but no invoice job was found.');
         }
 
         $dailySalesLog->load('lines');
+        if (!$dailySalesLog->customer_id) {
+            return back()->with('error', 'Please select a customer before creating an invoice.');
+        }
+
         if ($dailySalesLog->lines->isEmpty()) {
             return back()->with('error', 'Add at least one line item before creating an invoice.');
         }
 
+        if (!$dailySalesLog->isApprovalReady()) {
+            return back()->with('error', 'Please complete the approval details before converting this quotation to an invoice.');
+        }
+
         $job = $dailySalesLog->createOrUpdateInvoiceJob(false);
-        $dailySalesLog->update(['job_id' => $job->id]);
+        $dailySalesLog->update([
+            'job_id' => $job->id,
+            'status' => DailySalesLog::STATUS_INVOICED,
+        ]);
 
         ActivityLog::record('sale.invoice_created', "Invoice created for sale #{$dailySalesLog->id}", $dailySalesLog);
 

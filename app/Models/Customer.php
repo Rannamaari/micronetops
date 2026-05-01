@@ -34,6 +34,16 @@ class Customer extends Model
         return $this->hasMany(Job::class);
     }
 
+    public function addresses()
+    {
+        return $this->hasMany(CustomerAddress::class)->orderByDesc('is_default')->orderBy('label');
+    }
+
+    public function defaultAddress()
+    {
+        return $this->hasOne(CustomerAddress::class)->where('is_default', true);
+    }
+
     public function hasExpiredRoadWorthiness(): bool
     {
         return $this->vehicles()

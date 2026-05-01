@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Job;
 use App\Models\Payment;
 use App\Models\PettyCash;
+use App\Models\DailySalesLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,6 +45,10 @@ class PaymentController extends Controller
 
         $job->updatePaymentStatus();
 
+        DailySalesLog::where('job_id', $job->id)->get()->each(function (DailySalesLog $log) use ($job) {
+            $log->syncWorkflowStatus($job->fresh());
+        });
+
         return back()->with('success', 'Payment recorded.' . (strtolower($validated['method']) === 'cash' ? ' Cash added to petty cash.' : ''));
     }
 
@@ -68,6 +73,10 @@ class PaymentController extends Controller
         $payment->delete();
 
         $job->updatePaymentStatus();
+
+        DailySalesLog::where('job_id', $job->id)->get()->each(function (DailySalesLog $log) use ($job) {
+            $log->syncWorkflowStatus($job->fresh());
+        });
 
         return back()->with('success', 'Payment removed.');
     }

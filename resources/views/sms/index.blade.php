@@ -86,16 +86,31 @@
                                 </div>
 
                                 <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                    <select x-model="customerCategoryFilter"
+                                            class="w-full sm:w-48 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <option value="all">All business lines</option>
+                                        <option value="moto">Micro Moto</option>
+                                        <option value="ac">Micro Cool</option>
+                                        <option value="it">Micronet</option>
+                                        <option value="easyfix">Easy Fix</option>
+                                    </select>
+                                    <input type="month"
+                                           x-model="customerAddedMonth"
+                                           class="w-full sm:w-44 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <input type="text"
                                            x-model="allFilter"
                                            class="w-full sm:w-72 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                            placeholder="Filter customers...">
                                     <button type="button"
-                                            @click="excludedIds = []"
+                                            @click="resetAudienceFilters()"
                                             class="px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-xs font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
-                                        Reset Exclusions
+                                        Reset Filters
                                     </button>
                                 </div>
+                            </div>
+
+                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                Use business line and month to target customers added during a specific period.
                             </div>
 
                             <div class="mt-3 max-h-72 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -103,7 +118,13 @@
                                     <div class="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
                                         <div class="min-w-0">
                                             <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" x-text="c.name"></div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="c.phone"></div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                <span x-text="c.phone"></span>
+                                                <span class="mx-1">•</span>
+                                                <span x-text="categoryLabel(c.category)"></span>
+                                                <span class="mx-1">•</span>
+                                                <span x-text="formatAddedAt(c.created_at)"></span>
+                                            </div>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <template x-if="isExcluded(c.id)">
@@ -124,7 +145,15 @@
                             </div>
 
                             <input type="hidden" name="exclude_customer_ids" :value="excludeIdsValue()">
+                            <input type="hidden" name="customer_category_filter" :value="customerCategoryFilter">
+                            <input type="hidden" name="customer_added_month" :value="customerAddedMonth">
                             @error('exclude_customer_ids')
+                                <div class="text-xs text-red-600 mt-2">{{ $message }}</div>
+                            @enderror
+                            @error('customer_category_filter')
+                                <div class="text-xs text-red-600 mt-2">{{ $message }}</div>
+                            @enderror
+                            @error('customer_added_month')
                                 <div class="text-xs text-red-600 mt-2">{{ $message }}</div>
                             @enderror
                         </div>
@@ -298,6 +327,8 @@ function smsPage(allUrl, searchUrl) {
         allCustomers: [],
         allLoading: false,
         allFilter: '',
+        customerCategoryFilter: '{{ old('customer_category_filter', 'all') }}',
+        customerAddedMonth: '{{ old('customer_added_month', '') }}',
         excludedIds: [],
         init() {
             // Restore exclusions if validation failed (optional, simple).
@@ -311,20 +342,46 @@ function smsPage(allUrl, searchUrl) {
             this.$watch('audience', (val) => {
                 if (val === 'all_customers') this.loadAllCustomers();
             });
+            this.$watch('customerCategoryFilter', () => {
+                if (this.audience === 'all_customers') this.reloadAllCustomers();
+            });
+            this.$watch('customerAddedMonth', () => {
+                if (this.audience === 'all_customers') this.reloadAllCustomers();
+            });
             if (this.audience === 'all_customers') {
                 this.loadAllCustomers();
             }
         },
+        buildAllCustomersUrl() {
+            const url = new URL(this.allUrl, window.location.origin);
+            if (this.customerCategoryFilter && this.customerCategoryFilter !== 'all') {
+                url.searchParams.set('customer_category_filter', this.customerCategoryFilter);
+            }
+            if (this.customerAddedMonth) {
+                url.searchParams.set('customer_added_month', this.customerAddedMonth);
+            }
+            return url.toString();
+        },
         async loadAllCustomers() {
             if (this.allLoading || this.allCustomers.length > 0) return;
+            await this.fetchAllCustomers();
+        },
+        async reloadAllCustomers() {
+            if (this.allLoading) return;
+            this.allCustomers = [];
+            await this.fetchAllCustomers();
+        },
+        async fetchAllCustomers() {
             this.allLoading = true;
             try {
-                const res = await fetch(this.allUrl, {
+                const res = await fetch(this.buildAllCustomersUrl(), {
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin'
                 });
                 const json = await res.json();
                 this.allCustomers = Array.isArray(json.data) ? json.data : [];
+                const validIds = this.allCustomers.map(c => String(c.id));
+                this.excludedIds = this.excludedIds.filter(id => validIds.includes(String(id)));
             } catch (e) {
                 this.allCustomers = [];
             } finally {
@@ -340,11 +397,31 @@ function smsPage(allUrl, searchUrl) {
             if (idx >= 0) this.excludedIds.splice(idx, 1);
             else this.excludedIds.push(key);
         },
+        resetAudienceFilters() {
+            this.customerCategoryFilter = 'all';
+            this.customerAddedMonth = '';
+            this.allFilter = '';
+            this.excludedIds = [];
+        },
         excludeIdsValue() {
             return this.excludedIds.join(',');
         },
         includedCount() {
             return Math.max(0, this.allCustomers.length - this.excludedIds.length);
+        },
+        categoryLabel(category) {
+            return ({
+                moto: 'Micro Moto',
+                ac: 'Micro Cool',
+                it: 'Micronet',
+                easyfix: 'Easy Fix',
+            })[category] || 'Uncategorized';
+        },
+        formatAddedAt(value) {
+            if (!value) return 'No date';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return 'No date';
+            return 'Added ' + d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short' });
         },
         filteredAllCustomers() {
             const f = (this.allFilter || '').trim().toLowerCase();
@@ -353,7 +430,8 @@ function smsPage(allUrl, searchUrl) {
                 const name = String(c.name || '').toLowerCase();
                 const phone = String(c.phone || '').toLowerCase();
                 const email = String(c.email || '').toLowerCase();
-                return name.includes(f) || phone.includes(f) || email.includes(f);
+                const category = this.categoryLabel(c.category).toLowerCase();
+                return name.includes(f) || phone.includes(f) || email.includes(f) || category.includes(f);
             });
         }
     }

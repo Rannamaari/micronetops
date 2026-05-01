@@ -1,10 +1,10 @@
 <nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
+        <div class="flex justify-between items-center h-14 sm:h-16">
             <!-- Logo -->
             <div class="flex-shrink-0">
                 <a href="{{ Auth::user()->canAccessOperations() ? route('dashboard') : route('rattehin.index') }}" class="flex items-center hover:opacity-80 transition-opacity">
-                    <x-application-logo class="h-8 w-auto" />
+                    <x-application-logo class="h-7 sm:h-8 w-auto" />
                 </a>
             </div>
 
@@ -90,7 +90,7 @@
             <div class="flex items-center gap-3">
                 <!-- User Menu -->
                 <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                    <button @click="open = !open" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                    <button @click="open = !open" class="flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200">
                         <span class="hidden sm:inline">{{ Auth::user()->name }}</span>
                         <span class="sm:hidden">{{ Str::limit(Auth::user()->name, 10, '') }}</span>
                         @if(Auth::user()->isPremium())

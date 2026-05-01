@@ -17,6 +17,8 @@ use Carbon\Carbon;
 
 class JobController extends Controller
 {
+    private const CUSTOMER_PHONE_RULES = ['required', 'string', 'max:20', 'regex:/^[0-9\\s,;\\/|()+-]+$/'];
+
     /**
      * List recent jobs with enhanced filtering.
      */
@@ -130,6 +132,7 @@ class JobController extends Controller
 
         // Load only the 5 most recent customers by default
         $customers = Customer::with([
+            'addresses:id,customer_id,label,address,contact_name,contact_phone,is_default',
             'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])->latest()->limit(5)->get();
@@ -137,6 +140,7 @@ class JobController extends Controller
         // If a customer is pre-selected, make sure they're in the list
         if ($preselectedCustomerId) {
             $preselectedCustomer = Customer::with([
+                'addresses:id,customer_id,label,address,contact_name,contact_phone,is_default',
                 'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
                 'acUnits:id,customer_id,brand,btu,gas_type,location_description',
             ])->find($preselectedCustomerId);
@@ -162,6 +166,7 @@ class JobController extends Controller
         $search = $request->get('q', '');
 
         $customers = Customer::with([
+            'addresses:id,customer_id,label,address,contact_name,contact_phone,is_default',
             'vehicles:id,customer_id,brand,model,registration_number,year,mileage',
             'acUnits:id,customer_id,brand,btu,gas_type,location_description',
         ])
@@ -182,6 +187,17 @@ class JobController extends Controller
                     'phone' => $customer->phone,
                     'text' => $customer->name . ' (' . $customer->phone . ')',
                     'address' => $customer->address ?? '',
+                    'addresses' => $customer->addresses->map(function ($address) {
+                        return [
+                            'id' => $address->id,
+                            'label' => $address->label,
+                            'address' => $address->address,
+                            'contact_name' => $address->contact_name,
+                            'contact_phone' => $address->contact_phone,
+                            'is_default' => (bool) $address->is_default,
+                            'summary' => trim($address->label . ' - ' . $address->address),
+                        ];
+                    })->values()->all(),
                     'vehicles' => $customer->vehicles->map(function ($v) {
                         return [
                             'id' => $v->id,
@@ -207,7 +223,7 @@ class JobController extends Controller
         $validated = $request->validate([
             // Required fields for quick creation
             'job_type' => ['required', Rule::in(['moto', 'ac', 'it', 'easyfix'])],
-            'customer_phone' => ['required', 'string', 'max:20'],
+            'customer_phone' => self::CUSTOMER_PHONE_RULES,
             'customer_name' => ['required', 'string', 'max:100'],
             'customer_gst_number' => ['nullable', 'string', 'max:50'],
 
@@ -225,6 +241,7 @@ class JobController extends Controller
 
             // Optional - link to existing customer/equipment
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'customer_address_id' => ['nullable', 'exists:customer_addresses,id'],
             'vehicle_id' => ['nullable', 'exists:vehicles,id'],
             'ac_unit_id' => ['nullable', 'exists:ac_units,id'],
 
@@ -237,12 +254,25 @@ class JobController extends Controller
             'job_category' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:255'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
+        ], [
+            'customer_phone.regex' => 'Customer phone can contain digits and common separators only. Letters are not allowed.',
         ]);
 
         // Find or create customer — ensures one customer per phone number
         $customer = null;
+        $selectedAddress = null;
         if (!empty($validated['customer_id'])) {
             $customer = Customer::find($validated['customer_id']);
+        }
+
+        if ($customer && !empty($validated['customer_address_id'])) {
+            $selectedAddress = $customer->addresses()->find($validated['customer_address_id']);
+
+            if (!$selectedAddress) {
+                return back()->withErrors([
+                    'customer_address_id' => 'Selected address does not belong to this customer.',
+                ])->withInput();
+            }
         }
 
         if (!$customer && $validated['customer_phone']) {
@@ -268,6 +298,14 @@ class JobController extends Controller
                     default => 'moto',
                 },
             ]);
+
+            if (!empty($validated['location'])) {
+                $selectedAddress = $customer->addresses()->create([
+                    'label' => 'Primary',
+                    'address' => $validated['location'],
+                    'is_default' => true,
+                ]);
+            }
         }
 
         // Determine status based on scheduling
@@ -282,7 +320,8 @@ class JobController extends Controller
             'scheduled_at' => $validated['scheduled_at'] ?? null,
             'scheduled_end_at' => $validated['scheduled_end_at'] ?? null,
             'due_date' => $validated['due_date'] ?? null,
-            'location' => $validated['location'] ?? $validated['address'] ?? null,
+            'quotation_validity_days' => 3,
+            'location' => $validated['location'] ?? $validated['address'] ?? $selectedAddress?->address ?? null,
             'priority' => $validated['priority'] ?? Job::PRIORITY_NORMAL,
 
             // Core fields
@@ -290,6 +329,7 @@ class JobController extends Controller
             'job_type' => $validated['job_type'],
             'job_category' => $validated['job_category'] ?? 'general',
             'customer_id' => $customer?->id,
+            'customer_address_id' => $selectedAddress?->id,
 
             // Snapshot customer data — use DB record when customer exists
             'customer_name' => $customer?->name ?? $validated['customer_name'] ?? 'Walk-in',
@@ -301,7 +341,7 @@ class JobController extends Controller
             'ac_unit_id' => $validated['ac_unit_id'] ?? null,
 
             // Other
-            'address' => $validated['address'] ?? $customer?->address ?? $validated['location'],
+            'address' => $validated['address'] ?? $validated['location'] ?? $selectedAddress?->address ?? $customer?->address,
             'pickup_location' => $validated['pickup_location'] ?? null,
             'problem_description' => $validated['problem_description'] ?? null,
             'customer_notes' => $validated['customer_notes'] ?? null,
@@ -337,10 +377,15 @@ class JobController extends Controller
         $sale = DailySalesLog::create([
             'date' => $job->job_date ?? now()->toDateString(),
             'due_date' => $job->due_date,
+            'quotation_validity_days' => $job->quotation_validity_days ?: 3,
             'business_unit' => $unit,
             'created_by' => Auth::id(),
             'status' => 'draft',
             'customer_id' => $customer?->id,
+            'customer_address_id' => $selectedAddress?->id,
+            'customer_address_text' => $selectedAddress?->address ?? $job->address,
+            'po_number' => $job->po_number,
+            'approval_method' => $job->approval_method ?: 'not_applicable',
             'notes' => $job->customer_notes,
             'job_id' => $job->id,
         ]);
@@ -441,6 +486,14 @@ class JobController extends Controller
      */
     public function invoice(Job $job)
     {
+        $draftSale = \App\Models\DailySalesLog::where('job_id', $job->id)
+            ->where('status', 'draft')
+            ->first();
+
+        if ($draftSale) {
+            $job = $draftSale->syncLinkedDraftJob() ?? $job;
+        }
+
         $job->load(['customer', 'vehicle', 'acUnit', 'items.inventoryItem', 'payments']);
 
         // Brand selection based on job type
@@ -652,6 +705,14 @@ class JobController extends Controller
     public function quotation(Job $job)
     {
         // Reuse invoice view but change title to "QUOTATION"
+        $draftSale = \App\Models\DailySalesLog::where('job_id', $job->id)
+            ->where('status', 'draft')
+            ->first();
+
+        if ($draftSale) {
+            $job = $draftSale->syncLinkedDraftJob() ?? $job;
+        }
+
         $job->load(['customer', 'vehicle', 'acUnit', 'items.inventoryItem']);
 
         if ($job->job_type === 'ac') {
@@ -781,12 +842,14 @@ class JobController extends Controller
     {
         $validated = $request->validate([
             'job_type' => ['required', Rule::in(['moto', 'ac', 'it', 'easyfix'])],
-            'customer_phone' => ['required', 'string', 'max:20'],
+            'customer_phone' => self::CUSTOMER_PHONE_RULES,
             'customer_name' => ['required', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:100'],
             'scheduled_at' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
+        ], [
+            'customer_phone.regex' => 'Customer phone can contain digits and common separators only. Letters are not allowed.',
         ]);
 
         $job = Job::create([

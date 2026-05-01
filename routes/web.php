@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcUnitController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\DailySalesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaultTicketController;
@@ -170,10 +171,15 @@ Route::middleware('auth')->group(function () {
         Route::get('sales/daily', [DailySalesController::class, 'index'])->name('sales.daily.index');
         Route::post('sales/daily', [DailySalesController::class, 'openLog'])->name('sales.daily.open');
         Route::get('sales/daily/{dailySalesLog}', [DailySalesController::class, 'show'])->name('sales.daily.show');
+        Route::get('sales/daily/{dailySalesLog}/quotation-builder', [DailySalesController::class, 'quotationBuilder'])->name('sales.daily.quotation-builder');
+        Route::get('sales/daily/{dailySalesLog}/invoice-workflow', [DailySalesController::class, 'invoiceWorkflow'])->name('sales.daily.invoice-workflow');
         Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
         Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
         Route::post('sales/daily/{dailySalesLog}/set-customer', [DailySalesController::class, 'setCustomer'])->name('sales.daily.set-customer');
         Route::patch('sales/daily/{dailySalesLog}/due-date', [DailySalesController::class, 'updateDueDate'])->name('sales.daily.update-due-date');
+        Route::patch('sales/daily/{dailySalesLog}/quotation-validity', [DailySalesController::class, 'updateQuotationValidity'])->name('sales.daily.update-quotation-validity');
+        Route::patch('sales/daily/{dailySalesLog}/po-number', [DailySalesController::class, 'updatePoNumber'])->name('sales.daily.update-po-number');
+        Route::patch('sales/daily/{dailySalesLog}/approval-method', [DailySalesController::class, 'updateApprovalMethod'])->name('sales.daily.update-approval-method');
         Route::patch('sales/daily/{dailySalesLog}/notes', [DailySalesController::class, 'updateNotes'])->name('sales.daily.update-notes');
         Route::post('sales/daily/{dailySalesLog}/create-customer', [DailySalesController::class, 'createAndSetCustomer'])->name('sales.daily.create-customer');
         Route::post('sales/daily/{dailySalesLog}/convert-invoice', [DailySalesController::class, 'convertToInvoice'])->name('sales.daily.convert-invoice');
@@ -230,6 +236,9 @@ Route::middleware('auth')->group(function () {
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
         Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
         Route::patch('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+        Route::post('customers/{customer}/addresses', [CustomerAddressController::class, 'store'])->name('customers.addresses.store');
+        Route::patch('customers/{customer}/addresses/{address}', [CustomerAddressController::class, 'update'])->name('customers.addresses.update');
+        Route::delete('customers/{customer}/addresses/{address}', [CustomerAddressController::class, 'destroy'])->name('customers.addresses.destroy');
 
         // Nested create for vehicles & AC units under customer
         Route::post('customers/{customer}/vehicles', [VehicleController::class, 'store'])

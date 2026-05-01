@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\SmsMessage;
 use App\Services\DhiraaguSmsClient;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class SmsController extends Controller
@@ -60,12 +61,12 @@ class SmsController extends Controller
      * GET /sms/customers/all
      * Returns a full list of customers for the "All Customers" SMS audience.
      */
-    public function allCustomers(): \Illuminate\Http\JsonResponse
+    public function allCustomers(Request $request): \Illuminate\Http\JsonResponse
     {
-        $customers = Customer::query()
+        $customers = $this->filteredCustomersQuery($request)
             ->orderBy('name')
             ->limit(2000)
-            ->get(['id', 'name', 'phone', 'email', 'address']);
+            ->get(['id', 'name', 'phone', 'email', 'address', 'category', 'created_at']);
 
         return response()->json([
             'total' => $customers->count(),
@@ -81,6 +82,8 @@ class SmsController extends Controller
             'content' => ['required', 'string', 'max:1000'],
             'numbers' => ['nullable', 'string', 'max:50000'],
             'exclude_customer_ids' => ['nullable', 'string', 'max:50000'],
+            'customer_category_filter' => ['nullable', 'in:all,moto,ac,it,easyfix'],
+            'customer_added_month' => ['nullable', 'date_format:Y-m'],
         ]);
 
         $content = trim((string) $validated['content']);
@@ -110,7 +113,7 @@ class SmsController extends Controller
                 }
             }
 
-            foreach (Customer::query()->select('id', 'phone')->cursor() as $customer) {
+            foreach ($this->filteredCustomersQuery($request)->select('id', 'phone')->cursor() as $customer) {
                 if (!empty($excludedIds[(int) $customer->id])) {
                     continue;
                 }
@@ -214,6 +217,19 @@ class SmsController extends Controller
      */
     private function normalizeDestination(string $token): ?string
     {
+        $token = trim($token);
+        if ($token === '') {
+            return null;
+        }
+
+        if (preg_match('/[[:alpha:]]/u', $token)) {
+            return null;
+        }
+
+        if (!preg_match('/^[0-9\\s()+-]+$/', $token)) {
+            return null;
+        }
+
         $digits = preg_replace('/\\D+/', '', $token);
         $digits = (string) $digits;
         if ($digits === '') return null;
@@ -227,5 +243,30 @@ class SmsController extends Controller
         }
 
         return null;
+    }
+
+    private function filteredCustomersQuery(Request $request)
+    {
+        $query = Customer::query();
+
+        $category = (string) $request->input('customer_category_filter', 'all');
+        if ($category !== '' && $category !== 'all') {
+            $query->where('category', $category);
+        }
+
+        $addedMonth = trim((string) $request->input('customer_added_month', ''));
+        if ($addedMonth !== '') {
+            try {
+                $month = Carbon::createFromFormat('Y-m', $addedMonth)->startOfMonth();
+                $query->whereBetween('created_at', [
+                    $month->copy()->startOfMonth(),
+                    $month->copy()->endOfMonth(),
+                ]);
+            } catch (\Throwable $e) {
+                // Validation already guards the format; ignore invalid values defensively.
+            }
+        }
+
+        return $query;
     }
 }

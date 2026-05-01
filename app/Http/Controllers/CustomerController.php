@@ -9,12 +9,15 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
 {
+    private const PHONE_RULES = ['required', 'string', 'max:50', 'regex:/^[0-9\\s,;\\/|()+-]+$/'];
+
     /**
      * List customers with search.
      */
     public function index(Request $request)
     {
         $search = $request->get('search');
+        $phoneFilter = (string) $request->get('phone_filter', 'all');
 
         $query = Customer::with('vehicles');
 
@@ -28,12 +31,16 @@ class CustomerController extends Controller
             });
         }
 
+        if ($phoneFilter === 'invalid') {
+            $query->whereRaw("phone ~ '[A-Za-z]'");
+        }
+
         $customers = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         // Get the most recently created customer for the notice
         $lastCustomer = Customer::orderBy('created_at', 'desc')->first();
 
-        return view('customers.index', compact('customers', 'search', 'lastCustomer'));
+        return view('customers.index', compact('customers', 'search', 'lastCustomer', 'phoneFilter'));
     }
 
     /**
@@ -51,11 +58,13 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone'],
+            'phone'    => array_merge(self::PHONE_RULES, ['unique:customers,phone']),
             'email'    => ['nullable', 'email', 'max:255'],
             'address'  => ['nullable', 'string', 'max:500'],
             'gst_number' => ['nullable', 'string', 'max:50'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
         ]);
 
         $customer = Customer::create($validated);
@@ -71,7 +80,7 @@ class CustomerController extends Controller
      */
     public function show(Customer $customer)
     {
-        $customer->load(['vehicles', 'acUnits', 'jobs']);
+        $customer->load(['vehicles', 'acUnits', 'jobs', 'addresses']);
 
         return view('customers.show', compact('customer'));
     }
@@ -98,11 +107,13 @@ class CustomerController extends Controller
         }
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'phone'    => ['required', 'string', 'max:50', 'unique:customers,phone,' . $customer->id],
+            'phone'    => array_merge(self::PHONE_RULES, ['unique:customers,phone,' . $customer->id]),
             'email'    => ['nullable', 'email', 'max:255'],
             'address'  => ['nullable', 'string', 'max:500'],
             'gst_number' => ['nullable', 'string', 'max:50'],
             'notes'    => ['nullable', 'string'],
+        ], [
+            'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
         ]);
 
         $customer->update($validated);

@@ -12,22 +12,89 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
                 <form method="POST" action="{{ route('jobs.store') }}" class="p-4 space-y-4"
                       x-data="{
-                          jobType: '{{ old('job_type', 'moto') }}',
-                          phone: '{{ old('customer_phone', $preselectedCustomer?->phone ?? '') }}',
-                          customerName: '{{ old('customer_name', $preselectedCustomer?->name ?? '') }}',
-                          customerId: '{{ old('customer_id', $preselectedCustomer?->id ?? '') }}',
-                          customerAddress: '{{ old('location', $preselectedCustomer?->address ?? '') }}',
+                          jobType: {{ Js::from(old('job_type', 'moto')) }},
+                          phone: {{ Js::from(old('customer_phone', $preselectedCustomer?->phone ?? '')) }},
+                          customerName: {{ Js::from(old('customer_name', $preselectedCustomer?->name ?? '')) }},
+                          customerId: {{ Js::from((string) old('customer_id', $preselectedCustomer?->id ?? '')) }},
+                          customerAddress: {{ Js::from(old('location', $preselectedCustomer?->address ?? '')) }},
+                          customerAddressId: {{ Js::from((string) old('customer_address_id', '')) }},
                           phoneError: '',
 
                           searchResults: [],
-                          selectedCustomer: {{ $preselectedCustomer ? "{ id: {$preselectedCustomer->id}, name: '{$preselectedCustomer->name}', phone: '{$preselectedCustomer->phone}', address: '" . ($preselectedCustomer->address ?? '') . "' }" : 'null' }},
+                          selectedCustomer: {{ Js::from($preselectedCustomer ? [
+                              'id' => $preselectedCustomer->id,
+                              'name' => $preselectedCustomer->name,
+                              'phone' => $preselectedCustomer->phone,
+                              'address' => $preselectedCustomer->address ?? '',
+                              'addresses' => $preselectedCustomer->addresses->map(fn ($address) => [
+                                  'id' => $address->id,
+                                  'label' => $address->label,
+                                  'address' => $address->address,
+                                  'contact_name' => $address->contact_name,
+                                  'contact_phone' => $address->contact_phone,
+                                  'is_default' => (bool) $address->is_default,
+                                  'summary' => trim($address->label . ' - ' . $address->address),
+                              ])->values()->all(),
+                          ] : null) }},
+                          customerAddresses: {{ Js::from($preselectedCustomer?->addresses?->map(fn ($address) => [
+                              'id' => $address->id,
+                              'label' => $address->label,
+                              'address' => $address->address,
+                              'contact_name' => $address->contact_name,
+                              'contact_phone' => $address->contact_phone,
+                              'is_default' => (bool) $address->is_default,
+                              'summary' => trim($address->label . ' - ' . $address->address),
+                          ])->values()->all() ?? []) }},
                           searching: false,
                           searched: false,
                           searchTimeout: null,
                           showDropdown: false,
 
+                          init() {
+                              this.populateAddressSelection();
+                          },
+
                           normalizePhone(p) {
                               return p.replace(/[\s\-\(\)\.]/g, '').replace(/^\+960/, '');
+                          },
+
+                          populateAddressSelection() {
+                              this.customerAddresses = Array.isArray(this.selectedCustomer?.addresses) ? this.selectedCustomer.addresses : [];
+
+                              if (!this.customerAddresses.length) {
+                                  this.customerAddressId = '';
+                                  return;
+                              }
+
+                              if (this.customerAddressId) {
+                                  const existing = this.customerAddresses.find(a => String(a.id) === String(this.customerAddressId));
+                                  if (existing) {
+                                      this.applySelectedAddress(existing, false);
+                                      return;
+                                  }
+                              }
+
+                              const defaultAddress = this.customerAddresses.find(a => a.is_default) || this.customerAddresses[0];
+                              if (defaultAddress && !this.customerAddress) {
+                                  this.applySelectedAddress(defaultAddress, false);
+                              }
+                          },
+
+                          applySelectedAddress(address, forceLocation = true) {
+                              if (!address) {
+                                  this.customerAddressId = '';
+                                  return;
+                              }
+
+                              this.customerAddressId = String(address.id);
+                              if (forceLocation || !this.customerAddress) {
+                                  this.customerAddress = address.address || '';
+                              }
+                          },
+
+                          selectAddressById() {
+                              const selected = this.customerAddresses.find(a => String(a.id) === String(this.customerAddressId));
+                              this.applySelectedAddress(selected, true);
                           },
 
                           searchCustomer() {
@@ -75,11 +142,13 @@
                               this.selectedCustomer = customer;
                               this.customerId = customer.id;
                               this.customerName = customer.name;
-                              this.customerAddress = customer.address || '';
+                              this.customerAddress = '';
                               this.phone = customer.phone;
+                              this.customerAddressId = '';
                               this.showDropdown = false;
                               this.searchResults = [];
                               this.phoneError = '';
+                              this.populateAddressSelection();
                           },
 
                           clearCustomer(refocus = true) {
@@ -87,6 +156,8 @@
                               this.customerId = '';
                               this.customerName = '';
                               this.customerAddress = '';
+                              this.customerAddressId = '';
+                              this.customerAddresses = [];
                               this.showDropdown = false;
                               if (refocus) {
                                   this.$nextTick(() => {
@@ -229,6 +300,8 @@
                             </button>
                         </div>
 
+                        <input type="hidden" name="customer_id" :value="customerId">
+
                         {{-- New customer hint --}}
                         <p x-show="!selectedCustomer && !searching && searched && searchResults.length === 0 && !phoneError"
                            x-cloak
@@ -285,6 +358,23 @@
 
                     {{-- Location --}}
                     <div>
+                        <template x-if="selectedCustomer && customerAddresses.length > 0">
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Saved Address</label>
+                                <select name="customer_address_id"
+                                        x-model="customerAddressId"
+                                        @change="selectAddressById()"
+                                        class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <template x-for="address in customerAddresses" :key="address.id">
+                                        <option :value="String(address.id)" x-text="address.summary"></option>
+                                    </template>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Choose a saved address, or edit the location field below for a one-off visit.</p>
+                                @error('customer_address_id')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </template>
                         <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Location</label>
                         <input type="text" name="location"
                                x-model="customerAddress"
@@ -362,7 +452,6 @@
                     </div>
 
                     {{-- Hidden fields --}}
-                    <input type="hidden" name="customer_id" :value="customerId">
                     <input type="hidden" name="job_date" value="{{ date('Y-m-d') }}">
                     <input type="hidden" name="job_category" value="general">
 

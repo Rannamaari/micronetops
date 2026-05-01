@@ -28,15 +28,26 @@
                 </div>
             @endif
 
+            @php
+                $searching = filled($search ?? '');
+            @endphp
+
             {{-- Date Picker + Filter + New Sale Buttons --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                <form method="GET" action="{{ route('sales.daily.index') }}" class="flex flex-wrap items-end gap-3">
-                    <div class="flex-1 min-w-[130px]">
+                <form method="GET" action="{{ route('sales.daily.index') }}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+                    <div class="xl:col-span-2">
+                        <label for="search" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Search Sales</label>
+                        <input type="text" name="search" id="search" value="{{ $search ?? '' }}"
+                               placeholder="Bill #, customer name, or phone"
+                               class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
+                        <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">When searching, results check across all sales instead of only the selected date.</p>
+                    </div>
+                    <div class="min-w-[130px]">
                         <label for="date" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
                         <input type="date" name="date" id="date" value="{{ $date }}" max="{{ now()->toDateString() }}"
                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
                     </div>
-                    <div class="w-28">
+                    <div>
                         <label for="business_unit" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
 	                        <select name="business_unit" id="business_unit"
 	                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
@@ -47,10 +58,29 @@
 	                            <option value="easyfix" {{ ($businessUnit ?? '') === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
 	                        </select>
                     </div>
-                    <button type="submit"
-                            class="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-                        View
-                    </button>
+                    <div>
+                        <label for="status" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select name="status" id="status"
+                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
+                            <option value="">All</option>
+                            <option value="draft" {{ ($status ?? '') === 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="quotation" {{ ($status ?? '') === 'quotation' ? 'selected' : '' }}>Quotation</option>
+                            <option value="invoiced" {{ ($status ?? '') === 'invoiced' ? 'selected' : '' }}>Invoiced</option>
+                            <option value="partial_paid" {{ ($status ?? '') === 'partial_paid' ? 'selected' : '' }}>Partial Paid</option>
+                            <option value="paid" {{ ($status ?? '') === 'paid' ? 'selected' : '' }}>Paid</option>
+                            <option value="submitted" {{ ($status ?? '') === 'submitted' ? 'selected' : '' }}>Paid (Legacy)</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button type="submit"
+                                class="flex-1 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                            Search
+                        </button>
+                        <a href="{{ route('sales.daily.index') }}"
+                           class="h-10 px-4 inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                            Reset
+                        </a>
+                    </div>
                 </form>
 
                 {{-- New Sale buttons (only for today or past dates) --}}
@@ -112,13 +142,28 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                 <div class="px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                        Sales for {{ \Carbon\Carbon::parse($date)->format('D, d M Y') }} ({{ $logs->count() }})
+                        @if($searching)
+                            Search Results ({{ $logs->count() }})
+                        @else
+                            Sales for {{ \Carbon\Carbon::parse($date)->format('D, d M Y') }} ({{ $logs->count() }})
+                        @endif
                     </h3>
+                    @if($searching)
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Showing matches for <span class="font-medium text-gray-700 dark:text-gray-200">"{{ $search }}"</span>
+                            @if($businessUnit)
+                                in {{ $businessUnit === 'moto' ? 'Micro Moto' : ($businessUnit === 'cool' ? 'Micro Cool' : ($businessUnit === 'easyfix' ? 'Easy Fix' : 'Micronet')) }}
+                            @endif
+                            @if(filled($status ?? ''))
+                                with status <span class="font-medium text-gray-700 dark:text-gray-200">{{ str($status)->replace('_', ' ')->title() }}</span>
+                            @endif
+                        </p>
+                    @endif
                 </div>
 
                 @if($logs->isEmpty())
                     <div class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-                        No sales for this date. Click "New Sale" to get started.
+                        {{ $searching ? 'No sales matched your search.' : 'No sales for this date. Click "New Sale" to get started.' }}
                     </div>
                 @else
                     {{-- Desktop Table --}}
@@ -147,15 +192,26 @@
 	                                            </span>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                                            {{ $log->customer?->name ?? 'Walk-in' }}
+                                            @if($log->customer)
+                                                <a href="{{ route('customers.show', $log->customer) }}"
+                                                   class="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline">
+                                                    {{ $log->customer->name }}
+                                                </a>
+                                            @else
+                                                Walk-in
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300">{{ $log->lines->count() }}</td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{{ number_format($totals['grand'], 2) }} MVR</td>
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex flex-col items-center gap-1">
                                                 <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                    {{ $log->status === 'submitted' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }}">
-                                                    {{ ucfirst($log->status) }}
+                                                    {{ $log->status === \App\Models\DailySalesLog::STATUS_DRAFT ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                                    {{ $log->status === \App\Models\DailySalesLog::STATUS_QUOTATION ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : '' }}
+                                                    {{ $log->status === \App\Models\DailySalesLog::STATUS_INVOICED ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : '' }}
+                                                    {{ $log->status === \App\Models\DailySalesLog::STATUS_PARTIAL_PAID ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                                    {{ in_array($log->status, ['submitted', \App\Models\DailySalesLog::STATUS_PAID], true) ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}">
+                                                    {{ $log->status_label }}
                                                 </span>
                                                 @if($log->isSubmitted() && $log->payment_method)
                                                     <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
@@ -169,10 +225,10 @@
                                             <div class="flex items-center justify-center gap-2">
                                                 <a href="{{ route('sales.daily.show', $log) }}"
                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition
-                                                       {{ $log->isSubmitted() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' }}">
-                                                    {{ $log->isSubmitted() ? 'View' : 'Continue' }}
+                                                       {{ $log->isInvoiceStage() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' }}">
+                                                    {{ $log->isInvoiceStage() ? 'Open Invoice' : 'Continue Quote' }}
                                                 </a>
-                                                @if(!$log->isSubmitted() && Auth::user()->canDeleteSales())
+                                                @if($log->canEditQuotation() && Auth::user()->canDeleteSales())
                                                     <form method="POST" action="{{ route('sales.daily.destroy', $log) }}"
                                                           onsubmit="return confirm('Delete draft sale #{{ $log->id }}? This cannot be undone.')">
                                                         @csrf
@@ -205,8 +261,12 @@
 	                                                {{ $log->business_unit === 'moto' ? 'Moto' : ($log->business_unit === 'cool' ? 'Cool' : ($log->business_unit === 'easyfix' ? 'Fix' : 'IT')) }}
 	                                            </span>
                                             <span class="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium
-                                                {{ $log->status === 'submitted' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }}">
-                                                {{ ucfirst($log->status) }}
+                                                {{ $log->status === \App\Models\DailySalesLog::STATUS_DRAFT ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                                {{ $log->status === \App\Models\DailySalesLog::STATUS_QUOTATION ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : '' }}
+                                                {{ $log->status === \App\Models\DailySalesLog::STATUS_INVOICED ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : '' }}
+                                                {{ $log->status === \App\Models\DailySalesLog::STATUS_PARTIAL_PAID ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                                {{ in_array($log->status, ['submitted', \App\Models\DailySalesLog::STATUS_PAID], true) ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}">
+                                                {{ $log->status_label }}
                                             </span>
                                             @if($log->isSubmitted() && $log->payment_method)
                                                 <span class="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium
@@ -216,7 +276,14 @@
                                             @endif
                                         </div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            {{ $log->customer?->name ?? 'Walk-in' }}
+                                            @if($log->customer)
+                                                <a href="{{ route('customers.show', $log->customer) }}"
+                                                   class="font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline">
+                                                    {{ $log->customer->name }}
+                                                </a>
+                                            @else
+                                                Walk-in
+                                            @endif
                                             <span class="mx-1">&middot;</span>
                                             {{ $log->lines->count() }} line(s)
                                         </div>
@@ -229,10 +296,10 @@
                                 <div class="flex items-center gap-2 mt-3">
                                     <a href="{{ route('sales.daily.show', $log) }}"
                                        class="flex-1 text-center px-3 py-2 text-sm font-medium rounded-lg transition
-                                           {{ $log->isSubmitted() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white' }}">
-                                        {{ $log->isSubmitted() ? 'View' : 'Continue' }}
+                                           {{ $log->isInvoiceStage() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white' }}">
+                                        {{ $log->isInvoiceStage() ? 'Open Invoice' : 'Continue Quote' }}
                                     </a>
-                                    @if(!$log->isSubmitted() && Auth::user()->canDeleteSales())
+                                    @if($log->canEditQuotation() && Auth::user()->canDeleteSales())
                                         <form method="POST" action="{{ route('sales.daily.destroy', $log) }}"
                                               onsubmit="return confirm('Delete draft sale #{{ $log->id }}?')">
                                             @csrf

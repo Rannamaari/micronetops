@@ -80,6 +80,11 @@
 	                <div class="text-xs">GST No: {{ $job->customer->gst_number }}</div>
 	            @endif
 	            <div class="text-xs">Phone: {{ $job->customer_phone ?? $job->customer?->phone }}</div>
+                @if(($job->approval_method ?? 'not_applicable') === 'po' && $job->po_number)
+                    <div class="text-xs">PO No: {{ $job->po_number }}</div>
+                @elseif(($job->approval_method ?? 'not_applicable') === 'signed_copy')
+                    <div class="text-xs">Approval: Signed copy via WhatsApp</div>
+                @endif
 	        </div>
         <div style="text-align:right;">
             <div class="text-xs mb-1"><strong>Job Type:</strong> {{ strtoupper($job->job_type) }}</div>
@@ -134,6 +139,11 @@
                         @if($item->item_description)
                             <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
                         @endif
+                        @if($item->warranty_value && $item->warranty_unit)
+                            <div class="text-xs" style="color: #047857;">
+                                Warranty: {{ $item->warranty_value }} {{ $item->warranty_value == 1 ? rtrim($item->warranty_unit, 's') : $item->warranty_unit }}
+                            </div>
+                        @endif
                     </td>
                     <td class="text-right">{{ $item->quantity }}</td>
                     <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
@@ -170,6 +180,11 @@
                             @if($item->item_description)
                                 <div class="text-xs" style="color: #6b7280;">{{ $item->item_description }}</div>
                             @endif
+                            @if($item->warranty_value && $item->warranty_unit)
+                                <div class="text-xs" style="color: #047857;">
+                                    Warranty: {{ $item->warranty_value }} {{ $item->warranty_value == 1 ? rtrim($item->warranty_unit, 's') : $item->warranty_unit }}
+                                </div>
+                            @endif
                         </td>
                         <td class="text-right">{{ $item->quantity }}</td>
                         <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
@@ -186,6 +201,9 @@
         $subtotal = (float) $job->labour_total + (float) $job->travel_charges + (float) $job->parts_total - (float) $job->discount;
         $gst = (float) ($job->gst_amount ?? 0);
         $grand = (float) $job->total_amount;
+        $hasWarranty = $job->items->contains(function ($item) {
+            return !empty($item->warranty_value) && !empty($item->warranty_unit);
+        });
     @endphp
     <div class="mt-4" style="max-width:300px; margin-left:auto;">
         <table>
@@ -244,6 +262,14 @@
         <div class="text-xs mb-3">
             After payment, please WhatsApp the receipt to <strong>9996210</strong> for confirmation.
         </div>
+        <div class="text-xs mb-3">
+            For cheque payments, please make the cheque payable to <strong>Micronet</strong>.
+        </div>
+        @if($hasWarranty)
+        <div class="text-xs mb-3">
+            Please retain this invoice as proof of purchase, as warranty claims will be honored only upon presentation of this invoice.
+        </div>
+        @endif
 
         <div class="text-sm font-bold mb-2">Payment Terms</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
@@ -252,9 +278,8 @@
             @else
                 <li class="text-xs">Payment is due upon receipt of invoice.</li>
             @endif
-            <li class="text-xs">Services/products will be considered complete once full payment is received.</li>
-            <li class="text-xs">Please ensure the transfer reference matches your invoice number for smooth processing.</li>
-            <li class="text-xs">A late payment penalty fee of 1% per day may apply.</li>
+            <li class="text-xs">Services and products will be treated as complete once full payment has been received.</li>
+            <li class="text-xs">Please ensure that the bank transfer reference matches your invoice number for smooth processing.</li>
         </ul>
     </div>
 </div>

@@ -20,11 +20,16 @@
                                value="{{ $search ?? '' }}"
                                placeholder="Search by name, phone, email, or address..."
                                class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select name="phone_filter"
+                                class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="all" {{ ($phoneFilter ?? 'all') === 'all' ? 'selected' : '' }}>All Phones</option>
+                            <option value="invalid" {{ ($phoneFilter ?? 'all') === 'invalid' ? 'selected' : '' }}>Invalid Phone</option>
+                        </select>
                         <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:outline-none">
                             Search
                         </button>
-                        @if($search ?? false)
+                        @if(($search ?? false) || (($phoneFilter ?? 'all') !== 'all'))
                             <a href="{{ route('customers.index') }}"
                                class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-gray-700 dark:text-gray-200 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none">
                                 Clear
@@ -91,6 +96,7 @@
                     @forelse($customers as $customer)
                         @php
                             $hasExpiredRW = $customer->hasExpiredRoadWorthiness();
+                            $hasInvalidPhone = preg_match('/[A-Za-z]/', (string) $customer->phone) === 1;
                         @endphp
                         <tr onclick="window.location.href='{{ route('customers.show', $customer) }}'"
                             class="touch-row cursor-pointer transition-colors duration-150 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 active:bg-indigo-100 dark:active:bg-indigo-900/30 touch-manipulation {{ $hasExpiredRW ? 'bg-red-50 dark:bg-red-900/10' : '' }}">
@@ -100,6 +106,11 @@
                                     @if($hasExpiredRW)
                                         <span class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                                             Expired RW
+                                        </span>
+                                    @endif
+                                    @if($hasInvalidPhone)
+                                        <span class="px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                            Invalid Phone
                                         </span>
                                     @endif
                                 </div>
@@ -151,4 +162,3 @@
         </div>
     </div>
 </x-app-layout>
-

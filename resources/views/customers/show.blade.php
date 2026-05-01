@@ -154,6 +154,185 @@
                 </div>
             </div>
 
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Saved Addresses</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Keep home, office, and site locations under one customer.</p>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                            {{ $customer->addresses->count() }} saved
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-5 space-y-4">
+                    @if($customer->addresses->isEmpty() && $customer->address)
+                        <div class="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+                            <div class="text-sm font-semibold text-amber-900 dark:text-amber-200">Legacy address on file</div>
+                            <div class="mt-1 text-sm text-amber-800 dark:text-amber-300">{{ $customer->address }}</div>
+                            <div class="mt-1 text-xs text-amber-700 dark:text-amber-400">You can add this below as a saved address to reuse it when creating jobs.</div>
+                        </div>
+                    @endif
+
+                    @if(Auth::user()->canEditCustomers())
+                        <form method="POST" action="{{ route('customers.addresses.store', $customer) }}" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-4 space-y-3">
+                            @csrf
+                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Add Address</div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label</label>
+                                    <input type="text" name="label" value="{{ old('label') }}"
+                                           class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Home, Office, Shop, Site A" required>
+                                    @error('label')
+                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Name</label>
+                                    <input type="text" name="contact_name" value="{{ old('contact_name') }}"
+                                           class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Reception, Ahmed, Accounts">
+                                    @error('contact_name')
+                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                                <textarea name="address" rows="3"
+                                          class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="Full location details" required>{{ old('address') }}</textarea>
+                                @error('address')
+                                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Phone</label>
+                                    <input type="text" name="contact_phone" value="{{ old('contact_phone') }}" inputmode="numeric"
+                                           class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Optional phone for this location">
+                                    @error('contact_phone')
+                                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <label class="inline-flex items-center gap-2 pt-7 text-sm text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" name="is_default" value="1" {{ old('is_default') ? 'checked' : '' }}
+                                           class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <span>Set as default job address</span>
+                                </label>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="submit"
+                                        class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-semibold text-white transition">
+                                    Save Address
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+
+                    @if($customer->addresses->isEmpty())
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 p-4 text-sm text-gray-500 dark:text-gray-400">
+                            No saved addresses yet.
+                        </div>
+                    @else
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            @foreach($customer->addresses as $address)
+                                <div class="rounded-xl border {{ $address->is_default ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/70 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/20' }} p-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <div class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ $address->label }}</div>
+                                                @if($address->is_default)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-600 text-white">
+                                                        Default
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $address->address }}</div>
+                                            @if($address->contact_name || $address->contact_phone)
+                                                <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ $address->contact_name ?: 'Contact' }}
+                                                    @if($address->contact_phone)
+                                                        <span class="mx-1">•</span>{{ $address->contact_phone }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    @if(Auth::user()->canEditCustomers())
+                                        <details class="mt-4">
+                                            <summary class="cursor-pointer text-sm font-medium text-indigo-600 dark:text-indigo-400">Edit address</summary>
+                                            <form method="POST" action="{{ route('customers.addresses.update', [$customer, $address]) }}" class="mt-3 space-y-3">
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label</label>
+                                                        <input type="text" name="label" value="{{ old('label', $address->label) }}"
+                                                               class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Name</label>
+                                                        <input type="text" name="contact_name" value="{{ old('contact_name', $address->contact_name) }}"
+                                                               class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                                                    <textarea name="address" rows="3"
+                                                              class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('address', $address->address) }}</textarea>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Phone</label>
+                                                        <input type="text" name="contact_phone" value="{{ old('contact_phone', $address->contact_phone) }}" inputmode="numeric"
+                                                               class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                    </div>
+                                                    <label class="inline-flex items-center gap-2 pt-7 text-sm text-gray-700 dark:text-gray-300">
+                                                        <input type="checkbox" name="is_default" value="1" {{ old('is_default', $address->is_default) ? 'checked' : '' }}
+                                                               class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                                        <span>Set as default</span>
+                                                    </label>
+                                                </div>
+
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-semibold text-white transition">
+                                                        Update
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            <form method="POST" action="{{ route('customers.addresses.destroy', [$customer, $address]) }}" class="mt-3"
+                                                  onsubmit="return confirm('Delete this saved address?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:text-red-700">
+                                                    Delete Address
+                                                </button>
+                                            </form>
+                                        </details>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Vehicles & AC units --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {{-- Vehicles --}}

@@ -297,7 +297,7 @@ class SalesController extends Controller
             Auth::setUser($actor);
 
             // If submitted, reopen first to reverse stock deductions, job, and payment
-            if ($log->isSubmitted()) {
+            if ($log->isInvoiceStage()) {
                 $log->reopen();
             }
 

@@ -146,10 +146,12 @@ class Job extends Model
     protected $fillable = [
         'job_date',
         'due_date',
+        'quotation_validity_days',
         'job_type',
         'job_category',
         'title',
         'customer_id',
+        'customer_address_id',
         'customer_name',
         'customer_phone',
         'customer_email',
@@ -165,6 +167,8 @@ class Job extends Model
         'problem_description',
         'internal_notes',
         'customer_notes',
+        'po_number',
+        'approval_method',
         'labour_total',
         'parts_total',
         'travel_charges',
@@ -184,6 +188,7 @@ class Job extends Model
     protected $casts = [
         'job_date'          => 'date',
         'due_date'          => 'date',
+        'quotation_validity_days' => 'integer',
         'labour_total'      => 'decimal:2',
         'parts_total'       => 'decimal:2',
         'travel_charges'    => 'decimal:2',
@@ -285,6 +290,11 @@ class Job extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function customerAddress()
+    {
+        return $this->belongsTo(CustomerAddress::class);
     }
 
     public function vehicle()

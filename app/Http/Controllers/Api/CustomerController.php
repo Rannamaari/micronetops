@@ -10,6 +10,9 @@ use Illuminate\Validation\ValidationException;
 
 class CustomerController extends Controller
 {
+    private const PHONE_RULES = ['required', 'string', 'max:50', 'regex:/^[0-9\\s,;\\/|()+-]+$/'];
+    private const PHONE_RULES_SOMETIMES = ['sometimes', 'string', 'max:50', 'regex:/^[0-9\\s,;\\/|()+-]+$/'];
+
     /**
      * GET /api/customers/search?q=keyword
      * Search customers by name or phone.
@@ -49,10 +52,12 @@ class CustomerController extends Controller
         try {
             $validated = $request->validate([
                 'name'     => ['required', 'string', 'max:255'],
-                'phone'    => ['required', 'string', 'max:50'],
+                'phone'    => self::PHONE_RULES,
                 'email'    => ['nullable', 'email', 'max:255'],
                 'gst_number' => ['nullable', 'string', 'max:50'],
                 'category' => ['nullable', 'in:moto,ac,it,easyfix'],
+            ], [
+                'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
@@ -128,12 +133,14 @@ class CustomerController extends Controller
         try {
             $validated = $request->validate([
                 'name'     => ['sometimes', 'string', 'max:255'],
-                'phone'    => ['sometimes', 'string', 'max:50', 'unique:customers,phone,' . $id],
+                'phone'    => array_merge(self::PHONE_RULES_SOMETIMES, ['unique:customers,phone,' . $id]),
                 'email'    => ['sometimes', 'nullable', 'email', 'max:255'],
                 'address'  => ['sometimes', 'nullable', 'string', 'max:500'],
                 'notes'    => ['sometimes', 'nullable', 'string'],
                 'gst_number' => ['sometimes', 'nullable', 'string', 'max:50'],
                 'category' => ['sometimes', 'in:moto,ac,it,easyfix'],
+            ], [
+                'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
