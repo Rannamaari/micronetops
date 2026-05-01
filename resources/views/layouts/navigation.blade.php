@@ -183,6 +183,7 @@
                             @if(Auth::user()->canRunEod())
                                 <a href="{{ route('sales.eod.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.eod.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">End of Day</a>
                             @endif
+                            <a href="{{ route('sales.search') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('sales.search') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Search</a>
                         </div>
                     </div>
                 @endif
@@ -307,6 +308,9 @@
                             End of Day
                         </a>
                     @endif
+                    <a href="{{ route('sales.search') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('sales.search') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Search
+                    </a>
                 </div>
             </div>
         </div>

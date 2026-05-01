@@ -33,6 +33,7 @@ use App\Http\Controllers\RoadWorthinessReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\SalesSearchController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -188,6 +189,7 @@ Route::middleware('auth')->group(function () {
         Route::post('sales/daily/{dailySalesLog}/reopen', [DailySalesController::class, 'reopen'])->name('sales.daily.reopen');
         Route::delete('sales/daily/{dailySalesLog}', [DailySalesController::class, 'destroy'])->name('sales.daily.destroy');
         Route::get('sales/reports', [DailySalesController::class, 'reports'])->name('sales.reports');
+        Route::get('sales/search', [SalesSearchController::class, 'index'])->name('sales.search');
 
         // End of Day
         Route::get('sales/eod', [EodController::class, 'index'])->name('sales.eod.index');

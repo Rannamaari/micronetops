@@ -19,58 +19,30 @@ class DailySalesController extends Controller
     public function index(Request $request)
     {
         $date = $request->get('date', now()->toDateString());
-        $businessUnit = $request->get('business_unit');
         $search = trim((string) $request->get('search', ''));
-        $status = $request->get('status', '');
-        preg_match('/\d+/', $search, $billMatches);
-        $billSearch = $billMatches[0] ?? null;
-        $isGlobalBillSearch = $billSearch !== null
-            && preg_match('/^\s*(?:bill\s*)?#?\s*\d+\s*$/i', $search) === 1;
-
-        $query = DailySalesLog::query();
-
-        if (!$isGlobalBillSearch) {
-            $query->forDate($date);
-        }
-
-        if ($businessUnit) {
-            $query->forUnit($businessUnit);
-        }
-
-        if ($status !== '' && $status !== 'all') {
-            $query->where('status', $status);
-        }
 
         if ($search !== '') {
+            $query = DailySalesLog::query();
             $normalizedSearch = mb_strtolower($search);
 
-            $query->where(function ($q) use ($search, $normalizedSearch, $billSearch) {
-                if ($billSearch !== null) {
-                    $q->orWhere('id', (int) $billSearch)
-                        ->orWhereRaw('CAST(id AS TEXT) LIKE ?', ['%' . $billSearch . '%'])
-                        ->orWhere('job_id', (int) $billSearch);
-                }
-
-                $q->orWhereHas('customer', function ($customerQuery) use ($search, $normalizedSearch) {
-                    $customerQuery->whereRaw('LOWER(name) LIKE ?', ['%' . $normalizedSearch . '%'])
-                        ->orWhere('phone', 'like', '%' . $search . '%');
-                })->orWhereHas('job', function ($jobQuery) use ($search, $normalizedSearch, $billSearch) {
-                    $jobQuery->whereRaw('LOWER(customer_name) LIKE ?', ['%' . $normalizedSearch . '%'])
-                        ->orWhere('customer_phone', 'like', '%' . $search . '%');
-
-                    if ($billSearch !== null) {
-                        $jobQuery->orWhere('id', (int) $billSearch);
-                    }
+            $query->where(function ($q) use ($normalizedSearch) {
+                $q->whereHas('customer', function ($customerQuery) use ($normalizedSearch) {
+                    $customerQuery->whereRaw('LOWER(name) LIKE ?', ['%' . $normalizedSearch . '%']);
+                })->orWhereHas('job', function ($jobQuery) use ($normalizedSearch) {
+                    $jobQuery->whereRaw('LOWER(customer_name) LIKE ?', ['%' . $normalizedSearch . '%']);
                 });
             });
+        } else {
+            $query = DailySalesLog::query()->forDate($date);
         }
 
-        $logs = $query->with('lines', 'createdByUser', 'customer')
+        $logs = $query
+            ->with('lines', 'createdByUser', 'customer')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
 
-        return view('sales.daily-index', compact('date', 'logs', 'businessUnit', 'search', 'status'));
+        return view('sales.daily-index', compact('date', 'logs', 'search'));
     }
 
     public function destroy(DailySalesLog $dailySalesLog)

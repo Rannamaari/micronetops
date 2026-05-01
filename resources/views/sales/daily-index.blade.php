@@ -32,56 +32,42 @@
                 $searching = filled($search ?? '');
             @endphp
 
-            {{-- Date Picker + Filter + New Sale Buttons --}}
+            {{-- Date Picker + Customer Search + New Sale Buttons --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                <form method="GET" action="{{ route('sales.daily.index') }}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
-                    <div class="xl:col-span-2">
-                        <label for="search" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Search Sales</label>
-                        <input type="text" name="search" id="search" value="{{ $search ?? '' }}"
-                               placeholder="Bill #, customer name, or phone"
-                               class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
-                        <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Customer/phone search stays on the selected date. Bill number search like <span class="font-medium">#140</span> checks across all sales.</p>
-                    </div>
-                    <div class="min-w-[130px]">
+                <form method="GET" action="{{ route('sales.daily.index') }}" class="grid grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)_auto] gap-3">
+                    <div class="w-full min-w-[180px]">
                         <label for="date" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
                         <input type="date" name="date" id="date" value="{{ $date }}" max="{{ now()->toDateString() }}"
                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
                     </div>
-                    <div>
-                        <label for="business_unit" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-	                        <select name="business_unit" id="business_unit"
-	                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
-	                            <option value="">All</option>
-	                            <option value="moto" {{ ($businessUnit ?? '') === 'moto' ? 'selected' : '' }}>Moto</option>
-	                            <option value="cool" {{ ($businessUnit ?? '') === 'cool' ? 'selected' : '' }}>Cool</option>
-	                            <option value="it" {{ ($businessUnit ?? '') === 'it' ? 'selected' : '' }}>Micronet</option>
-	                            <option value="easyfix" {{ ($businessUnit ?? '') === 'easyfix' ? 'selected' : '' }}>Easy Fix</option>
-	                        </select>
-                    </div>
-                    <div>
-                        <label for="status" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                        <select name="status" id="status"
-                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
-                            <option value="">All</option>
-                            <option value="draft" {{ ($status ?? '') === 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="quotation" {{ ($status ?? '') === 'quotation' ? 'selected' : '' }}>Quotation</option>
-                            <option value="invoiced" {{ ($status ?? '') === 'invoiced' ? 'selected' : '' }}>Invoiced</option>
-                            <option value="partial_paid" {{ ($status ?? '') === 'partial_paid' ? 'selected' : '' }}>Partial Paid</option>
-                            <option value="paid" {{ ($status ?? '') === 'paid' ? 'selected' : '' }}>Paid</option>
-                            <option value="submitted" {{ ($status ?? '') === 'submitted' ? 'selected' : '' }}>Paid (Legacy)</option>
-                        </select>
+                    <div class="w-full">
+                        <label for="search" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Customer Name</label>
+                        <input type="text" name="search" id="search" value="{{ $search ?? '' }}"
+                               placeholder="Search customer across all sales"
+                               class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
                     </div>
                     <div class="flex items-end gap-2">
                         <button type="submit"
-                                class="flex-1 h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-                            Search
+                                class="w-full sm:w-auto h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                            Filter
                         </button>
-                        <a href="{{ route('sales.daily.index') }}"
-                           class="h-10 px-4 inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
-                            Reset
-                        </a>
+                        @if($searching)
+                            <a href="{{ route('sales.daily.index', ['date' => $date]) }}"
+                               class="h-10 px-4 inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                                Clear
+                            </a>
+                        @endif
                     </div>
                 </form>
+                @if($searching)
+                    <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        Searching customer name <span class="font-medium text-gray-700 dark:text-gray-200">"{{ $search }}"</span> across all sales.
+                    </div>
+                @else
+                    <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        Showing all sales for {{ \Carbon\Carbon::parse($date)->format('D, d M Y') }}.
+                    </div>
+                @endif
 
                 {{-- New Sale buttons (only for today or past dates) --}}
                 @if($date <= now()->toDateString())
@@ -148,22 +134,11 @@
                             Sales for {{ \Carbon\Carbon::parse($date)->format('D, d M Y') }} ({{ $logs->count() }})
                         @endif
                     </h3>
-                    @if($searching)
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Showing matches for <span class="font-medium text-gray-700 dark:text-gray-200">"{{ $search }}"</span>
-                            @if($businessUnit)
-                                in {{ $businessUnit === 'moto' ? 'Micro Moto' : ($businessUnit === 'cool' ? 'Micro Cool' : ($businessUnit === 'easyfix' ? 'Easy Fix' : 'Micronet')) }}
-                            @endif
-                            @if(filled($status ?? ''))
-                                with status <span class="font-medium text-gray-700 dark:text-gray-200">{{ str($status)->replace('_', ' ')->title() }}</span>
-                            @endif
-                        </p>
-                    @endif
                 </div>
 
                 @if($logs->isEmpty())
                     <div class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-                        {{ $searching ? 'No sales matched your search.' : 'No sales for this date. Click "New Sale" to get started.' }}
+                        {{ $searching ? 'No customers matched this name in sales records.' : 'No sales for this date. Click "New Sale" to get started.' }}
                     </div>
                 @else
                     {{-- Desktop Table --}}
