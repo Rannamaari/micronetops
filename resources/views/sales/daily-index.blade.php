@@ -40,7 +40,7 @@
                         <input type="text" name="search" id="search" value="{{ $search ?? '' }}"
                                placeholder="Bill #, customer name, or phone"
                                class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm text-sm">
-                        <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">When searching, results check across all sales instead of only the selected date.</p>
+                        <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Customer/phone search stays on the selected date. Bill number search like <span class="font-medium">#140</span> checks across all sales.</p>
                     </div>
                     <div class="min-w-[130px]">
                         <label for="date" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>

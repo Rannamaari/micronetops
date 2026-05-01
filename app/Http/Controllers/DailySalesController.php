@@ -22,10 +22,14 @@ class DailySalesController extends Controller
         $businessUnit = $request->get('business_unit');
         $search = trim((string) $request->get('search', ''));
         $status = $request->get('status', '');
+        preg_match('/\d+/', $search, $billMatches);
+        $billSearch = $billMatches[0] ?? null;
+        $isGlobalBillSearch = $billSearch !== null
+            && preg_match('/^\s*(?:bill\s*)?#?\s*\d+\s*$/i', $search) === 1;
 
         $query = DailySalesLog::query();
 
-        if ($search === '') {
+        if (!$isGlobalBillSearch) {
             $query->forDate($date);
         }
 
@@ -39,8 +43,6 @@ class DailySalesController extends Controller
 
         if ($search !== '') {
             $normalizedSearch = mb_strtolower($search);
-            preg_match('/\d+/', $search, $billMatches);
-            $billSearch = $billMatches[0] ?? null;
 
             $query->where(function ($q) use ($search, $normalizedSearch, $billSearch) {
                 if ($billSearch !== null) {
