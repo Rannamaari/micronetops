@@ -23,10 +23,7 @@ class DailySalesController extends Controller
         $search = trim((string) $request->get('search', ''));
         $status = $request->get('status', '');
 
-        $query = DailySalesLog::query()
-            ->leftJoin('customers', 'daily_sales_logs.customer_id', '=', 'customers.id')
-            ->leftJoin('jobs', 'daily_sales_logs.job_id', '=', 'jobs.id')
-            ->select('daily_sales_logs.*');
+        $query = DailySalesLog::query();
 
         if ($search === '') {
             $query->forDate($date);
@@ -37,7 +34,7 @@ class DailySalesController extends Controller
         }
 
         if ($status !== '' && $status !== 'all') {
-            $query->where('daily_sales_logs.status', $status);
+            $query->where('status', $status);
         }
 
         if ($search !== '') {
@@ -47,22 +44,28 @@ class DailySalesController extends Controller
 
             $query->where(function ($q) use ($search, $normalizedSearch, $billSearch) {
                 if ($billSearch !== null) {
-                    $q->orWhere('daily_sales_logs.id', (int) $billSearch)
-                        ->orWhereRaw('CAST(daily_sales_logs.id AS TEXT) LIKE ?', ['%' . $billSearch . '%'])
-                        ->orWhere('jobs.id', (int) $billSearch)
-                        ->orWhereRaw('CAST(jobs.id AS TEXT) LIKE ?', ['%' . $billSearch . '%']);
+                    $q->orWhere('id', (int) $billSearch)
+                        ->orWhereRaw('CAST(id AS TEXT) LIKE ?', ['%' . $billSearch . '%'])
+                        ->orWhere('job_id', (int) $billSearch);
                 }
 
-                $q->orWhereRaw('LOWER(customers.name) LIKE ?', ['%' . $normalizedSearch . '%'])
-                    ->orWhere('customers.phone', 'like', '%' . $search . '%')
-                    ->orWhereRaw('LOWER(jobs.customer_name) LIKE ?', ['%' . $normalizedSearch . '%'])
-                    ->orWhere('jobs.customer_phone', 'like', '%' . $search . '%');
+                $q->orWhereHas('customer', function ($customerQuery) use ($search, $normalizedSearch) {
+                    $customerQuery->whereRaw('LOWER(name) LIKE ?', ['%' . $normalizedSearch . '%'])
+                        ->orWhere('phone', 'like', '%' . $search . '%');
+                })->orWhereHas('job', function ($jobQuery) use ($search, $normalizedSearch, $billSearch) {
+                    $jobQuery->whereRaw('LOWER(customer_name) LIKE ?', ['%' . $normalizedSearch . '%'])
+                        ->orWhere('customer_phone', 'like', '%' . $search . '%');
+
+                    if ($billSearch !== null) {
+                        $jobQuery->orWhere('id', (int) $billSearch);
+                    }
+                });
             });
         }
 
         $logs = $query->with('lines', 'createdByUser', 'customer')
-            ->orderByDesc('daily_sales_logs.created_at')
-            ->orderByDesc('daily_sales_logs.id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
 
         return view('sales.daily-index', compact('date', 'logs', 'businessUnit', 'search', 'status'));
