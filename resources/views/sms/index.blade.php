@@ -33,7 +33,7 @@
                     Send SMS
                 </div>
 
-                <form method="POST" action="{{ route('sms.send') }}" class="space-y-4">
+                <form method="POST" action="{{ route('sms.send') }}" class="space-y-4" x-data="{ deliveryTiming: '{{ old('delivery_timing', 'now') }}' }">
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -253,11 +253,44 @@
                         @enderror
                     </div>
 
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 space-y-4">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Delivery Timing</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Send immediately, or schedule the SMS for later.</div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                <input type="radio" name="delivery_timing" value="now" x-model="deliveryTiming" {{ old('delivery_timing', 'now') === 'now' ? 'checked' : '' }}>
+                                <span class="text-sm text-gray-800 dark:text-gray-200">Send now</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                <input type="radio" name="delivery_timing" value="later" x-model="deliveryTiming" {{ old('delivery_timing') === 'later' ? 'checked' : '' }}>
+                                <span class="text-sm text-gray-800 dark:text-gray-200">Schedule for later</span>
+                            </label>
+                        </div>
+
+                        <div x-show="deliveryTiming === 'later'" x-cloak>
+                            <label for="scheduled_for" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Date & Time</label>
+                            <input id="scheduled_for" name="scheduled_for" type="datetime-local"
+                                   value="{{ old('scheduled_for') }}"
+                                   class="w-full sm:w-80 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Time uses your current app timezone.</div>
+                            @error('scheduled_for')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        @error('delivery_timing')
+                            <div class="text-xs text-red-600">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="flex items-center justify-end gap-3">
                         <button type="submit"
-                                onclick="return confirm('Send this SMS now?')"
+                                @click="if (deliveryTiming === 'now' && !confirm('Send this SMS now?')) { $event.preventDefault(); } if (deliveryTiming === 'later' && !confirm('Schedule this SMS for later?')) { $event.preventDefault(); }"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
-                            Send SMS
+                            <span x-text="deliveryTiming === 'later' ? 'Schedule SMS' : 'Send SMS'"></span>
                         </button>
                     </div>
                 </form>
@@ -273,9 +306,12 @@
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Date</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">By</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Audience</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Scheduled</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Sent</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Failed</th>
                             <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Message</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -294,6 +330,25 @@
                                         {{ $row->audience === 'all_customers' ? 'All Customers' : 'Manual' }}
                                     </span>
                                 </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex px-2 py-1 rounded text-xs font-medium
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_SCHEDULED ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' : '' }}
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_SENT ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_FAILED ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : '' }}
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_CANCELLED ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : '' }}
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_SENDING ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                        {{ $row->status === \App\Models\SmsMessage::STATUS_DRAFT ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : '' }}">
+                                        {{ str($row->status)->replace('_', ' ')->title() }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                    @if($row->scheduled_for)
+                                        <div>{{ $row->scheduled_for->format('Y-m-d') }}</div>
+                                        <div>{{ $row->scheduled_for->format('H:i') }}</div>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                                     {{ $row->sent_count }}
                                 </td>
@@ -302,11 +357,27 @@
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                                     <div class="max-w-md line-clamp-2">{{ $row->content }}</div>
+                                    @if($row->error_message)
+                                        <div class="mt-1 text-xs text-red-500 dark:text-red-400 line-clamp-2">{{ $row->error_message }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    @if($row->status === \App\Models\SmsMessage::STATUS_SCHEDULED)
+                                        <form method="POST" action="{{ route('sms.cancel', $row) }}" onsubmit="return confirm('Cancel this scheduled SMS?')">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex items-center px-3 py-1.5 rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800 text-xs font-semibold">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    @else
+                                        —
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                     No SMS sent yet.
                                 </td>
                             </tr>

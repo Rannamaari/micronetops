@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\SmsMessage;
-use App\Services\DhiraaguSmsClient;
+use App\Services\SmsMessageSender;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -15,7 +15,7 @@ class SmsController extends Controller
     {
         $recent = SmsMessage::with('user:id,name')
             ->orderByDesc('id')
-            ->limit(25)
+            ->limit(50)
             ->get();
 
         return view('sms.index', [
@@ -74,12 +74,14 @@ class SmsController extends Controller
         ]);
     }
 
-    public function send(Request $request, DhiraaguSmsClient $sms)
+    public function send(Request $request, SmsMessageSender $sender)
     {
         $validated = $request->validate([
             'audience' => ['required', 'in:manual,all_customers'],
             'source' => ['nullable', 'string', 'max:50'],
             'content' => ['required', 'string', 'max:1000'],
+            'delivery_timing' => ['required', 'in:now,later'],
+            'scheduled_for' => ['nullable', 'date', 'required_if:delivery_timing,later', 'after:now'],
             'numbers' => ['nullable', 'string', 'max:50000'],
             'exclude_customer_ids' => ['nullable', 'string', 'max:50000'],
             'customer_category_filter' => ['nullable', 'in:all,moto,ac,it,easyfix'],
@@ -89,49 +91,9 @@ class SmsController extends Controller
         $content = trim((string) $validated['content']);
         $source = isset($validated['source']) ? trim((string) $validated['source']) : null;
         $audience = (string) $validated['audience'];
+        $deliveryTiming = (string) $validated['delivery_timing'];
 
-        $destinations = [];
-        $invalid = [];
-
-        if ($audience === 'manual') {
-            $raw = (string) ($validated['numbers'] ?? '');
-            foreach ($this->extractPhoneTokens($raw) as $token) {
-                $n = $this->normalizeDestination($token);
-                if ($n) {
-                    $destinations[] = $n;
-                } else {
-                    $invalid[] = $token;
-                }
-            }
-        } else {
-            $excludedIds = [];
-            $excludeRaw = trim((string) ($validated['exclude_customer_ids'] ?? ''));
-            if ($excludeRaw !== '') {
-                foreach (preg_split('/[\\s,;]+/', $excludeRaw) ?: [] as $p) {
-                    $id = (int) trim((string) $p);
-                    if ($id > 0) $excludedIds[$id] = true;
-                }
-            }
-
-            foreach ($this->filteredCustomersQuery($request)->select('id', 'phone')->cursor() as $customer) {
-                if (!empty($excludedIds[(int) $customer->id])) {
-                    continue;
-                }
-                foreach ($this->extractPhoneTokens((string) $customer->phone) as $token) {
-                    $n = $this->normalizeDestination($token);
-                    if ($n) {
-                        $destinations[] = $n;
-                    } else {
-                        // keep only a small sample of invalids to avoid huge logs
-                        if (count($invalid) < 50) {
-                            $invalid[] = $token;
-                        }
-                    }
-                }
-            }
-        }
-
-        $destinations = array_values(array_unique($destinations));
+        [$destinations, $invalid] = $this->resolveDestinations($request, $validated);
 
         if (count($destinations) === 0) {
             return back()->withInput()->with('error', 'No valid phone numbers found to send SMS.');
@@ -140,8 +102,12 @@ class SmsController extends Controller
         $log = SmsMessage::create([
             'user_id' => auth()->id(),
             'audience' => $audience,
+            'status' => $deliveryTiming === 'later' ? SmsMessage::STATUS_SCHEDULED : SmsMessage::STATUS_DRAFT,
             'source' => $source ?: (string) config('services.dhiraagu_sms.source'),
             'content' => $content,
+            'scheduled_for' => $deliveryTiming === 'later'
+                ? Carbon::parse((string) $validated['scheduled_for'])
+                : null,
             'destinations' => $destinations,
             'destinations_count' => count($destinations),
             'invalid_destinations' => $invalid,
@@ -149,46 +115,46 @@ class SmsController extends Controller
             'responses' => null,
             'sent_count' => 0,
             'failed_count' => 0,
+            'error_message' => null,
             'sent_at' => null,
         ]);
 
-        try {
-            $result = $sms->send($destinations, $content, $source);
-        } catch (\Throwable $e) {
-            $log->update([
-                'responses' => [[
-                    'transactionId' => null,
-                    'transactionStatus' => 'false',
-                    'transactionDescription' => $e->getMessage(),
-                    'referenceNumber' => '',
-                ]],
-                'failed_count' => count($destinations),
-                'sent_at' => now(),
-            ]);
+        if ($deliveryTiming === 'later') {
+            ActivityLog::record(
+                'sms.scheduled',
+                'SMS scheduled (' . $audience . ') for ' . $log->scheduled_for?->format('Y-m-d H:i'),
+                $log
+            );
 
-            return back()->withInput()->with('error', 'SMS failed: ' . $e->getMessage());
+            return redirect()
+                ->route('sms.index')
+                ->with('success', 'SMS scheduled for ' . $log->scheduled_for?->format('d M Y, h:i A') . '.');
         }
 
-        $log->update([
-            'responses' => $result['responses'],
-            'sent_count' => (int) $result['sent'],
-            'failed_count' => (int) $result['failed'],
-            'sent_at' => now(),
-        ]);
-
-        ActivityLog::record(
-            'sms.sent',
-            'SMS sent (' . $audience . '): ' . $result['sent'] . ' sent, ' . $result['failed'] . ' failed',
-            $log
-        );
-
-        $msg = $result['ok']
-            ? 'SMS sent successfully. Sent: ' . $result['sent'] . ', Failed: ' . $result['failed']
-            : 'SMS sent with errors. Sent: ' . $result['sent'] . ', Failed: ' . $result['failed'];
+        $result = $sender->send($log);
 
         return redirect()
             ->route('sms.index')
-            ->with($result['ok'] ? 'success' : 'error', $msg);
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    public function cancel(SmsMessage $smsMessage)
+    {
+        if (!$smsMessage->isScheduled()) {
+            return back()->with('error', 'Only scheduled SMS can be cancelled.');
+        }
+
+        $smsMessage->update([
+            'status' => SmsMessage::STATUS_CANCELLED,
+        ]);
+
+        ActivityLog::record(
+            'sms.cancelled',
+            'Scheduled SMS #' . $smsMessage->id . ' cancelled',
+            $smsMessage
+        );
+
+        return back()->with('success', 'Scheduled SMS cancelled.');
     }
 
     /**
@@ -268,5 +234,56 @@ class SmsController extends Controller
         }
 
         return $query;
+    }
+
+    /**
+     * @return array{0: array<int,string>, 1: array<int,string>}
+     */
+    private function resolveDestinations(Request $request, array $validated): array
+    {
+        $audience = (string) $validated['audience'];
+        $destinations = [];
+        $invalid = [];
+
+        if ($audience === 'manual') {
+            $raw = (string) ($validated['numbers'] ?? '');
+            foreach ($this->extractPhoneTokens($raw) as $token) {
+                $n = $this->normalizeDestination($token);
+                if ($n) {
+                    $destinations[] = $n;
+                } else {
+                    $invalid[] = $token;
+                }
+            }
+
+            return [array_values(array_unique($destinations)), $invalid];
+        }
+
+        $excludedIds = [];
+        $excludeRaw = trim((string) ($validated['exclude_customer_ids'] ?? ''));
+        if ($excludeRaw !== '') {
+            foreach (preg_split('/[\\s,;]+/', $excludeRaw) ?: [] as $p) {
+                $id = (int) trim((string) $p);
+                if ($id > 0) {
+                    $excludedIds[$id] = true;
+                }
+            }
+        }
+
+        foreach ($this->filteredCustomersQuery($request)->select('id', 'phone')->cursor() as $customer) {
+            if (!empty($excludedIds[(int) $customer->id])) {
+                continue;
+            }
+            foreach ($this->extractPhoneTokens((string) $customer->phone) as $token) {
+                $n = $this->normalizeDestination($token);
+                if ($n) {
+                    $destinations[] = $n;
+                } elseif (count($invalid) < 50) {
+                    $invalid[] = $token;
+                }
+            }
+        }
+
+        return [array_values(array_unique($destinations)), $invalid];
     }
 }

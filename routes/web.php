@@ -162,6 +162,9 @@ Route::middleware('auth')->group(function () {
         Route::post('sms/send', [SmsController::class, 'send'])
             ->middleware('operations')
             ->name('sms.send');
+        Route::post('sms/{smsMessage}/cancel', [SmsController::class, 'cancel'])
+            ->middleware('operations')
+            ->name('sms.cancel');
     });
 
     // Jobs - Admin, Manager, Moto Mechanic, AC Mechanic
