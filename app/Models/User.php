@@ -78,6 +78,16 @@ class User extends Authenticatable
         return $this->hasMany(InventoryLog::class);
     }
 
+    public function fixedAssetAssignments()
+    {
+        return $this->hasMany(FixedAssetAssignment::class, 'staff_id');
+    }
+
+    public function fixedAssetAssignmentsGiven()
+    {
+        return $this->hasMany(FixedAssetAssignment::class, 'assigned_by');
+    }
+
     /**
      * Jobs assigned to this user (many-to-many via job_assignees).
      */

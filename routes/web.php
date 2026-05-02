@@ -15,6 +15,9 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AccountTransferController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\FixedAssetBrandController;
+use App\Http\Controllers\FixedAssetCategoryController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryCategoryController;
 use App\Http\Controllers\InventoryPurchaseController;
@@ -122,6 +125,27 @@ Route::middleware('auth')->group(function () {
         Route::get('reports/low-inventory', [ReportsController::class, 'lowInventory'])->name('reports.low-inventory');
         Route::get('reports/sales-trends', [ReportsController::class, 'salesTrends'])->name('reports.sales-trends');
         Route::get('reports/inventory-overview', [ReportsController::class, 'inventoryOverview'])->name('reports.inventory-overview');
+        Route::get('reports/fixed-assets/current-custody', [FixedAssetController::class, 'currentCustody'])->name('reports.fixed-assets.current-custody');
+    });
+
+    Route::middleware('role:admin,manager')->group(function () {
+        Route::get('fixed-assets', [FixedAssetController::class, 'index'])->name('fixed-assets.index');
+        Route::get('fixed-assets/create', [FixedAssetController::class, 'create'])->name('fixed-assets.create');
+        Route::post('fixed-assets', [FixedAssetController::class, 'store'])->name('fixed-assets.store');
+        Route::get('fixed-assets/categories', [FixedAssetCategoryController::class, 'index'])->name('fixed-assets.categories.index');
+        Route::post('fixed-assets/categories', [FixedAssetCategoryController::class, 'store'])->name('fixed-assets.categories.store');
+        Route::patch('fixed-assets/categories/{fixedAssetCategory}', [FixedAssetCategoryController::class, 'update'])->name('fixed-assets.categories.update');
+        Route::get('fixed-assets/brands', [FixedAssetBrandController::class, 'index'])->name('fixed-assets.brands.index');
+        Route::post('fixed-assets/brands', [FixedAssetBrandController::class, 'store'])->name('fixed-assets.brands.store');
+        Route::patch('fixed-assets/brands/{fixedAssetBrand}', [FixedAssetBrandController::class, 'update'])->name('fixed-assets.brands.update');
+        Route::get('fixed-assets/{fixedAsset}/edit', [FixedAssetController::class, 'edit'])->name('fixed-assets.edit');
+        Route::patch('fixed-assets/{fixedAsset}', [FixedAssetController::class, 'update'])->name('fixed-assets.update');
+        Route::get('fixed-assets/{fixedAsset}/assign', [FixedAssetController::class, 'assignForm'])->name('fixed-assets.assign.create');
+        Route::post('fixed-assets/{fixedAsset}/assign', [FixedAssetController::class, 'assign'])->name('fixed-assets.assign.store');
+        Route::get('fixed-assets/{fixedAsset}/return', [FixedAssetController::class, 'returnForm'])->name('fixed-assets.return.create');
+        Route::patch('fixed-assets/{fixedAsset}/return', [FixedAssetController::class, 'markReturned'])->name('fixed-assets.return.store');
+        Route::get('fixed-assets/{fixedAsset}/history', [FixedAssetController::class, 'history'])->name('fixed-assets.history');
+        Route::get('fixed-assets/current-custody', [FixedAssetController::class, 'currentCustody'])->name('fixed-assets.current-custody');
     });
 
     // SMS - Admin and Manager only (Operations)

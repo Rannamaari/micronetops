@@ -192,6 +192,50 @@
                 </div>
             </div>
 
+            @if($fixedAssetStats)
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Fixed Asset Custody</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Quick view of company tools and current custody.</p>
+                        </div>
+                        <a href="{{ route('fixed-assets.index') }}" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Open assets →</a>
+                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-4">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Assets</p>
+                                <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($fixedAssetStats['total']) }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-4">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Available</p>
+                                <p class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">{{ number_format($fixedAssetStats['available']) }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-4">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Assigned</p>
+                                <p class="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($fixedAssetStats['assigned']) }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-4">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Damaged</p>
+                                <p class="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ number_format($fixedAssetStats['damaged']) }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-4">
+                                <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Lost</p>
+                                <p class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{{ number_format($fixedAssetStats['lost']) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Overdue Leads Alert --}}
             @if($overdueLeads->count() > 0)
                 <div class="mb-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg overflow-hidden">

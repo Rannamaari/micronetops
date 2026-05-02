@@ -115,6 +115,20 @@
                                     </div>
                                 </div>
                             </a>
+
+                            <a href="{{ route('reports.fixed-assets.current-custody') }}" class="block p-6 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900/30 transition">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-12 h-12 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V3H9v2H6a2 2 0 00-2 2v6m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6m16 0H4"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Fixed Assets</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Tools currently with staff and custody tracking</p>
+                                    </div>
+                                </div>
+                            </a>
                         @endif
                     </div>
                 </div>

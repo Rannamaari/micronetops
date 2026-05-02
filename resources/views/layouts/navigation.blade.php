@@ -15,6 +15,7 @@
                     || request()->routeIs('sales.*')
                     || request()->routeIs('inventory.*')
                     || request()->routeIs('inventory-categories.*');
+                $isFixedAssetsSection = request()->routeIs('fixed-assets.*') || request()->routeIs('reports.fixed-assets.*');
             @endphp
 
             <!-- Desktop & Tablet Navigation -->
@@ -45,6 +46,12 @@
                     @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                         <a href="{{ route('expenses.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') || request()->routeIs('vendors.*') || request()->routeIs('accounts.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
                             Expenses
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                        <a href="{{ route('fixed-assets.index') }}" class="px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ $isFixedAssetsSection ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-100' }}">
+                            Assets
                         </a>
                     @endif
 
@@ -252,6 +259,10 @@
                 @endif
 
                 @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                    <a href="{{ route('fixed-assets.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ $isFixedAssetsSection ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">Assets</a>
+                @endif
+
+                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                     <a href="{{ route('sms.index') }}" class="block px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 {{ request()->routeIs('sms.*') ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-700 active:bg-gray-100' }}">SMS</a>
                 @endif
 
@@ -310,6 +321,27 @@
                     @endif
                     <a href="{{ route('sales.search') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('sales.search') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
                         Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($isFixedAssetsSection)
+        <div class="hidden md:block border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex gap-6 lg:gap-8 overflow-x-auto py-3 scrollbar-hide">
+                    <a href="{{ route('fixed-assets.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('fixed-assets.index') || request()->routeIs('fixed-assets.create') || request()->routeIs('fixed-assets.edit') || request()->routeIs('fixed-assets.assign.*') || request()->routeIs('fixed-assets.return.*') || request()->routeIs('fixed-assets.history') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Assets
+                    </a>
+                    <a href="{{ route('fixed-assets.categories.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('fixed-assets.categories.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Categories
+                    </a>
+                    <a href="{{ route('fixed-assets.brands.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('fixed-assets.brands.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Brands
+                    </a>
+                    <a href="{{ route('fixed-assets.current-custody') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('fixed-assets.current-custody') || request()->routeIs('reports.fixed-assets.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                        Tools With Staff
                     </a>
                 </div>
             </div>
@@ -378,6 +410,9 @@
                     @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                         <a href="{{ route('reports.pnl') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.pnl') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
                             Profit & Loss
+                        </a>
+                        <a href="{{ route('reports.fixed-assets.current-custody') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('reports.fixed-assets.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Fixed Assets
                         </a>
                     @endif
                 </div>

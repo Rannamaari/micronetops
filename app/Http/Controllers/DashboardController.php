@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\FaultTicket;
+use App\Models\FixedAsset;
 use App\Models\InventoryItem;
 use App\Models\Job;
 use App\Models\JobItem;
@@ -77,6 +78,17 @@ class DashboardController extends Controller
         // Petty cash balance
         $pettyCashBalance = PettyCash::currentBalance();
 
+        $fixedAssetStats = null;
+        if (auth()->user()->hasAnyRole(['admin', 'manager'])) {
+            $fixedAssetStats = [
+                'total' => FixedAsset::count(),
+                'available' => FixedAsset::where('status', FixedAsset::STATUS_AVAILABLE)->count(),
+                'assigned' => FixedAsset::where('status', FixedAsset::STATUS_ASSIGNED)->count(),
+                'damaged' => FixedAsset::where('condition', FixedAsset::CONDITION_DAMAGED)->count(),
+                'lost' => FixedAsset::where('status', FixedAsset::STATUS_LOST)->count(),
+            ];
+        }
+
         // === DAILY SALES GRAPH (Last 10 days) ===
         $dailySalesData = $this->getDailySalesData();
 
@@ -129,6 +141,7 @@ class DashboardController extends Controller
             'totalInventoryItems',
             'lowStockItems',
             'pettyCashBalance',
+            'fixedAssetStats',
             'dailySalesData',
             'monthlyTrendsData',
             'bestSellingData',
