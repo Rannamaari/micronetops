@@ -18,6 +18,7 @@ class FixedAsset extends Model
     public const STATUS_UNDER_REPAIR = 'Under Repair';
     public const STATUS_RETIRED = 'Retired';
     public const STATUS_LOST = 'Lost';
+    public const STATUS_SOLD = 'Sold';
 
     protected $fillable = [
         'asset_code',
@@ -51,6 +52,7 @@ class FixedAsset extends Model
             self::STATUS_UNDER_REPAIR,
             self::STATUS_RETIRED,
             self::STATUS_LOST,
+            self::STATUS_SOLD,
         ];
     }
 
