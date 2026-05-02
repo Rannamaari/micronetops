@@ -9,6 +9,7 @@
             || $errors->has('po_number')
             || $errors->has('quotation_validity_days')
             || $errors->has('notes')
+            || $errors->has('search_note')
             || $errors->has('due_date');
     @endphp
     <x-slot name="header">
@@ -471,7 +472,7 @@
                         <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-4 sm:p-5 space-y-4">
                             <div>
                                 <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Approval & Customer Notes</h4>
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Capture the customer’s approval path and any note that should appear on the quotation or invoice.</p>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Capture the customer’s approval path, what should print on the document, and any internal search reference you may need later.</p>
                             </div>
 
                             <form method="POST" action="{{ route('sales.daily.update-approval-method', $log) }}" class="space-y-4"
@@ -528,6 +529,29 @@
                                         <button type="submit"
                                                 class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
                                             Save Notes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <form method="POST" action="{{ route('sales.daily.update-search-note', $log) }}" class="space-y-3">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div>
+                                        <label for="search-note" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Internal Search Note / Address Reference</label>
+                                        <textarea id="search-note" name="search_note" rows="4"
+                                                  class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 py-3 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                  placeholder="Example: Blue house behind STO, Hulhumale lot 11249, old customer from Orchid Magu, office upstairs...">{{ old('search_note', $log->search_note) }}</textarea>
+                                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Internal only. Use this when the phone number is missing and you need a searchable address or reference later. It will not print on the quotation or invoice.</p>
+                                        @error('search_note')
+                                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                            Save Search Note
                                         </button>
                                     </div>
                                 </form>
@@ -962,6 +986,28 @@
 
 	                {{-- Submit Sale Panel (invoice ready / unpaid only) --}}
 	                @if(!$log->isSubmitted() && $screen === 'invoice')
+                    <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 border border-slate-200 dark:border-slate-700 mb-4">
+                        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Internal Reference</div>
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">Save a searchable landmark, address clue, or backlog reference for this invoice. This does not print on customer documents.</div>
+                            </div>
+                            <form method="POST" action="{{ route('sales.daily.update-search-note', $log) }}" class="w-full lg:w-[28rem] space-y-3">
+                                @csrf
+                                @method('PATCH')
+                                <textarea name="search_note" rows="3"
+                                          class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm px-4 py-3 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          placeholder="Add searchable internal note...">{{ old('search_note', $log->search_note) }}</textarea>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-600 transition">
+                                        Save Search Note
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
 	                    <div id="submit-sale-panel" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6 border border-indigo-100 dark:border-indigo-900/40 mb-4">
 	                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 	                            <div>

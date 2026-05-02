@@ -229,6 +229,29 @@ class DailySalesController extends Controller
         return back()->with('success', 'Notes updated.');
     }
 
+    public function updateSearchNote(Request $request, DailySalesLog $dailySalesLog)
+    {
+        $validated = $request->validate([
+            'search_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $dailySalesLog->update([
+            'search_note' => $validated['search_note'] ?? null,
+        ]);
+
+        if ($dailySalesLog->job_id && $dailySalesLog->job) {
+            $dailySalesLog->job->update([
+                'search_note' => $dailySalesLog->search_note,
+            ]);
+        } else {
+            $dailySalesLog->syncLinkedDraftJob();
+        }
+
+        ActivityLog::record('sale.search_note_updated', "Sale #{$dailySalesLog->id} search note updated", $dailySalesLog);
+
+        return back()->with('success', 'Internal search note updated.');
+    }
+
     public function updatePoNumber(Request $request, DailySalesLog $dailySalesLog)
     {
         if (!$dailySalesLog->canEditQuotation()) {

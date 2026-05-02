@@ -331,17 +331,32 @@ class FixedAssetController extends Controller
         ]);
     }
 
-    public function currentCustody()
+    public function currentCustody(Request $request)
     {
-        $assignments = FixedAssetAssignment::query()
+        $staffId = $request->integer('staff_id') ?: null;
+
+        $assignmentQuery = FixedAssetAssignment::query()
             ->open()
             ->with(['asset', 'staff', 'assignedBy'])
-            ->orderBy('assigned_at')
+            ->orderBy('assigned_at');
+
+        if ($staffId) {
+            $assignmentQuery->where('staff_id', $staffId);
+        }
+
+        $assignments = $assignmentQuery
             ->get()
             ->groupBy(fn (FixedAssetAssignment $assignment) => $assignment->staff?->name ?? 'Unassigned');
 
+        $staffOptions = User::query()
+            ->whereIn('id', FixedAssetAssignment::query()->open()->select('staff_id'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('fixed-assets.current-custody', [
             'groupedAssignments' => $assignments,
+            'staffOptions' => $staffOptions,
+            'staffId' => $staffId,
         ]);
     }
 

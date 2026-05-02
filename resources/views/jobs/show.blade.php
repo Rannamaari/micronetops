@@ -375,6 +375,24 @@
                         </button>
                     </form>
                 </div>
+
+                <div class="mt-4">
+                    <form method="POST" action="{{ route('jobs.update-search-note', $job) }}" class="space-y-2">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Internal search note / address reference</label>
+                            <textarea name="search_note" rows="3"
+                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                      placeholder="Add a searchable internal note for backlog invoices, landmarks, address clues, or reference details...">{{ old('search_note', $job->search_note) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Internal only. This will not print on the quotation or invoice.</p>
+                        </div>
+                        <button type="submit"
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-slate-700 border border-transparent rounded-xl sm:rounded-lg font-semibold text-sm text-white hover:bg-slate-800">
+                            Save Search Note
+                        </button>
+                    </form>
+                </div>
             </div>
 
             {{-- Charges: labour (read-only), travel, discount --}}

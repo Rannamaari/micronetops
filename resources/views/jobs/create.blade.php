@@ -400,6 +400,14 @@
                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Shown on printed quotation/invoice only when filled.</div>
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Internal search note / address reference (optional)</label>
+                        <textarea name="search_note" rows="3"
+                                  class="block w-full p-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                  placeholder="Example: Blue house behind STO, Hulhumale lot 11249, office upstairs.">{{ old('search_note') }}</textarea>
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Use this when you need a searchable internal reference. It is not printed on invoices or quotations.</div>
+                    </div>
+
                     {{-- Schedule & Priority - Collapsible --}}
                     <div x-data="{ showMore: {{ old('scheduled_at') || old('priority') ? 'true' : 'false' }} }">
                         <button type="button" @click="showMore = !showMore"

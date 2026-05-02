@@ -59,6 +59,7 @@ class SalesSearchController extends Controller
                         ->orWhereRaw('LOWER(address) LIKE ?', ['%' . $normalized . '%'])
                         ->orWhereRaw('LOWER(problem_description) LIKE ?', ['%' . $normalized . '%'])
                         ->orWhereRaw('LOWER(customer_notes) LIKE ?', ['%' . $normalized . '%'])
+                        ->orWhereRaw('LOWER(search_note) LIKE ?', ['%' . $normalized . '%'])
                         ->orWhereRaw('LOWER(po_number) LIKE ?', ['%' . $normalized . '%']);
                 })
                 ->orderByDesc('id')
@@ -74,6 +75,7 @@ class SalesSearchController extends Controller
                     }
 
                     $q->orWhereRaw('LOWER(notes) LIKE ?', ['%' . $normalized . '%'])
+                        ->orWhereRaw('LOWER(search_note) LIKE ?', ['%' . $normalized . '%'])
                         ->orWhereRaw('LOWER(po_number) LIKE ?', ['%' . $normalized . '%'])
                         ->orWhereHas('customer', function ($customerQuery) use ($normalized) {
                             $customerQuery->whereRaw('LOWER(name) LIKE ?', ['%' . $normalized . '%'])

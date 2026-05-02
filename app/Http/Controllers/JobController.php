@@ -236,6 +236,7 @@ class JobController extends Controller
             'title' => ['nullable', 'string', 'max:100'],
             'problem_description' => ['nullable', 'string'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'search_note' => ['nullable', 'string', 'max:2000'],
             'location' => ['nullable', 'string', 'max:255'],
             'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
 
@@ -345,6 +346,7 @@ class JobController extends Controller
             'pickup_location' => $validated['pickup_location'] ?? null,
             'problem_description' => $validated['problem_description'] ?? null,
             'customer_notes' => $validated['customer_notes'] ?? null,
+            'search_note' => $validated['search_note'] ?? null,
 
             'status' => $status,
             'payment_status' => 'unpaid',
@@ -387,6 +389,7 @@ class JobController extends Controller
             'po_number' => $job->po_number,
             'approval_method' => $job->approval_method ?: 'not_applicable',
             'notes' => $job->customer_notes,
+            'search_note' => $job->search_note,
             'job_id' => $job->id,
         ]);
 
@@ -479,6 +482,30 @@ class JobController extends Controller
         ActivityLog::record('job.customer_notes_updated', "Job #{$job->id} customer notes updated", $job);
 
         return back()->with('success', 'Customer notes updated.');
+    }
+
+    public function updateSearchNote(Request $request, Job $job)
+    {
+        $validated = $request->validate([
+            'search_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $job->search_note = $validated['search_note'] ?? null;
+        $job->save();
+
+        $linkedSale = \App\Models\DailySalesLog::where('job_id', $job->id)
+            ->latest('id')
+            ->first();
+
+        if ($linkedSale) {
+            $linkedSale->update([
+                'search_note' => $job->search_note,
+            ]);
+        }
+
+        ActivityLog::record('job.search_note_updated', "Job #{$job->id} search note updated", $job);
+
+        return back()->with('success', 'Internal search note updated.');
     }
 
     /**

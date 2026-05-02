@@ -13,6 +13,24 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg">
                 <div class="p-4 sm:p-6">
+                    <form method="GET" action="{{ route('fixed-assets.current-custody') }}" class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 mb-6">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Staff</label>
+                            <select name="staff_id" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-sm h-10">
+                                <option value="">All staff</option>
+                                @foreach($staffOptions as $staff)
+                                    <option value="{{ $staff->id }}" @selected((string) $staffId === (string) $staff->id)>{{ $staff->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button class="h-10 px-4 bg-gray-900 text-white rounded-lg text-sm">Filter</button>
+                            @if($staffId)
+                                <a href="{{ route('fixed-assets.current-custody') }}" class="h-10 px-4 inline-flex items-center rounded-lg bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Reset</a>
+                            @endif
+                        </div>
+                    </form>
+
                     @forelse($groupedAssignments as $staffName => $assignments)
                         <div class="@if(!$loop->first) mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 @endif">
                             <div class="flex items-center justify-between gap-3 mb-4">

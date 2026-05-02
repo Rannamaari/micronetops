@@ -174,6 +174,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('jobs/{job}', [JobController::class, 'update'])->name('jobs.update');
         Route::patch('jobs/{job}/due-date', [JobController::class, 'updateDueDate'])->name('jobs.update-due-date');
         Route::patch('jobs/{job}/customer-notes', [JobController::class, 'updateCustomerNotes'])->name('jobs.update-customer-notes');
+        Route::patch('jobs/{job}/search-note', [JobController::class, 'updateSearchNote'])->name('jobs.update-search-note');
 
         // Calendar view & API
         Route::get('jobs-calendar', [JobController::class, 'calendar'])->name('jobs.calendar');
@@ -206,6 +207,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('sales/daily/{dailySalesLog}/po-number', [DailySalesController::class, 'updatePoNumber'])->name('sales.daily.update-po-number');
         Route::patch('sales/daily/{dailySalesLog}/approval-method', [DailySalesController::class, 'updateApprovalMethod'])->name('sales.daily.update-approval-method');
         Route::patch('sales/daily/{dailySalesLog}/notes', [DailySalesController::class, 'updateNotes'])->name('sales.daily.update-notes');
+        Route::patch('sales/daily/{dailySalesLog}/search-note', [DailySalesController::class, 'updateSearchNote'])->name('sales.daily.update-search-note');
         Route::post('sales/daily/{dailySalesLog}/create-customer', [DailySalesController::class, 'createAndSetCustomer'])->name('sales.daily.create-customer');
         Route::post('sales/daily/{dailySalesLog}/convert-invoice', [DailySalesController::class, 'convertToInvoice'])->name('sales.daily.convert-invoice');
         Route::post('sales/daily/{dailySalesLog}/submit', [DailySalesController::class, 'submit'])->name('sales.daily.submit');

@@ -25,7 +25,7 @@
                             name="q"
                             id="q"
                             value="{{ $query }}"
-                            placeholder="Customer name, phone, job #, sale #, PO number, location..."
+                            placeholder="Customer name, phone, job #, sale #, PO number, location, address note..."
                             class="flex-1 h-12 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-base px-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                         <button
@@ -44,7 +44,7 @@
                         @endif
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                        Strong search checks customer names and phones, job IDs, sales IDs, PO numbers, locations, notes, and sale line descriptions.
+                        Strong search checks customer names and phones, job IDs, sales IDs, PO numbers, locations, customer notes, internal search notes, and sale line descriptions.
                     </p>
                 </form>
             </div>
@@ -124,6 +124,11 @@
                                             @if($job->location)
                                                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ $job->location }}</div>
                                             @endif
+                                            @if($job->search_note)
+                                                <div class="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                                                    Search note: {{ $job->search_note }}
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="text-right shrink-0">
                                             <div class="text-xs text-gray-500 dark:text-gray-400">{{ str($job->status)->replace('_', ' ')->title() }}</div>
@@ -154,6 +159,11 @@
                                             <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                 {{ $sale->date?->format('d M Y') }} · {{ strtoupper($sale->business_unit) }} · {{ $sale->lines->count() }} line(s)
                                             </div>
+                                            @if($sale->search_note)
+                                                <div class="mt-2 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                                                    Search note: {{ $sale->search_note }}
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="text-right shrink-0">
                                             <div class="text-xs text-gray-500 dark:text-gray-400">{{ $sale->status_label }}</div>

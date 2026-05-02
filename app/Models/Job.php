@@ -167,6 +167,7 @@ class Job extends Model
         'problem_description',
         'internal_notes',
         'customer_notes',
+        'search_note',
         'po_number',
         'approval_method',
         'labour_total',
@@ -643,7 +644,10 @@ class Job extends Model
             $q->whereRaw('lower(title) like ?', ["%{$s}%"])
               ->orWhereRaw('lower(customer_name) like ?', ["%{$s}%"])
               ->orWhereRaw('lower(customer_phone) like ?', ["%{$s}%"])
-              ->orWhereRaw('lower(location) like ?', ["%{$s}%"]);
+              ->orWhereRaw('lower(location) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(address) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(customer_notes) like ?', ["%{$s}%"])
+              ->orWhereRaw('lower(search_note) like ?', ["%{$s}%"]);
         });
     }
 
