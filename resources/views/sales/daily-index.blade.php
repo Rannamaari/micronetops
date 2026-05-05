@@ -292,9 +292,10 @@
 
                     {{-- Day Totals --}}
                     @php
-                        $dayGrand = $logs->sum(fn($l) => $l->totals['grand']);
-                        $dayCash = $logs->where('payment_method', 'cash')->sum(fn($l) => $l->totals['grand']);
-                        $dayTransfer = $logs->where('payment_method', 'transfer')->sum(fn($l) => $l->totals['grand']);
+                        $countedLogs = $logs->filter(fn($l) => $l->isInvoiceStage());
+                        $dayGrand = $countedLogs->sum(fn($l) => $l->totals['grand']);
+                        $dayCash = $countedLogs->where('payment_method', 'cash')->sum(fn($l) => $l->totals['grand']);
+                        $dayTransfer = $countedLogs->where('payment_method', 'transfer')->sum(fn($l) => $l->totals['grand']);
                     @endphp
                     <div class="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                         <div class="grid grid-cols-3 gap-3 sm:gap-4 text-center">
@@ -309,6 +310,7 @@
                             <div>
                                 <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Day Total</p>
                                 <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mt-0.5 tabular-nums">{{ number_format($dayGrand, 2) }}</p>
+                                <p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Quotations are excluded until invoiced</p>
                             </div>
                         </div>
                     </div>
