@@ -1036,6 +1036,24 @@
 	                                       class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                                        Preview Invoice
 	                                    </a>
+                                        @if($log->job && $log->job->balance_amount > 0)
+                                            <form method="POST" action="{{ route('jobs.send-invoice-reminder', $log->job) }}"
+                                                  onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                                                    Send Reminder
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('jobs.send-invoice-reminder-email', $log->job) }}"
+                                                  onsubmit="return confirm('Send invoice due reminder email to this customer now?')">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="inline-flex items-center gap-1 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition">
+                                                    Send Email Reminder
+                                                </button>
+                                            </form>
+                                        @endif
 	                                @endif
 	                            </div>
                                 @unless($log->job_id || $workflowInvoiceReady)

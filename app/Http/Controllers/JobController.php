@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use App\Models\AcUnit;
 use App\Models\User;
 use App\Models\InventoryItem;
+use App\Services\InvoiceReminderSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -468,6 +469,56 @@ class JobController extends Controller
         ActivityLog::record('job.due_date_updated', "Job #{$job->id} invoice due date → {$label}", $job);
 
         return back()->with('success', 'Invoice due date updated.');
+    }
+
+    public function sendInvoiceReminder(Job $job, InvoiceReminderSmsService $reminderService)
+    {
+        if (in_array($job->status, ['new', 'scheduled'], true)) {
+            return back()->with('error', 'Create the invoice first before sending a due-bill reminder.');
+        }
+
+        if ((float) $job->balance_amount <= 0) {
+            return back()->with('error', 'This invoice has no outstanding balance to remind the customer about.');
+        }
+
+        try {
+            $result = $reminderService->send($job, auth()->user());
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        ActivityLog::record(
+            'job.invoice_reminder_sent',
+            'Invoice reminder sent for job #' . $job->id . ' (' . $result['sent'] . ' sent, ' . $result['failed'] . ' failed)',
+            $job
+        );
+
+        return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    public function sendInvoiceReminderEmail(Job $job, InvoiceReminderSmsService $reminderService)
+    {
+        if (in_array($job->status, ['new', 'scheduled'], true)) {
+            return back()->with('error', 'Create the invoice first before sending a due-bill reminder.');
+        }
+
+        if ((float) $job->balance_amount <= 0) {
+            return back()->with('error', 'This invoice has no outstanding balance to remind the customer about.');
+        }
+
+        try {
+            $reminderService->sendEmail($job);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        ActivityLog::record(
+            'job.invoice_reminder_email_sent',
+            'Invoice reminder email sent for job #' . $job->id,
+            $job
+        );
+
+        return back()->with('success', 'Invoice reminder email sent successfully.');
     }
 
     public function updateCustomerNotes(Request $request, Job $job)

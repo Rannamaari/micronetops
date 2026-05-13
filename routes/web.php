@@ -176,6 +176,8 @@ Route::middleware('auth')->group(function () {
         Route::get('jobs/{job}', [JobController::class, 'show'])->name('jobs.show');
         Route::patch('jobs/{job}', [JobController::class, 'update'])->name('jobs.update');
         Route::patch('jobs/{job}/due-date', [JobController::class, 'updateDueDate'])->name('jobs.update-due-date');
+        Route::post('jobs/{job}/send-invoice-reminder', [JobController::class, 'sendInvoiceReminder'])->name('jobs.send-invoice-reminder');
+        Route::post('jobs/{job}/send-invoice-reminder-email', [JobController::class, 'sendInvoiceReminderEmail'])->name('jobs.send-invoice-reminder-email');
         Route::patch('jobs/{job}/customer-notes', [JobController::class, 'updateCustomerNotes'])->name('jobs.update-customer-notes');
         Route::patch('jobs/{job}/search-note', [JobController::class, 'updateSearchNote'])->name('jobs.update-search-note');
 

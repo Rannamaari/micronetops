@@ -241,23 +241,18 @@
     </div>
 
     {{-- Payment Details Footer --}}
+    @php
+        $paymentDetails = config('invoice_reminders.accounts.' . $job->job_type, []);
+    @endphp
     <div class="mt-6" style="border-top: 2px solid #e5e7eb; padding-top: 15px;">
         <div class="text-sm font-bold mb-2">Payment Details</div>
         <div class="text-xs mb-1">
             <strong>Bank Transfer:</strong>
-            @if($job->job_type === 'ac')
-                7730000785866
-            @else
-                7730000140010
-            @endif
+            {{ $paymentDetails['account_number'] ?? '' }}
         </div>
         <div class="text-xs mb-1">
             <strong>Account Name:</strong>
-            @if($job->job_type === 'ac')
-                Hussain M. Ibrahim
-            @else
-                Micronet
-            @endif
+            {{ $paymentDetails['account_name'] ?? 'Micronet' }}
         </div>
         <div class="text-xs mb-3">
             After payment, please WhatsApp the receipt to <strong>9996210</strong> for confirmation.

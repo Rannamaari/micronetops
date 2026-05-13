@@ -963,6 +963,30 @@
                             </svg>
                             View Invoice
                         </a>
+                        @if($job->balance_amount > 0)
+                            <form method="POST" action="{{ route('jobs.send-invoice-reminder', $job) }}" class="flex-1 sm:flex-none"
+                                  onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 rounded-xl font-semibold text-sm text-white hover:bg-blue-700 active:bg-blue-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 16a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2h14a2 2 0 012 2v10z"></path>
+                                    </svg>
+                                    Send Reminder
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ route('jobs.send-invoice-reminder-email', $job) }}" class="flex-1 sm:flex-none"
+                                  onsubmit="return confirm('Send invoice due reminder email to this customer now?')">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full inline-flex items-center justify-center px-4 py-3 bg-sky-600 rounded-xl font-semibold text-sm text-white hover:bg-sky-700 active:bg-sky-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Send Email Reminder
+                                </button>
+                            </form>
+                        @endif
                     @endif
                     <a href="{{ route('jobs.index') }}"
                        class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 active:bg-gray-300">
