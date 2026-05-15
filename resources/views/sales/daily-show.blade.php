@@ -1032,17 +1032,31 @@
 	                                        </button>
 	                                    </form>
 	                                @else
+                                        @php
+                                            $reminderSmsPreview = $log->job ? app(\App\Services\InvoiceReminderSmsService::class)->previewMessage($log->job) : null;
+                                        @endphp
 	                                    <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
 	                                       class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                                        Preview Invoice
 	                                    </a>
                                         @if($log->job && $log->job->balance_amount > 0)
+                                            <div class="basis-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-900/10 p-3">
+                                                <div class="flex items-center justify-between gap-3 mb-2">
+                                                    <div class="text-sm font-semibold text-blue-900 dark:text-blue-100">SMS Reminder Preview</div>
+                                                    <button type="button"
+                                                            onclick="navigator.clipboard.writeText(@js($reminderSmsPreview))"
+                                                            class="inline-flex items-center justify-center px-3 py-1.5 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-semibold text-blue-700 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                                                        Copy SMS
+                                                    </button>
+                                                </div>
+                                                <div class="text-xs text-blue-800 dark:text-blue-200 whitespace-pre-line leading-6">{{ $reminderSmsPreview }}</div>
+                                            </div>
                                             <form method="POST" action="{{ route('jobs.send-invoice-reminder', $log->job) }}"
                                                   onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')">
                                                 @csrf
                                                 <button type="submit"
                                                         class="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
-                                                    Send Reminder
+                                                    Send SMS Reminder
                                                 </button>
                                             </form>
                                             <form method="POST" action="{{ route('jobs.send-invoice-reminder-email', $log->job) }}"

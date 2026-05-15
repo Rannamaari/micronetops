@@ -956,6 +956,9 @@
                             View Quotation
                         </a>
                     @else
+                        @php
+                            $reminderSmsPreview = app(\App\Services\InvoiceReminderSmsService::class)->previewMessage($job);
+                        @endphp
                         <a href="{{ route('jobs.invoice', $job) }}" target="_blank"
                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gray-800 dark:bg-gray-700 rounded-xl font-semibold text-sm text-white hover:bg-gray-900 active:bg-gray-950">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -964,6 +967,17 @@
                             View Invoice
                         </a>
                         @if($job->balance_amount > 0)
+                            <div class="w-full sm:basis-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-900/10 p-3">
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="text-sm font-semibold text-blue-900 dark:text-blue-100">SMS Reminder Preview</div>
+                                    <button type="button"
+                                            onclick="navigator.clipboard.writeText(@js($reminderSmsPreview))"
+                                            class="inline-flex items-center justify-center px-3 py-1.5 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-semibold text-blue-700 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                                        Copy SMS
+                                    </button>
+                                </div>
+                                <div class="text-xs text-blue-800 dark:text-blue-200 whitespace-pre-line leading-6">{{ $reminderSmsPreview }}</div>
+                            </div>
                             <form method="POST" action="{{ route('jobs.send-invoice-reminder', $job) }}" class="flex-1 sm:flex-none"
                                   onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')">
                                 @csrf
@@ -972,7 +986,7 @@
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 16a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2h14a2 2 0 012 2v10z"></path>
                                     </svg>
-                                    Send Reminder
+                                    Send SMS Reminder
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('jobs.send-invoice-reminder-email', $job) }}" class="flex-1 sm:flex-none"

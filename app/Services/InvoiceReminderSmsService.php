@@ -48,6 +48,13 @@ class InvoiceReminderSmsService
         return $this->sender->send($message);
     }
 
+    public function previewMessage(Job $job): string
+    {
+        $account = $this->paymentDetailsForJob($job);
+
+        return $this->buildMessage($job, $account);
+    }
+
     public function sendEmail(Job $job): void
     {
         $email = trim((string) ($job->customer_email ?? ''));
