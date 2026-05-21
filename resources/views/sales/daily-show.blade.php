@@ -34,40 +34,40 @@
                     @endif
                 </div>
             </div>
-            <div class="flex items-center gap-2 w-full overflow-x-auto sm:w-auto sm:flex-wrap pb-1 sm:pb-0">
+            <div class="grid grid-cols-2 gap-2 w-full lg:flex lg:flex-wrap lg:w-auto">
                 <a href="{{ route('sales.daily.index', ['date' => $log->date->toDateString()]) }}"
-                   class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
+                   class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back
                 </a>
 
                 @if($log->canEditQuotation())
 	                    <a href="{{ route('sales.daily.quotation', $log) }}" target="_blank"
-	                       class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">
+	                       class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">
 	                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
 	                        Preview Quotation
 	                    </a>
                         <a href="{{ route('sales.daily.quotation-builder', $log) }}"
-                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 {{ $screen === 'builder' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
+                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 {{ $screen === 'builder' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
                             Builder
                         </a>
                         <a href="{{ route('sales.daily.invoice-workflow', $log) }}"
-                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 {{ $screen === 'invoice' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
+                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 {{ $screen === 'invoice' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700' }} text-sm font-medium rounded-lg transition">
                             Invoice
                         </a>
 	                    @if($log->job_id)
 	                        <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-		                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+		                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
 	                            Preview Invoice
 	                        </a>
 	                    @else
-                            <div class="w-full sm:w-auto">
-	                            <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full sm:w-auto">
+                            <div class="w-full lg:w-auto">
+	                            <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full lg:w-auto">
 	                                @csrf
 	                                <button type="submit"
                                             {{ $workflowInvoiceReady ? '' : 'disabled' }}
-	                                    class="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
+	                                    class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
 	                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
 	                                    Create Invoice
 	                                </button>
@@ -79,52 +79,52 @@
 	                    @endif
 	                @elseif($log->status === \App\Models\DailySalesLog::STATUS_INVOICED)
                         <a href="{{ route('sales.daily.invoice-workflow', $log) }}"
-                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 text-sm font-medium rounded-lg transition">
+                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 text-sm font-medium rounded-lg transition">
                             Invoice
                         </a>
                         @if($log->job_id)
                             <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-                               class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                               class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 Preview Invoice
                             </a>
                         @endif
                         <a href="#submit-sale-panel"
-                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             Submit Sale
                         </a>
                         @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                            <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this invoice back to quotation stage? Stock movements will be reversed.')">
+                            <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this invoice back to quotation stage? Stock movements will be reversed.')" class="w-full lg:w-auto">
                                 @csrf
-                                <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
+                                <button type="submit" class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                     Reopen
                                 </button>
                             </form>
                         @endif
 	                @else
-	                    <form method="POST" action="{{ route('sales.daily.open') }}">
+	                    <form method="POST" action="{{ route('sales.daily.open') }}" class="w-full lg:w-auto">
 	                        @csrf
 	                        <input type="hidden" name="date" value="{{ $log->date->toDateString() }}">
 	                        <input type="hidden" name="business_unit" value="{{ $log->business_unit }}">
                         <button type="submit"
-                                class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+                                class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             New Sale
                         </button>
                     </form>
                     @if($log->job_id)
                         <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-                           class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+                           class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                             Print Invoice
                         </a>
                     @endif
                     @if(Auth::user()->hasAnyRole(['admin', 'manager']))
-                        <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this sale? Stock movements will be reversed.')">
+                        <form method="POST" action="{{ route('sales.daily.reopen', $log) }}" onsubmit="return confirm('Reopen this sale? Stock movements will be reversed.')" class="w-full lg:w-auto">
                             @csrf
-                            <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
+                            <button type="submit" class="w-full min-w-0 inline-flex items-center justify-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Reopen
                             </button>
@@ -158,44 +158,6 @@
                 </div>
             @endif
 
-            @if($log->canEditQuotation() && $screen === 'builder')
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                    <div class="rounded-2xl border {{ $workflowCustomerReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowCustomerReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 1</div>
-                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Customer & Address</div>
-                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            @if($log->customer)
-                                {{ $log->customer->name . ($log->customer_address_text ? ' · address selected' : ' · no address yet') }}
-                            @else
-                                {{ 'Walk-in customer selected' . ($log->customer_address_text ? ' · ' . $log->customer_address_text : '') }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border {{ $workflowApprovalReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowApprovalReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 2</div>
-                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Quotation Setup</div>
-                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {{ ($log->approval_method ?? 'not_applicable') === 'signed_copy' ? 'Signed-copy approval selected.' : (($log->approval_method ?? 'not_applicable') === 'po' ? ($log->po_number ? 'PO ready: ' . $log->po_number : 'PO selected - add PO number.') : 'Optional - leave as not applicable unless needed.') }}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border {{ $workflowItemsReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowItemsReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 3</div>
-                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Build Quotation</div>
-                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $workflowItemsReady ? $log->lines->count() . ' item(s) added. Review and preview the quotation.' : 'Add items, notes, warranty, and pricing lines.' }}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border {{ $workflowInvoiceReady ? 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowInvoiceReady ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}">Step 4</div>
-                        <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Invoice Creation</div>
-                        <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $workflowInvoiceReady ? 'Ready to create or preview the invoice.' : 'Add items and finish quotation setup before converting to invoice.' }}
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Step 1: Customer --}}
             @if($log->canEditQuotation() && $screen === 'builder')
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6"
                      x-data="{
@@ -257,14 +219,13 @@
                         }
                      }">
                     <div class="mb-3">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Step 1</div>
-                        <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Customer, Address, and Approval Target</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Customer and Address</h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choose a saved customer, or keep this invoice as a walk-in and use the quotation settings notes/search fields for the identifying details.</p>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div class="flex flex-col items-stretch gap-3 lg:flex-row lg:items-center">
                         {{-- Current selection --}}
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <template x-if="selectedCustomer">
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-lg text-sm font-medium text-indigo-700 dark:text-indigo-300">
@@ -280,7 +241,7 @@
                             </template>
                             <template x-if="!selectedCustomer">
                                 <button type="button" @click="$refs.clearForm.submit()"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-800 rounded-lg text-sm font-medium text-green-700 dark:text-green-300 shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     Walk-in Customer
                                 </button>
@@ -288,7 +249,7 @@
                         </div>
 
                         {{-- Search input --}}
-                        <div class="relative flex-1 w-full sm:max-w-xs" @click.away="showDropdown = false">
+                        <div class="relative flex-1 w-full lg:max-w-sm" @click.away="showDropdown = false">
                             <input type="text" x-model="phone" @input="searchCustomers()" @focus="if(results.length) showDropdown = true"
                                    placeholder="Search by phone or name..."
                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
@@ -315,7 +276,8 @@
                             </div>
                         </div>
                         <button type="button" @click="$refs.clearForm.submit()"
-                                class="inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                                class="w-full lg:w-auto inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg transition"
+                                :class="selectedCustomer ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200' : 'bg-green-600 hover:bg-green-700 text-white shadow-sm'">
                             Use Walk-in
                         </button>
                     </div>
@@ -415,7 +377,6 @@
                 </div>
             @endif
 
-            {{-- Step 2: Quotation settings --}}
             @if($log->canEditQuotation() && $screen === 'builder')
                 <div x-data="{ open: {{ $stepTwoHasErrors ? 'true' : 'false' }} }"
                      class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -423,8 +384,7 @@
                             @click="open = !open"
                             class="w-full flex items-start justify-between gap-4 p-4 sm:p-5 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition">
                         <div>
-                            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Step 2 · Optional</div>
-                            <h3 class="mt-1 text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Quotation Settings</h3>
+                            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Quotation Settings</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Expand only if you need to add due dates, validity, approval method, or customer notes.</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
@@ -574,7 +534,6 @@
                 </div>
             @endif
 
-            {{-- Add Line Form --}}
             @if($log->canEditQuotation() && $screen === 'builder')
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6"
                      x-data="{
@@ -622,8 +581,7 @@
                         }
                      }">
                     <div class="mb-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Step 3</div>
-                        <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Build the Quotation</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Build the Quotation</h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add inventory or custom lines, set pricing, notes, GST, and warranty, then review the quotation preview.</p>
                     </div>
 
@@ -892,18 +850,17 @@
                 @endif
             </div>
 
-            {{-- Step 4: Totals / invoice / payment --}}
             @if($log->lines->isNotEmpty())
                 @php $totals = $log->totals; @endphp
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
                     <div class="mb-4">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $log->isSubmitted() ? 'Completed Sale' : 'Step 4' }}</div>
+                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $log->isSubmitted() ? 'Completed Sale' : 'Invoice & Payment' }}</div>
                         <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $log->isSubmitted() ? 'Invoice and Payment Summary' : ($screen === 'invoice' ? 'Invoice Conversion and Payment' : 'Invoice Creation and Payment') }}</h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                             {{ $log->isSubmitted() ? 'Review the final totals, invoice state, and payment/account trail.' : ($screen === 'invoice' ? 'Convert the approved quotation to an invoice, then capture payment and submission here.' : 'Once the quotation is approved, review totals and convert or submit from this section.') }}
                         </p>
                     </div>
-                    <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                         <div>
                             <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Subtotal</p>
                             <p class="text-lg font-bold text-gray-700 dark:text-gray-300 mt-1">{{ number_format($totals['subtotal'], 2) }}</p>
@@ -1027,19 +984,19 @@
 	                                <div class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $log->job_id ? 'Invoice created - ready to collect payment' : 'Convert the approved quotation' }}</div>
 	                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $log->job_id ? 'The invoice is already created. Use Submit Sale below to mark it paid and finish the sale.' : 'Make sure customer, address, items, approval method, and PO/signed-copy approval are all ready before creating the invoice.' }}</div>
 	                            </div>
-	                            <div class="flex flex-wrap gap-2">
+	                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full lg:w-auto">
 	                                @if($log->canEditQuotation())
     	                                <a href="{{ route('sales.daily.quotation-builder', $log) }}"
-    	                                   class="inline-flex items-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium rounded-lg transition">
+    	                                   class="w-full inline-flex items-center justify-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm font-medium rounded-lg transition">
     	                                    Back to Builder
     	                                </a>
                                     @endif
 	                                @if(!$log->job_id)
-	                                    <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank">
+	                                    <form method="POST" action="{{ route('sales.daily.convert-invoice', $log) }}" target="_blank" class="w-full">
 	                                        @csrf
 	                                        <button type="submit"
                                                     {{ $workflowInvoiceReady ? '' : 'disabled' }}
-	                                                class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
+	                                                class="w-full inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition {{ $workflowInvoiceReady ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' }}">
 	                                            Create Invoice
 	                                        </button>
 	                                    </form>
@@ -1048,11 +1005,11 @@
                                             $reminderSmsPreview = $log->job ? app(\App\Services\InvoiceReminderSmsService::class)->previewMessage($log->job) : null;
                                         @endphp
 	                                    <a href="{{ route('jobs.invoice', $log->job_id) }}" target="_blank"
-	                                       class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+	                                       class="w-full inline-flex items-center justify-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
 	                                        Preview Invoice
 	                                    </a>
                                         @if($log->job && $log->job->balance_amount > 0)
-                                            <div class="basis-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-900/10 p-3">
+                                            <div class="sm:col-span-2 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-900/10 p-3">
                                                 <div class="flex items-center justify-between gap-3 mb-2">
                                                     <div class="text-sm font-semibold text-blue-900 dark:text-blue-100">SMS Reminder Preview</div>
                                                     <button type="button"
@@ -1064,18 +1021,18 @@
                                                 <div class="text-xs text-blue-800 dark:text-blue-200 whitespace-pre-line leading-6">{{ $reminderSmsPreview }}</div>
                                             </div>
                                             <form method="POST" action="{{ route('jobs.send-invoice-reminder', $log->job) }}"
-                                                  onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')">
+                                                  onsubmit="return confirm('Send invoice due reminder SMS to this customer now?')" class="w-full">
                                                 @csrf
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+                                                        class="w-full inline-flex items-center justify-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
                                                     Send SMS Reminder
                                                 </button>
                                             </form>
                                             <form method="POST" action="{{ route('jobs.send-invoice-reminder-email', $log->job) }}"
-                                                  onsubmit="return confirm('Send invoice due reminder email to this customer now?')">
+                                                  onsubmit="return confirm('Send invoice due reminder email to this customer now?')" class="w-full">
                                                 @csrf
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition">
+                                                        class="w-full inline-flex items-center justify-center gap-1 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition">
                                                     Send Email Reminder
                                                 </button>
                                             </form>
