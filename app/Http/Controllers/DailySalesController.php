@@ -600,9 +600,6 @@ class DailySalesController extends Controller
         }
 
         $dailySalesLog->load('lines');
-        if (!$dailySalesLog->customer_id) {
-            return back()->with('error', 'Please select a customer before creating an invoice.');
-        }
 
         if ($dailySalesLog->lines->isEmpty()) {
             return back()->with('error', 'Add at least one line item before creating an invoice.');

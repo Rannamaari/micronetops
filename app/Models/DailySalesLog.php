@@ -144,8 +144,7 @@ class DailySalesLog extends Model
 
     public function isReadyForInvoice(): bool
     {
-        return (bool) $this->customer_id
-            && $this->isApprovalReady()
+        return $this->isApprovalReady()
             && $this->lines()->exists();
     }
 

@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
         $screen = $screen ?? 'builder';
-        $workflowCustomerReady = (bool) $log->customer_id;
+        $workflowCustomerReady = true;
         $workflowApprovalReady = $log->isApprovalReady();
         $workflowItemsReady = $log->lines->isNotEmpty();
         $workflowInvoiceReady = $log->isReadyForInvoice();
@@ -73,7 +73,7 @@
 	                                </button>
 	                            </form>
                                 @unless($workflowInvoiceReady)
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Complete customer, approval, and item details first.</p>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Complete approval and item details first. Saved customers are optional for walk-ins.</p>
                                 @endunless
                             </div>
 	                    @endif
@@ -164,7 +164,11 @@
                         <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowCustomerReady ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400' }}">Step 1</div>
                         <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Customer & Address</div>
                         <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $workflowCustomerReady ? ($log->customer?->name . ($log->customer_address_text ? ' · address selected' : ' · no address yet')) : 'Select the customer and the correct service address.' }}
+                            @if($log->customer)
+                                {{ $log->customer->name . ($log->customer_address_text ? ' · address selected' : ' · no address yet') }}
+                            @else
+                                {{ 'Walk-in customer selected' . ($log->customer_address_text ? ' · ' . $log->customer_address_text : '') }}
+                            @endif
                         </div>
                     </div>
                     <div class="rounded-2xl border {{ $workflowApprovalReady ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }} p-4">
@@ -185,7 +189,7 @@
                         <div class="text-xs font-semibold uppercase tracking-wide {{ $workflowInvoiceReady ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400' }}">Step 4</div>
                         <div class="mt-1 text-base font-semibold text-gray-900 dark:text-gray-100">Invoice Creation</div>
                         <div class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $workflowInvoiceReady ? 'Ready to create or preview the invoice.' : 'Complete steps 1 to 3 before converting to invoice.' }}
+                            {{ $workflowInvoiceReady ? 'Ready to create or preview the invoice.' : 'Add items and finish quotation setup before converting to invoice.' }}
                         </div>
                     </div>
                 </div>
@@ -255,7 +259,7 @@
                     <div class="mb-3">
                         <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Step 1</div>
                         <h3 class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Customer, Address, and Approval Target</h3>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choose the customer first, then lock the correct address before building the quotation.</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choose a saved customer, or keep this invoice as a walk-in and use the quotation settings notes/search fields for the identifying details.</p>
                     </div>
 
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -275,10 +279,11 @@
                                 </div>
                             </template>
                             <template x-if="!selectedCustomer">
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400">
+                                <button type="button" @click="$refs.clearForm.submit()"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     Walk-in Customer
-                                </span>
+                                </button>
                             </template>
                         </div>
 
@@ -309,6 +314,10 @@
                                 </button>
                             </div>
                         </div>
+                        <button type="button" @click="$refs.clearForm.submit()"
+                                class="inline-flex items-center justify-center px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition">
+                            Use Walk-in
+                        </button>
                     </div>
 
                     @if($log->customer && $log->customer->addresses->isNotEmpty())
@@ -399,6 +408,9 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             Walk-in Customer
                         </span>
+                        @if($log->customer_address_text)
+                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $log->customer_address_text }}</div>
+                        @endif
                     @endif
                 </div>
             @endif
