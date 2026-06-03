@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Customer;
+use App\Models\DailySalesLog;
 use App\Models\InventoryItem;
 use App\Models\InventoryLog;
 use App\Models\Job;
 use App\Models\JobItem;
+use App\Models\Payment;
+use App\Models\PettyCash;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -50,9 +54,12 @@ class JobController extends Controller
                 'customer_name' => ['nullable', 'string', 'max:255'],
                 'customer_phone' => self::CUSTOMER_PHONE_RULES,
                 'customer_gst_number' => ['nullable', 'string', 'max:50'],
+                'easyfix_user_id' => ['nullable', 'string', 'max:255'],
+                'easyfix_job_id' => ['nullable', 'string', 'max:255'],
                 'title' => ['nullable', 'string', 'max:100'],
                 'problem_description' => ['nullable', 'string'],
                 'customer_notes' => ['nullable', 'string', 'max:2000'],
+                'search_note' => ['nullable', 'string', 'max:2000'],
                 'location' => ['nullable', 'string', 'max:255'],
                 'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
                 'scheduled_at' => ['nullable', 'date'],
@@ -89,6 +96,7 @@ class JobController extends Controller
                     'name' => $validated['customer_name'] ?? 'Unknown',
                     'address' => $validated['location'] ?? null,
                     'gst_number' => $validated['customer_gst_number'] ?? null,
+                    'easyfix_user_id' => $validated['easyfix_user_id'] ?? null,
                     'category' => match ($validated['job_type']) {
                         'ac' => 'ac',
                         'it' => 'it',
@@ -111,6 +119,10 @@ class JobController extends Controller
                 }
                 if (!empty($validated['customer_name']) && ($customer->name === 'Unknown' || empty($customer->name))) {
                     $customer->name = $validated['customer_name'];
+                    $changed = true;
+                }
+                if (!empty($validated['easyfix_user_id']) && empty($customer->easyfix_user_id)) {
+                    $customer->easyfix_user_id = $validated['easyfix_user_id'];
                     $changed = true;
                 }
                 if ($changed) $customer->save();
@@ -146,6 +158,8 @@ class JobController extends Controller
             'pickup_location' => null,
             'problem_description' => $validated['problem_description'] ?? null,
             'customer_notes' => $validated['customer_notes'] ?? null,
+            'search_note' => $validated['search_note'] ?? null,
+            'easyfix_job_id' => $validated['easyfix_job_id'] ?? null,
 
             'status' => $status,
             'payment_status' => 'unpaid',
@@ -169,6 +183,7 @@ class JobController extends Controller
         return response()->json([
             'message' => 'Job created.',
             'job_id' => $job->id,
+            'easyfix_job_id' => $job->easyfix_job_id,
             'job_type' => $job->job_type,
             'status' => $job->status,
             'customer' => $customer ? [
@@ -213,6 +228,10 @@ class JobController extends Controller
                 'title' => $job->title,
                 'problem_description' => $job->problem_description,
                 'customer_notes' => $job->customer_notes,
+                'search_note' => $job->search_note,
+                'easyfix_job_id' => $job->easyfix_job_id,
+                'easyfix_quote_id' => $job->easyfix_quote_id,
+                'easyfix_invoice_id' => $job->easyfix_invoice_id,
                 'totals' => [
                     'labour_total' => number_format((float) $job->labour_total, 2),
                     'parts_total' => number_format((float) $job->parts_total, 2),
@@ -432,6 +451,195 @@ class JobController extends Controller
             'number' => $invoiceNumber,
             'html' => $html,
         ]);
+    }
+
+    /**
+     * POST /api/jobs/{id}/convert-invoice
+     * Finalize a job as invoice-ready and return invoice metadata/HTML endpoint.
+     */
+    public function convertInvoice(int $id, Request $request): JsonResponse
+    {
+        $job = Job::with('items', 'payments')->find($id);
+        if (!$job) {
+            return response()->json(['error' => "Job #{$id} not found."], 404);
+        }
+
+        try {
+            $validated = $request->validate([
+                'due_date' => ['nullable', 'date'],
+                'customer_notes' => ['nullable', 'string', 'max:2000'],
+                'search_note' => ['nullable', 'string', 'max:2000'],
+                'po_number' => ['nullable', 'string', 'max:255'],
+                'approval_method' => ['nullable', Rule::in(['not_applicable', 'po', 'signed_copy'])],
+                'easyfix_quote_id' => ['nullable', 'string', 'max:255'],
+                'easyfix_invoice_id' => ['nullable', 'string', 'max:255'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        if (!$job->items()->exists()) {
+            return response()->json(['error' => 'Add at least one line item before converting this job to an invoice.'], 422);
+        }
+
+        if (($validated['approval_method'] ?? $job->approval_method) === 'po' && blank($validated['po_number'] ?? $job->po_number)) {
+            return response()->json(['error' => 'PO number is required when approval_method is "po".'], 422);
+        }
+
+        $actor = User::where('role', 'admin')->first();
+        if (!$actor) {
+            return response()->json(['error' => 'No admin user found to act as API actor.'], 500);
+        }
+        Auth::setUser($actor);
+
+        $job->fill([
+            'due_date' => $validated['due_date'] ?? $job->due_date,
+            'customer_notes' => array_key_exists('customer_notes', $validated) ? $validated['customer_notes'] : $job->customer_notes,
+            'search_note' => array_key_exists('search_note', $validated) ? $validated['search_note'] : $job->search_note,
+            'po_number' => array_key_exists('po_number', $validated) ? $validated['po_number'] : $job->po_number,
+            'approval_method' => $validated['approval_method'] ?? $job->approval_method ?? 'not_applicable',
+            'easyfix_quote_id' => array_key_exists('easyfix_quote_id', $validated) ? $validated['easyfix_quote_id'] : $job->easyfix_quote_id,
+            'easyfix_invoice_id' => array_key_exists('easyfix_invoice_id', $validated) ? $validated['easyfix_invoice_id'] : $job->easyfix_invoice_id,
+        ]);
+
+        $job->recalculateTotals();
+        $job->save();
+
+        DailySalesLog::where('job_id', $job->id)->get()->each(function (DailySalesLog $log) use ($job) {
+            $log->forceFill([
+                'status' => DailySalesLog::STATUS_INVOICED,
+                'job_id' => $job->id,
+            ])->save();
+        });
+
+        $invoiceNumber = 'JOB-' . str_pad($job->id, 5, '0', STR_PAD_LEFT);
+
+        return response()->json([
+            'message' => 'Invoice created.',
+            'job_id' => $job->id,
+            'invoice_number' => $invoiceNumber,
+            'status' => $job->status,
+            'payment_status' => $job->payment_status,
+            'easyfix_quote_id' => $job->easyfix_quote_id,
+            'easyfix_invoice_id' => $job->easyfix_invoice_id,
+            'invoice_api' => url('/api/jobs/' . $job->id . '/invoice'),
+            'quotation_api' => url('/api/jobs/' . $job->id . '/quotation'),
+        ]);
+    }
+
+    /**
+     * PATCH /api/jobs/{id}/status
+     * Update a job workflow status.
+     */
+    public function updateStatus(int $id, Request $request): JsonResponse
+    {
+        $job = Job::find($id);
+        if (!$job) {
+            return response()->json(['error' => "Job #{$id} not found."], 404);
+        }
+
+        try {
+            $validated = $request->validate([
+                'status' => ['required', Rule::in(array_keys(Job::getStatuses()))],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        $actor = User::where('role', 'admin')->first();
+        if (!$actor) {
+            return response()->json(['error' => 'No admin user found to act as API actor.'], 500);
+        }
+        Auth::setUser($actor);
+
+        $job->updateStatus($validated['status'], $actor, $validated['notes'] ?? null);
+
+        return response()->json([
+            'message' => 'Job status updated.',
+            'job_id' => $job->id,
+            'status' => $job->fresh()->status,
+        ]);
+    }
+
+    /**
+     * POST /api/jobs/{id}/payments
+     * Record a payment against a job invoice.
+     */
+    public function addPayment(int $id, Request $request): JsonResponse
+    {
+        $job = Job::find($id);
+        if (!$job) {
+            return response()->json(['error' => "Job #{$id} not found."], 404);
+        }
+
+        try {
+            $validated = $request->validate([
+                'amount' => ['required', 'numeric', 'min:0.01'],
+                'method' => ['required', 'string', 'max:50'],
+                'reference' => ['nullable', 'string', 'max:255'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        $actor = User::where('role', 'admin')->first();
+        if (!$actor) {
+            return response()->json(['error' => 'No admin user found to act as API actor.'], 500);
+        }
+        Auth::setUser($actor);
+
+        DB::beginTransaction();
+        try {
+            $payment = Payment::create([
+                'job_id' => $job->id,
+                'amount' => $validated['amount'],
+                'method' => $validated['method'],
+                'reference' => $validated['reference'] ?? null,
+                'status' => 'completed',
+            ]);
+
+            if (strtolower($validated['method']) === 'cash') {
+                $job->load('customer');
+                PettyCash::create([
+                    'user_id' => $actor->id,
+                    'type' => 'topup',
+                    'amount' => $validated['amount'],
+                    'category' => 'customer_payment',
+                    'purpose' => 'Cash payment from job #' . $job->id . ($job->customer ? ' - ' . $job->customer->name : ''),
+                    'status' => 'approved',
+                    'approved_by' => $actor->id,
+                    'paid_at' => now(),
+                    'source_payment_id' => $payment->id,
+                ]);
+            }
+
+            $job->updatePaymentStatus();
+
+            DailySalesLog::where('job_id', $job->id)->get()->each(function (DailySalesLog $log) use ($job) {
+                $log->syncWorkflowStatus($job->fresh());
+            });
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Payment could not be recorded.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+
+        $job = $job->fresh();
+
+        return response()->json([
+            'message' => 'Payment recorded.',
+            'job_id' => $job->id,
+            'payment_id' => $payment->id,
+            'payment_status' => $job->payment_status,
+            'paid_amount' => number_format($job->paid_amount, 2, '.', ''),
+            'balance_amount' => number_format($job->balance_amount, 2, '.', ''),
+        ], 201);
     }
 
     private function brandFor(Job $job): array

@@ -60,6 +60,9 @@ Route::middleware('api.token')->group(function () {
     Route::prefix('jobs')->group(function () {
         Route::post('/',                [ApiJobController::class, 'store']);
         Route::get('/{id}',             [ApiJobController::class, 'show']);
+        Route::post('/{id}/convert-invoice', [ApiJobController::class, 'convertInvoice']);
+        Route::patch('/{id}/status',    [ApiJobController::class, 'updateStatus']);
+        Route::post('/{id}/payments',   [ApiJobController::class, 'addPayment']);
         Route::post('/{id}/items',      [ApiJobController::class, 'addItem']);
         Route::delete('/{id}/items/{itemId}', [ApiJobController::class, 'removeItem']);
         Route::get('/{id}/quotation',   [ApiJobController::class, 'quotationHtml']);

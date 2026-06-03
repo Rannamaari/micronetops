@@ -56,6 +56,9 @@ class CustomerController extends Controller
                 'email'    => ['nullable', 'email', 'max:255'],
                 'gst_number' => ['nullable', 'string', 'max:50'],
                 'category' => ['nullable', 'in:moto,ac,it,easyfix'],
+                'address'  => ['nullable', 'string', 'max:500'],
+                'notes'    => ['nullable', 'string'],
+                'easyfix_user_id' => ['nullable', 'string', 'max:255'],
             ], [
                 'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
             ]);
@@ -69,7 +72,7 @@ class CustomerController extends Controller
             return response()->json([
                 'created'  => false,
                 'message'  => 'Customer already exists with this phone number.',
-                'data'     => $existing->only(['id', 'name', 'phone', 'email', 'gst_number', 'category']),
+                'data'     => $existing->only(['id', 'name', 'phone', 'email', 'address', 'gst_number', 'category', 'notes', 'easyfix_user_id']),
             ]);
         }
 
@@ -77,14 +80,17 @@ class CustomerController extends Controller
             'name'     => $validated['name'],
             'phone'    => $validated['phone'],
             'email'    => $validated['email'] ?? null,
+            'address'  => $validated['address'] ?? null,
             'gst_number' => $validated['gst_number'] ?? null,
             'category' => $validated['category'] ?? 'moto',
+            'notes'    => $validated['notes'] ?? null,
+            'easyfix_user_id' => $validated['easyfix_user_id'] ?? null,
         ]);
 
         return response()->json([
             'created' => true,
             'message' => 'Customer created successfully.',
-            'data'    => $customer->only(['id', 'name', 'phone', 'email', 'gst_number', 'category']),
+            'data'    => $customer->only(['id', 'name', 'phone', 'email', 'address', 'gst_number', 'category', 'notes', 'easyfix_user_id']),
         ], 201);
     }
 
@@ -109,6 +115,7 @@ class CustomerController extends Controller
                 'address'    => $customer->address,
                 'category'   => $customer->category,
                 'notes'      => $customer->notes,
+                'easyfix_user_id' => $customer->easyfix_user_id,
                 'total_jobs' => $customer->jobs->count(),
                 'total_spent'=> number_format($customer->jobs->sum('total_amount'), 2),
                 'created_at' => $customer->created_at->format('Y-m-d'),
@@ -139,6 +146,7 @@ class CustomerController extends Controller
                 'notes'    => ['sometimes', 'nullable', 'string'],
                 'gst_number' => ['sometimes', 'nullable', 'string', 'max:50'],
                 'category' => ['sometimes', 'in:moto,ac,it,easyfix'],
+                'easyfix_user_id' => ['sometimes', 'nullable', 'string', 'max:255'],
             ], [
                 'phone.regex' => 'Phone number can contain digits and common separators only. Letters are not allowed.',
             ]);
@@ -150,7 +158,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'message' => 'Customer updated successfully.',
-            'data'    => $customer->fresh()->only(['id', 'name', 'phone', 'email', 'address', 'gst_number', 'category', 'notes']),
+            'data'    => $customer->fresh()->only(['id', 'name', 'phone', 'email', 'address', 'gst_number', 'category', 'notes', 'easyfix_user_id']),
         ]);
     }
 

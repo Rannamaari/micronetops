@@ -17,6 +17,7 @@ class Customer extends Model
         'gst_number',
         'category',
         'notes',
+        'easyfix_user_id',
     ];
 
     public function vehicles()
