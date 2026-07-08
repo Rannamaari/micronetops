@@ -43,36 +43,23 @@ class EmployeeAttendance extends Model
      */
     public static function isMarkedForMonth(int $employeeId, int $year, int $month): bool
     {
-        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
-
-        // Get employee to check hire date
         $employee = \App\Models\Employee::find($employeeId);
         if (!$employee) {
             return false;
         }
 
-        // If employee wasn't hired yet in this month, return true (no attendance needed)
-        if ($employee->hire_date && Carbon::parse($employee->hire_date)->gt($endDate)) {
+        $period = $employee->getEmploymentPeriodForMonth($year, $month);
+        if (!$period) {
             return true;
-        }
-
-        // Calculate actual working start date (later of month start or hire date)
-        $actualStartDate = $startDate;
-        if ($employee->hire_date) {
-            $hireDate = Carbon::parse($employee->hire_date);
-            if ($hireDate->gt($startDate) && $hireDate->lte($endDate)) {
-                $actualStartDate = $hireDate;
-            }
         }
 
         // Count how many days have attendance records
         $markedDays = self::where('employee_id', $employeeId)
-            ->whereBetween('date', [$actualStartDate, $endDate])
+            ->whereBetween('date', [$period['pay_period_start'], $period['pay_period_end']])
             ->count();
 
-        // Calculate expected working days (excluding Fridays) from actual start date
-        $expectedDays = self::getWorkingDaysBetween($actualStartDate, $endDate);
+        // Calculate expected working days (excluding Fridays) within the employment period
+        $expectedDays = self::getWorkingDaysBetween($period['pay_period_start'], $period['pay_period_end']);
 
         return $markedDays >= $expectedDays;
     }
@@ -112,31 +99,20 @@ class EmployeeAttendance extends Model
      */
     public static function getAbsentDays(int $employeeId, int $year, int $month): int
     {
-        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
-
-        // Get employee to check hire date
         $employee = \App\Models\Employee::find($employeeId);
         if (!$employee) {
             return 0;
         }
 
-        // Calculate actual working start date (later of month start or hire date)
-        $actualStartDate = $startDate;
-        if ($employee->hire_date) {
-            $hireDate = Carbon::parse($employee->hire_date);
-            if ($hireDate->gt($startDate) && $hireDate->lte($endDate)) {
-                $actualStartDate = $hireDate;
-            } elseif ($hireDate->gt($endDate)) {
-                // Employee not hired yet in this month
-                return 0;
-            }
+        $period = $employee->getEmploymentPeriodForMonth($year, $month);
+        if (!$period) {
+            return 0;
         }
 
         // Count UNPAID absent days only (exclude sick leave which is paid)
-        // Only count from actual start date onwards
+        // Only count inside the actual employment period for the payroll month.
         return self::where('employee_id', $employeeId)
-            ->whereBetween('date', [$actualStartDate, $endDate])
+            ->whereBetween('date', [$period['pay_period_start'], $period['pay_period_end']])
             ->where('status', 'absent')
             ->where(function($query) {
                 $query->whereNull('absence_reason')

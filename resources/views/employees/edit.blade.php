@@ -77,6 +77,10 @@
                             <input type="date" name="hire_date" value="{{ old('hire_date', $employee->hire_date?->format('Y-m-d')) }}" required class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-sm">
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Termination Date</label>
+                            <input type="date" name="termination_date" value="{{ old('termination_date', $employee->termination_date?->format('Y-m-d')) }}" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-sm">
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Basic Salary (USD)</label>
                             <input type="number" step="0.01" name="basic_salary_usd" value="{{ old('basic_salary_usd', $employee->basic_salary_usd) }}" x-model="salaryUsd" @input="salaryMvr = (salaryUsd * 15.42).toFixed(2)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-sm">
                             <p class="mt-1 text-xs text-gray-500">Conversion rate: 1 USD = 15.42 MVR</p>

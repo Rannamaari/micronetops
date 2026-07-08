@@ -25,6 +25,7 @@ class Employee extends Model
         'position',
         'department',
         'hire_date',
+        'termination_date',
         'status',
         'address',
         'permanent_address',
@@ -56,6 +57,7 @@ class Employee extends Model
 
     protected $casts = [
         'hire_date' => 'date',
+        'termination_date' => 'date',
         'date_of_birth' => 'date',
         'date_of_arrival' => 'date',
         'work_permit_fee_paid_until' => 'date',
@@ -102,6 +104,98 @@ class Employee extends Model
     public function allowances()
     {
         return $this->hasMany(EmployeeAllowance::class);
+    }
+
+    /**
+     * Resolve the employee's payable employment period for a payroll month.
+     */
+    public function getEmploymentPeriodForMonth(int $year, int $month): ?array
+    {
+        $monthStart = Carbon::create($year, $month, 1)->startOfDay();
+        $monthEnd = $monthStart->copy()->endOfMonth()->startOfDay();
+
+        $employmentStart = $this->hire_date?->copy()->startOfDay() ?? $monthStart->copy();
+        $employmentEnd = $this->termination_date?->copy()->startOfDay() ?? $monthEnd->copy();
+
+        if ($employmentStart->gt($monthEnd) || $employmentEnd->lt($monthStart)) {
+            return null;
+        }
+
+        $payPeriodStart = $employmentStart->gt($monthStart)
+            ? $employmentStart->copy()
+            : $monthStart->copy();
+
+        $payPeriodEnd = $employmentEnd->lt($monthEnd)
+            ? $employmentEnd->copy()
+            : $monthEnd->copy();
+
+        if ($payPeriodEnd->lt($payPeriodStart)) {
+            return null;
+        }
+
+        return [
+            'month_start' => $monthStart,
+            'month_end' => $monthEnd,
+            'pay_period_start' => $payPeriodStart,
+            'pay_period_end' => $payPeriodEnd,
+            'days_in_month' => $monthStart->daysInMonth,
+            'payable_calendar_days' => $payPeriodStart->diffInDays($payPeriodEnd) + 1,
+        ];
+    }
+
+    public function getProratedBasicSalaryForMonth(int $year, int $month): float
+    {
+        $period = $this->getEmploymentPeriodForMonth($year, $month);
+
+        if (!$period || $period['days_in_month'] <= 0) {
+            return 0.0;
+        }
+
+        return round(
+            ((float) $this->basic_salary / $period['days_in_month']) * $period['payable_calendar_days'],
+            2
+        );
+    }
+
+    public function getProratedMonthlyAllowancesForMonth(int $year, int $month): float
+    {
+        $period = $this->getEmploymentPeriodForMonth($year, $month);
+
+        if (!$period || $period['days_in_month'] <= 0) {
+            return 0.0;
+        }
+
+        $allowances = $this->allowances()
+            ->where('is_active', true)
+            ->where('frequency', 'monthly')
+            ->get();
+
+        $total = $allowances->sum(function (EmployeeAllowance $allowance) use ($period) {
+            $allowanceStart = $allowance->start_date?->copy()->startOfDay() ?? $period['month_start']->copy();
+            $allowanceEnd = $allowance->end_date?->copy()->startOfDay() ?? $period['month_end']->copy();
+
+            if ($allowanceStart->gt($period['month_end']) || $allowanceEnd->lt($period['month_start'])) {
+                return 0;
+            }
+
+            $effectiveStart = $allowanceStart->gt($period['pay_period_start'])
+                ? $allowanceStart->copy()
+                : $period['pay_period_start']->copy();
+
+            $effectiveEnd = $allowanceEnd->lt($period['pay_period_end'])
+                ? $allowanceEnd->copy()
+                : $period['pay_period_end']->copy();
+
+            if ($effectiveEnd->lt($effectiveStart)) {
+                return 0;
+            }
+
+            $allowanceDays = $effectiveStart->diffInDays($effectiveEnd) + 1;
+
+            return ((float) $allowance->amount / $period['days_in_month']) * $allowanceDays;
+        });
+
+        return round((float) $total, 2);
     }
 
     // Status Calculation Methods

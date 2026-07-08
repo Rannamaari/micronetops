@@ -49,6 +49,7 @@ class HrEmployeeController extends Controller
                 'type' => $e->type,
                 'position' => $e->position,
                 'hire_date' => $e->hire_date?->format('Y-m-d'),
+                'termination_date' => $e->termination_date?->format('Y-m-d'),
                 'status' => $e->status,
                 'basic_salary' => (float) $e->basic_salary,
                 'basic_salary_usd' => $e->basic_salary_usd !== null ? (float) $e->basic_salary_usd : null,
@@ -82,6 +83,7 @@ class HrEmployeeController extends Controller
                 'position' => ['required', 'string', 'max:255'],
                 'department' => ['nullable', 'string', 'max:255'],
                 'hire_date' => ['required', 'date'],
+                'termination_date' => ['nullable', 'date', 'after_or_equal:hire_date'],
                 'status' => ['required', Rule::in(['active', 'inactive', 'terminated'])],
                 'address' => ['nullable', 'string'],
                 'nationality' => ['nullable', 'string', 'max:255'],
@@ -143,6 +145,7 @@ class HrEmployeeController extends Controller
                 'position' => ['sometimes', 'string', 'max:255'],
                 'department' => ['sometimes', 'nullable', 'string', 'max:255'],
                 'hire_date' => ['sometimes', 'date'],
+                'termination_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:hire_date'],
                 'status' => ['sometimes', Rule::in(['active', 'inactive', 'terminated'])],
                 'address' => ['sometimes', 'nullable', 'string'],
                 'nationality' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -197,4 +200,3 @@ class HrEmployeeController extends Controller
         return response()->json(['message' => "Employee \"{$name}\" deleted."]);
     }
 }
-

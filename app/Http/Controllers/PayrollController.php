@@ -56,12 +56,20 @@ class PayrollController extends Controller
         $year = $request->get('year', Carbon::now()->year);
         $month = $request->get('month', Carbon::now()->month);
 
-        // Get active employees who were hired before or during this month
+        // Get employees who were employed for any part of this payroll month.
+        $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
         $monthEnd = Carbon::create($year, $month, 1)->endOfMonth();
-        $employees = Employee::where('status', 'active')
+        $employees = Employee::where(function($q) {
+                $q->where('status', 'active')
+                  ->orWhere('status', 'terminated');
+            })
             ->where(function($q) use ($monthEnd) {
                 $q->whereNull('hire_date')
                   ->orWhere('hire_date', '<=', $monthEnd);
+            })
+            ->where(function($q) use ($monthStart) {
+                $q->whereNull('termination_date')
+                  ->orWhere('termination_date', '>=', $monthStart);
             })
             ->orderBy('name')
             ->get();
@@ -162,13 +170,32 @@ class PayrollController extends Controller
      */
     private function calculatePayroll(Employee $employee, int $year, int $month, ?int $manualAbsentDays = null)
     {
+        $period = $employee->getEmploymentPeriodForMonth($year, $month);
+        if (!$period) {
+            return [
+                'employee_id' => $employee->id,
+                'year' => $year,
+                'month' => $month,
+                'basic_salary' => 0,
+                'allowances' => 0,
+                'bonuses' => 0,
+                'overtime' => 0,
+                'loan_deduction' => 0,
+                'absent_deduction' => 0,
+                'absent_days' => 0,
+                'working_days' => 0,
+                'prorated_deduction' => 0,
+                'other_deductions' => 0,
+                'gross_salary' => 0,
+                'total_deductions' => 0,
+                'net_salary' => 0,
+            ];
+        }
+
         $basicSalary = $employee->basic_salary;
 
-        // Get all active allowances (monthly frequency)
-        $allowances = $employee->allowances()
-            ->where('is_active', true)
-            ->where('frequency', 'monthly')
-            ->sum('amount');
+        // Monthly fixed allowances are prorated by calendar days within the employment period.
+        $payableAllowances = $employee->getProratedMonthlyAllowancesForMonth($year, $month);
 
         // Calculate automatic bonuses for this month
         $automaticBonuses = 0;
@@ -180,78 +207,58 @@ class PayrollController extends Controller
             }
         }
 
-        // Calculate actual working period for this employee
-        $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
-        $monthEnd = Carbon::create($year, $month, 1)->endOfMonth();
-
-        // Determine actual start date (hire date if hired mid-month)
-        $actualStartDate = $monthStart->copy();
-        if ($employee->hire_date) {
-            $hireDate = Carbon::parse($employee->hire_date);
-            if ($hireDate->gt($monthStart) && $hireDate->lte($monthEnd)) {
-                $actualStartDate = $hireDate;
-            }
-        }
-
-        // Calculate full month working days (for daily rate calculation)
+        // Working-day logic remains only for attendance-based adjustments like unpaid leave
+        // and the current recurring bonus behavior.
         $fullMonthWorkingDays = EmployeeAttendance::getWorkingDaysInMonth($year, $month);
-
-        // Calculate working days (excluding Fridays) from hire date to month end
-        $expectedWorkingDays = EmployeeAttendance::getWorkingDaysBetween($actualStartDate, $monthEnd);
+        $expectedWorkingDays = EmployeeAttendance::getWorkingDaysBetween(
+            $period['pay_period_start'],
+            $period['pay_period_end']
+        );
 
         // Prevent division by zero
         if ($fullMonthWorkingDays <= 0) {
             $fullMonthWorkingDays = 1;
         }
-        if ($expectedWorkingDays <= 0) {
-            $expectedWorkingDays = 1;
-        }
 
         // Get absent days from attendance records
         $attendanceAbsentDays = EmployeeAttendance::getAbsentDays($employee->id, $year, $month);
         $absentDays = $attendanceAbsentDays > 0 ? $attendanceAbsentDays : ($manualAbsentDays ?? 0);
-
-        // Calculate actual days worked
-        $actualWorkedDays = $expectedWorkingDays - $absentDays;
-        if ($actualWorkedDays < 0) {
-            $actualWorkedDays = 0;
-        }
-
-        // Calculate daily rates based on FULL MONTH working days
-        $dailyBasicRate = $basicSalary / $fullMonthWorkingDays;
-        $dailyAllowanceRate = $allowances / $fullMonthWorkingDays;
         $dailyBonusRate = $automaticBonuses / $fullMonthWorkingDays;
+        $calendarDailyBasicRate = $period['days_in_month'] > 0
+            ? ((float) $basicSalary / $period['days_in_month'])
+            : 0;
 
-        // Basic salary: Pay ONLY for days actually worked
-        $payableBasicSalary = $dailyBasicRate * $actualWorkedDays;
-
-        // Allowances: Pay for EXPECTED days from hire date (NOT reduced for absences)
-        $payableAllowances = $dailyAllowanceRate * $expectedWorkingDays;
+        // Basic salary is prorated by payable calendar days, inclusive of join date,
+        // rest days, and public holidays while employed.
+        $payableBasicSalary = $employee->getProratedBasicSalaryForMonth($year, $month);
 
         // Bonuses: Pay for EXPECTED days from hire date (NOT reduced for absences)
-        $payableBonuses = $dailyBonusRate * $expectedWorkingDays;
+        $payableBonuses = round($dailyBonusRate * $expectedWorkingDays, 2);
+
+        // Unpaid leave / absence stays as a separate deduction from the gross amount.
+        $absentDeduction = round($calendarDailyBasicRate * $absentDays, 2);
 
         // Get total loan deductions for this month
         $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
 
         // Calculate totals
         $grossSalary = $payableBasicSalary + $payableAllowances + $payableBonuses;
-        $totalDeductions = $loanDeduction;
+        $totalDeductions = $loanDeduction + $absentDeduction;
         $netSalary = $grossSalary - $totalDeductions;
 
         return [
             'employee_id' => $employee->id,
             'year' => $year,
             'month' => $month,
-            'basic_salary' => $payableBasicSalary, // Store PAYABLE amount (prorated for worked days)
-            'allowances' => $payableAllowances, // Store PAYABLE amount (prorated for worked days)
-            'bonuses' => $payableBonuses, // Store PAYABLE amount (prorated for worked days)
+            'basic_salary' => $payableBasicSalary,
+            'allowances' => $payableAllowances,
+            'bonuses' => $payableBonuses,
             'overtime' => 0, // Can be added later
             'loan_deduction' => $loanDeduction,
-            'absent_deduction' => 0, // Not used - we pay only for worked days instead
+            'absent_deduction' => $absentDeduction,
             'absent_days' => $absentDays,
-            'working_days' => $expectedWorkingDays, // Expected working days from hire date
-            'prorated_deduction' => 0, // Not used - we pay only for worked days instead
+            'working_days' => $period['payable_calendar_days'],
+            'prorated_deduction' => 0,
             'other_deductions' => 0, // Will be added from form
             'gross_salary' => $grossSalary,
             'total_deductions' => $totalDeductions,

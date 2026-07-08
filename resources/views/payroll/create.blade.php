@@ -117,10 +117,13 @@
                         <div class="divide-y divide-gray-200 dark:divide-gray-700">
                             @foreach($employees as $employee)
                                 @php
-                                    $basicSalary = $employee->basic_salary;
-                                    $allowances = $employee->allowances()->where('is_active', true)->where('frequency', 'monthly')->sum('amount');
+                                    $basicSalary = (float) $employee->basic_salary;
+                                    $employmentPeriod = $employee->getEmploymentPeriodForMonth($year, $month);
+                                    $daysInMonth = $employmentPeriod['days_in_month'] ?? \Carbon\Carbon::create($year, $month)->daysInMonth;
+                                    $payableDays = $employmentPeriod['payable_calendar_days'] ?? 0;
+                                    $proratedBasicSalary = $employee->getProratedBasicSalaryForMonth($year, $month);
+                                    $proratedAllowances = $employee->getProratedMonthlyAllowancesForMonth($year, $month);
                                     $loanDeduction = $employee->activeLoans()->sum('monthly_deduction');
-                                    $daysInMonth = \Carbon\Carbon::create($year, $month)->daysInMonth;
 
                                     // Calculate automatic bonuses for this month
                                     $automaticBonuses = 0;
@@ -131,7 +134,7 @@
                                         }
                                     }
                                 @endphp
-                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50" x-data="{ selected: false, bonus: 0, absentDays: 0, otherDeduction: 0, autoBonuses: {{ $automaticBonuses }}, dailyRate: {{ $basicSalary }} / {{ $daysInMonth }} }">
+                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50" x-data="{ selected: false, bonus: 0, absentDays: 0, otherDeduction: 0, autoBonuses: {{ $automaticBonuses }}, dailyRate: {{ $daysInMonth > 0 ? $basicSalary / $daysInMonth : 0 }}, proratedBasic: {{ $proratedBasicSalary }}, proratedAllowances: {{ $proratedAllowances }} }">
                                     <div class="flex items-start gap-4">
                                         {{-- Checkbox --}}
                                         <div class="flex items-center h-10">
@@ -150,22 +153,25 @@
                                                 <div>
                                                     <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $employee->name }}</h4>
                                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $employee->employee_number }} • {{ $employee->position }}</p>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        {{ $payableDays }} payable calendar day{{ $payableDays === 1 ? '' : 's' }} in {{ date('F Y', mktime(0, 0, 0, $month, 1, $year)) }}
+                                                    </p>
                                                 </div>
                                                 <div class="text-right">
                                                     <div class="text-xs text-gray-500 dark:text-gray-400">Net Salary</div>
-                                                    <div class="text-lg font-bold text-gray-900 dark:text-gray-100" x-text="calculateNet({{ $basicSalary }}, {{ $allowances }}, {{ $automaticBonuses }}, {{ $loanDeduction }})"></div>
+                                                    <div class="text-lg font-bold text-gray-900 dark:text-gray-100" x-text="calculateNet(proratedBasic, proratedAllowances, autoBonuses, {{ $loanDeduction }})"></div>
                                                 </div>
                                             </div>
 
                                             {{-- Salary Breakdown --}}
                                             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
                                                 <div class="bg-gray-50 dark:bg-gray-900 rounded p-2">
-                                                    <div class="text-xs text-gray-500 dark:text-gray-400">Basic Salary</div>
-                                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ number_format($basicSalary, 2) }}</div>
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">Prorated Basic</div>
+                                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ number_format($proratedBasicSalary, 2) }}</div>
                                                 </div>
                                                 <div class="bg-green-50 dark:bg-green-900/20 rounded p-2">
-                                                    <div class="text-xs text-green-600 dark:text-green-400">Allowances</div>
-                                                    <div class="text-sm font-semibold text-green-700 dark:text-green-300">+{{ number_format($allowances, 2) }}</div>
+                                                    <div class="text-xs text-green-600 dark:text-green-400">Prorated Allowances</div>
+                                                    <div class="text-sm font-semibold text-green-700 dark:text-green-300">+{{ number_format($proratedAllowances, 2) }}</div>
                                                 </div>
                                                 <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded p-2">
                                                     <div class="text-xs text-yellow-600 dark:text-yellow-400">Auto Bonuses</div>
@@ -177,7 +183,7 @@
                                                 </div>
                                                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded p-2">
                                                     <div class="text-xs text-blue-600 dark:text-blue-400">Gross</div>
-                                                    <div class="text-sm font-semibold text-blue-700 dark:text-blue-300" x-text="({{ $basicSalary }} + {{ $allowances }} + autoBonuses + parseFloat(bonus || 0)).toFixed(2)"></div>
+                                                    <div class="text-sm font-semibold text-blue-700 dark:text-blue-300" x-text="(proratedBasic + proratedAllowances + autoBonuses + parseFloat(bonus || 0)).toFixed(2)"></div>
                                                 </div>
                                             </div>
 
