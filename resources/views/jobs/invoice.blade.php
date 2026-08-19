@@ -36,6 +36,20 @@
     </style>
 </head>
 <body>
+@php
+    $invoiceDate = $job->job_date instanceof \Carbon\CarbonInterface
+        ? $job->job_date->format('Y-m-d')
+        : (!empty($job->job_date) ? \Carbon\Carbon::parse($job->job_date)->format('Y-m-d') : now()->format('Y-m-d'));
+
+    $dueDate = $job->due_date instanceof \Carbon\CarbonInterface
+        ? $job->due_date->format('Y-m-d')
+        : (!empty($job->due_date) ? \Carbon\Carbon::parse($job->due_date)->format('Y-m-d') : 'Upon receipt');
+
+    $paymentStatusLabel = strtoupper((string) ($job->payment_status ?: 'unpaid'));
+    $billToName = $job->customer_name ?: $job->customer?->name ?: 'Walk-in Customer';
+    $billToPhone = $job->customer_phone ?: $job->customer?->phone ?: 'N/A';
+    $billToAddress = $job->address ?: $job->customer?->address ?: null;
+@endphp
 <div class="invoice">
     <div class="no-print" style="text-align:right; margin-bottom:10px;">
         <button onclick="window.print()">Print</button>
@@ -57,13 +71,13 @@
             <div class="font-bold">TAX INVOICE</div>
             <div class="text-xs mt-1">Invoice No: {{ $invoiceNumber }}</div>
             <div class="text-xs">Job ID: #{{ $job->id }}</div>
-            <div class="text-xs">Date: {{ $job->job_date ? \Carbon\Carbon::parse($job->job_date)->format('Y-m-d') : now()->format('Y-m-d') }}</div>
-            <div class="text-xs">Due: {{ $job->due_date ? $job->due_date->format('Y-m-d') : 'Upon receipt' }}</div>
+            <div class="text-xs">Date: {{ $invoiceDate }}</div>
+            <div class="text-xs">Due: {{ $dueDate }}</div>
             <div class="mt-1">
                 @if($job->payment_status === 'paid')
                     <span class="badge-paid">PAID</span>
                 @else
-                    <span class="badge-unpaid">{{ strtoupper($job->payment_status) }}</span>
+                    <span class="badge-unpaid">{{ $paymentStatusLabel }}</span>
                 @endif
             </div>
         </div>
@@ -72,14 +86,14 @@
 	    <div class="flex justify-between items-start border rounded" style="padding:10px;">
 	        <div>
 	            <div class="text-sm font-bold mb-1">Bill To</div>
-	            <div class="text-sm">{{ $job->customer_name ?? $job->customer?->name }}</div>
-	            @if($job->address)
-	                <div class="text-xs">{{ $job->address }}</div>
+	            <div class="text-sm">{{ $billToName }}</div>
+	            @if($billToAddress)
+	                <div class="text-xs">{{ $billToAddress }}</div>
 	            @endif
 	            @if($job->customer?->gst_number)
 	                <div class="text-xs">GST No: {{ $job->customer->gst_number }}</div>
 	            @endif
-	            <div class="text-xs">Phone: {{ $job->customer_phone ?? $job->customer?->phone }}</div>
+	            <div class="text-xs">Phone: {{ $billToPhone }}</div>
                 @if(($job->approval_method ?? 'not_applicable') === 'po' && $job->po_number)
                     <div class="text-xs">PO No: {{ $job->po_number }}</div>
                 @elseif(($job->approval_method ?? 'not_applicable') === 'signed_copy')
@@ -269,13 +283,18 @@
         <div class="text-sm font-bold mb-2">Payment Terms</div>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
             @if($job->due_date)
-                <li class="text-xs">Payment is due on or before {{ $job->due_date->format('Y-m-d') }}.</li>
+                <li class="text-xs">Payment is due on or before {{ $dueDate }}.</li>
             @else
                 <li class="text-xs">Payment is due upon receipt of invoice.</li>
             @endif
             <li class="text-xs">Services and products will be treated as complete once full payment has been received.</li>
             <li class="text-xs">Please ensure that the bank transfer reference matches your invoice number for smooth processing.</li>
         </ul>
+    </div>
+
+    <div class="mt-6 text-xs" style="border-top: 1px solid #e5e7eb; padding-top: 12px; line-height: 1.7;">
+        <div>This is a computer generated invoice, signature is not required.</div>
+        <div>Approved by Hussain Munad Ibrahim.</div>
     </div>
 </div>
 </body>
