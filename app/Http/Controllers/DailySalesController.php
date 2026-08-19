@@ -120,6 +120,34 @@ class DailySalesController extends Controller
         return view('sales.daily-show', $this->buildShowViewData($dailySalesLog, 'invoice'));
     }
 
+    public function updateInvoiceDate(Request $request, DailySalesLog $dailySalesLog)
+    {
+        if ($dailySalesLog->isSubmitted()) {
+            return back()->with('error', 'Cannot change the invoice date after payment has been recorded.');
+        }
+
+        $validated = $request->validate([
+            'date' => ['required', 'date', 'before_or_equal:today'],
+        ]);
+
+        $dailySalesLog->update([
+            'date' => $validated['date'],
+        ]);
+
+        if ($dailySalesLog->job_id && $dailySalesLog->job) {
+            $dailySalesLog->job->fill([
+                'job_date' => $validated['date'],
+                'title' => 'Daily Sales — ' . \Carbon\Carbon::parse($validated['date'])->format('d M Y'),
+            ])->save();
+        } else {
+            $dailySalesLog->syncLinkedDraftJob();
+        }
+
+        ActivityLog::record('sale.invoice_date_updated', "Sale #{$dailySalesLog->id} invoice date → {$validated['date']}", $dailySalesLog);
+
+        return back()->with('success', 'Invoice date updated.');
+    }
+
     private function buildShowViewData(DailySalesLog $dailySalesLog, string $screen): array
     {
         if ($dailySalesLog->job_id) {

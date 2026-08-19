@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; color: #111827; margin: 0; padding: 20px; }
-        .invoice { max-width: 800px; margin: 0 auto; }
+        .invoice { max-width: 800px; margin: 0 auto; position: relative; }
         .flex { display: flex; }
         .justify-between { justify-content: space-between; }
         .items-start { align-items: flex-start; }
@@ -29,9 +29,20 @@
         .text-right { text-align: right; }
         .badge-paid { display:inline-block; padding:2px 6px; border-radius:9999px; background:#dcfce7; color:#166534; font-size:10px; font-weight:600;}
         .badge-unpaid { display:inline-block; padding:2px 6px; border-radius:9999px; background:#fee2e2; color:#b91c1c; font-size:10px; font-weight:600;}
+        .print-page-footer { display: none; }
         @media print {
             body { padding: 0; }
             .no-print { display: none; }
+            .invoice { padding-bottom: 28px; }
+            .print-page-footer {
+                display: block;
+                position: absolute;
+                left: 0;
+                right: 0;
+                text-align: right;
+                font-size: 10px;
+                color: #6b7280;
+            }
         }
     </style>
 </head>
@@ -297,5 +308,45 @@
         <div>Approved by Hussain Munad Ibrahim.</div>
     </div>
 </div>
+<script>
+    (() => {
+        const PAGE_HEIGHT_MM = 297;
+        const PAGE_MARGIN_MM = 20;
+        const FOOTER_OFFSET_PX = 18;
+        const PX_PER_MM = 96 / 25.4;
+
+        function cleanupPageFooters() {
+            document.querySelectorAll('.print-page-footer').forEach((node) => node.remove());
+        }
+
+        function applyPageFooters() {
+            cleanupPageFooters();
+
+            const invoice = document.querySelector('.invoice');
+            if (!invoice) return;
+
+            const printableHeight = (PAGE_HEIGHT_MM - PAGE_MARGIN_MM) * PX_PER_MM;
+            const totalPages = Math.max(1, Math.ceil(invoice.scrollHeight / printableHeight));
+
+            if (totalPages <= 1) {
+                return;
+            }
+
+            invoice.style.paddingBottom = '36px';
+
+            for (let page = 1; page <= totalPages; page++) {
+                const footer = document.createElement('div');
+                footer.className = 'print-page-footer';
+                footer.textContent = `Page ${page} of ${totalPages}`;
+                footer.style.top = `${(page * printableHeight) - FOOTER_OFFSET_PX}px`;
+                invoice.appendChild(footer);
+            }
+        }
+
+        window.addEventListener('beforeprint', applyPageFooters);
+        window.addEventListener('afterprint', cleanupPageFooters);
+        window.addEventListener('load', applyPageFooters);
+    })();
+</script>
 </body>
 </html>

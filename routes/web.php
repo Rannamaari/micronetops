@@ -207,6 +207,7 @@ Route::middleware('auth')->group(function () {
         Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
         Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
         Route::post('sales/daily/{dailySalesLog}/set-customer', [DailySalesController::class, 'setCustomer'])->name('sales.daily.set-customer');
+        Route::patch('sales/daily/{dailySalesLog}/invoice-date', [DailySalesController::class, 'updateInvoiceDate'])->name('sales.daily.update-invoice-date');
         Route::patch('sales/daily/{dailySalesLog}/due-date', [DailySalesController::class, 'updateDueDate'])->name('sales.daily.update-due-date');
         Route::patch('sales/daily/{dailySalesLog}/quotation-validity', [DailySalesController::class, 'updateQuotationValidity'])->name('sales.daily.update-quotation-validity');
         Route::patch('sales/daily/{dailySalesLog}/po-number', [DailySalesController::class, 'updatePoNumber'])->name('sales.daily.update-po-number');
