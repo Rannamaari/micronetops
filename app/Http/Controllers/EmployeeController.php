@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 class EmployeeController extends Controller
 {
@@ -108,7 +109,7 @@ class EmployeeController extends Controller
             $validated['basic_salary'] = $validated['basic_salary_usd'] * 15.42;
         }
 
-        $employee = Employee::create($validated);
+        $employee = Employee::create($this->filterUnsupportedColumns($validated));
 
         return redirect()
             ->route('employees.show', $employee)
@@ -191,7 +192,7 @@ class EmployeeController extends Controller
             $validated['basic_salary'] = $validated['basic_salary_usd'] * 15.42;
         }
 
-        $employee->update($validated);
+        $employee->update($this->filterUnsupportedColumns($validated));
 
         return redirect()
             ->route('employees.show', $employee)
@@ -217,5 +218,24 @@ class EmployeeController extends Controller
     public function letterOfAppointment(Employee $employee)
     {
         return view('employees.letter-of-appointment', compact('employee'));
+    }
+
+    /**
+     * Drop fields that are not present in the current database schema.
+     * This protects production if a column migration has not been applied yet.
+     */
+    private function filterUnsupportedColumns(array $attributes): array
+    {
+        static $employeeColumns = null;
+
+        if ($employeeColumns === null) {
+            $employeeColumns = Schema::getColumnListing((new Employee())->getTable());
+        }
+
+        return array_filter(
+            $attributes,
+            fn ($value, $key) => in_array($key, $employeeColumns, true),
+            ARRAY_FILTER_USE_BOTH
+        );
     }
 }

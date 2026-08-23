@@ -27,6 +27,7 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PnLController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PettyCashController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringExpenseController;
 use App\Http\Controllers\VendorController;
@@ -222,6 +223,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('sales/daily/{dailySalesLog}', [DailySalesController::class, 'destroy'])->name('sales.daily.destroy');
         Route::get('sales/reports', [DailySalesController::class, 'reports'])->name('sales.reports');
         Route::get('sales/search', [SalesSearchController::class, 'index'])->name('sales.search');
+        Route::get('sales/purchase-orders', [PurchaseOrderController::class, 'index'])->name('sales.purchase-orders.index');
+        Route::get('sales/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('sales.purchase-orders.create');
+        Route::post('sales/purchase-orders', [PurchaseOrderController::class, 'store'])->name('sales.purchase-orders.store');
+        Route::get('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('sales.purchase-orders.show');
+        Route::get('sales/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('sales.purchase-orders.print');
+        Route::get('sales/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('sales.purchase-orders.edit');
+        Route::patch('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('sales.purchase-orders.update');
+        Route::patch('sales/purchase-orders/{purchaseOrder}/number', [PurchaseOrderController::class, 'updateNumber'])->name('sales.purchase-orders.update-number');
+        Route::post('sales/purchase-orders/{purchaseOrder}/resubmit', [PurchaseOrderController::class, 'resubmit'])->name('sales.purchase-orders.resubmit');
+        Route::post('sales/purchase-orders/{purchaseOrder}/issue', [PurchaseOrderController::class, 'issue'])->name('sales.purchase-orders.issue');
+        Route::post('sales/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('sales.purchase-orders.cancel');
 
         // End of Day
         Route::get('sales/eod', [EodController::class, 'index'])->name('sales.eod.index');
