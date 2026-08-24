@@ -206,6 +206,8 @@ Route::middleware('auth')->group(function () {
         Route::get('sales/daily/{dailySalesLog}/quotation-builder', [DailySalesController::class, 'quotationBuilder'])->name('sales.daily.quotation-builder');
         Route::get('sales/daily/{dailySalesLog}/invoice-workflow', [DailySalesController::class, 'invoiceWorkflow'])->name('sales.daily.invoice-workflow');
         Route::post('sales/daily/{dailySalesLog}/lines', [DailySalesController::class, 'addLine'])->name('sales.daily.add-line');
+        Route::patch('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'updateLine'])->name('sales.daily.update-line');
+        Route::post('sales/daily/{dailySalesLog}/lines/{line}/move', [DailySalesController::class, 'moveLine'])->name('sales.daily.move-line');
         Route::delete('sales/daily/{dailySalesLog}/lines/{line}', [DailySalesController::class, 'removeLine'])->name('sales.daily.remove-line');
         Route::post('sales/daily/{dailySalesLog}/set-customer', [DailySalesController::class, 'setCustomer'])->name('sales.daily.set-customer');
         Route::patch('sales/daily/{dailySalesLog}/invoice-date', [DailySalesController::class, 'updateInvoiceDate'])->name('sales.daily.update-invoice-date');

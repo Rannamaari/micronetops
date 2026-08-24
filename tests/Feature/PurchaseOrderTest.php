@@ -47,11 +47,20 @@ class PurchaseOrderTest extends TestCase
             'lines' => [
                 [
                     'inventory_item_id' => $item->id,
+                    'sort_order' => 1,
                     'description' => 'Network Cable',
                     'quantity' => 2,
                     'unit' => 'roll',
                     'unit_cost' => 250,
                     'notes' => 'CAT6',
+                ],
+                [
+                    'sort_order' => 2,
+                    'description' => 'RJ45 Connectors',
+                    'quantity' => 1,
+                    'unit' => 'box',
+                    'unit_cost' => 150,
+                    'notes' => 'Keep as backup stock.',
                 ],
             ],
         ]);
@@ -62,8 +71,10 @@ class PurchaseOrderTest extends TestCase
         $this->assertNotNull($purchaseOrder);
         $this->assertSame('PO-00001', $purchaseOrder->po_number);
         $this->assertEquals('it', $purchaseOrder->business_unit);
-        $this->assertEquals(500.00, (float) $purchaseOrder->total_amount);
-        $this->assertCount(1, $purchaseOrder->lines);
+        $this->assertEquals(650.00, (float) $purchaseOrder->total_amount);
+        $this->assertCount(2, $purchaseOrder->lines);
+        $this->assertSame([1, 2], $purchaseOrder->lines->pluck('sort_order')->all());
+        $this->assertSame(['Network Cable', 'RJ45 Connectors'], $purchaseOrder->lines->pluck('description')->all());
     }
 
     public function test_mechanic_cannot_access_purchase_orders(): void

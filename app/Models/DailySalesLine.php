@@ -12,6 +12,7 @@ class DailySalesLine extends Model
     protected $fillable = [
         'daily_sales_log_id',
         'inventory_item_id',
+        'sort_order',
         'description',
         'qty',
         'unit_price',
@@ -26,6 +27,7 @@ class DailySalesLine extends Model
     ];
 
     protected $casts = [
+        'sort_order' => 'integer',
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
         'is_stock_item' => 'boolean',

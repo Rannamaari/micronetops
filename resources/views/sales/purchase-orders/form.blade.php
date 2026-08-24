@@ -168,8 +168,13 @@
             <div class="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100" x-text="`Line ${index + 1}`"></h4>
-                    <button type="button" @click="removeLine(index)" class="text-sm text-red-600 hover:text-red-700 dark:text-red-400">Remove</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="moveUp(index)" :disabled="index === 0" class="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900">Up</button>
+                        <button type="button" @click="moveDown(index)" :disabled="index === lines.length - 1" class="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900">Down</button>
+                        <button type="button" @click="removeLine(index)" class="text-sm text-red-600 hover:text-red-700 dark:text-red-400">Remove</button>
+                    </div>
                 </div>
+                <input type="hidden" :name="`lines[${index}][sort_order]`" :value="index + 1">
 
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div class="lg:col-span-2">
@@ -263,6 +268,18 @@
                 },
                 removeLine(index) {
                     this.lines.splice(index, 1);
+                },
+                moveUp(index) {
+                    if (index === 0) return;
+                    const item = this.lines[index];
+                    this.lines.splice(index, 1);
+                    this.lines.splice(index - 1, 0, item);
+                },
+                moveDown(index) {
+                    if (index >= this.lines.length - 1) return;
+                    const item = this.lines[index];
+                    this.lines.splice(index, 1);
+                    this.lines.splice(index + 1, 0, item);
                 },
                 lineTotal(line) {
                     return (parseFloat(line.quantity || 0) * parseFloat(line.unit_cost || 0));

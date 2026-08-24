@@ -12,6 +12,7 @@ class PurchaseOrderLine extends Model
     protected $fillable = [
         'purchase_order_id',
         'inventory_item_id',
+        'sort_order',
         'description',
         'quantity',
         'unit',
@@ -21,6 +22,7 @@ class PurchaseOrderLine extends Model
     ];
 
     protected $casts = [
+        'sort_order' => 'integer',
         'quantity' => 'decimal:2',
         'unit_cost' => 'decimal:2',
         'line_total' => 'decimal:2',

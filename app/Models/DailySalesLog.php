@@ -53,7 +53,7 @@ class DailySalesLog extends Model
 
     public function lines()
     {
-        return $this->hasMany(DailySalesLine::class);
+        return $this->hasMany(DailySalesLine::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function createdByUser()
@@ -134,6 +134,15 @@ class DailySalesLog extends Model
     public function canEditQuotation(): bool
     {
         return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_QUOTATION], true);
+    }
+
+    public function canManageLineItems(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_QUOTATION,
+            self::STATUS_INVOICED,
+        ], true);
     }
 
     public function isApprovalReady(): bool

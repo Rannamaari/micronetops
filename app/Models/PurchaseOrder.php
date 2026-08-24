@@ -43,7 +43,7 @@ class PurchaseOrder extends Model
 
     public function lines()
     {
-        return $this->hasMany(PurchaseOrderLine::class)->orderBy('id');
+        return $this->hasMany(PurchaseOrderLine::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function vendor()

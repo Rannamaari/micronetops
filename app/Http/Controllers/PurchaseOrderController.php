@@ -98,6 +98,7 @@ class PurchaseOrderController extends Controller
 
                 $purchaseOrder->lines()->create([
                     'inventory_item_id' => $line['inventory_item_id'] ?? null,
+                    'sort_order' => (int) ($line['sort_order'] ?? 0),
                     'description' => $description,
                     'quantity' => $quantity,
                     'unit' => !empty($line['unit']) ? trim((string) $line['unit']) : null,
@@ -193,6 +194,7 @@ class PurchaseOrderController extends Controller
 
                 $purchaseOrder->lines()->create([
                     'inventory_item_id' => $line['inventory_item_id'] ?? null,
+                    'sort_order' => (int) ($line['sort_order'] ?? 0),
                     'description' => trim((string) $line['description']),
                     'quantity' => $quantity,
                     'unit' => !empty($line['unit']) ? trim((string) $line['unit']) : null,
@@ -267,6 +269,7 @@ class PurchaseOrderController extends Controller
             foreach ($purchaseOrder->lines as $line) {
                 $newPurchaseOrder->lines()->create([
                     'inventory_item_id' => $line->inventory_item_id,
+                    'sort_order' => $line->sort_order,
                     'description' => $line->description,
                     'quantity' => $line->quantity,
                     'unit' => $line->unit,
@@ -360,6 +363,7 @@ class PurchaseOrderController extends Controller
             'terms' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.inventory_item_id' => ['nullable', 'integer', 'exists:inventory_items,id'],
+            'lines.*.sort_order' => ['nullable', 'integer', 'min:1'],
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
             'lines.*.unit' => ['nullable', 'string', 'max:50'],
@@ -377,6 +381,7 @@ class PurchaseOrderController extends Controller
 
         $validated['lines'] = collect($validated['lines'])
             ->filter(fn (array $line) => !blank($line['description'] ?? null))
+            ->sortBy(fn (array $line, int $index) => $line['sort_order'] ?? ($index + 1))
             ->values()
             ->all();
 

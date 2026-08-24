@@ -764,7 +764,8 @@
             @endif
 
             {{-- Lines Table --}}
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden"
+                 x-data="{ editingLineId: null }">
                 <div class="px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                         Sale Lines ({{ $log->lines->count() }})
@@ -786,8 +787,8 @@
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">GST</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
-                                    @if($log->canEditQuotation())
-                                        <th class="px-4 py-3 w-16"></th>
+                                    @if($log->canManageLineItems())
+                                        <th class="px-4 py-3 w-44"></th>
                                     @endif
                                 </tr>
                             </thead>
@@ -822,18 +823,88 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{{ number_format($line->line_total + $line->gst_amount, 2) }}</td>
-                                        @if($log->canEditQuotation())
-                                            <td class="px-4 py-3 text-center">
-                                                <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        @if($log->canManageLineItems())
+                                            <td class="px-4 py-3">
+                                                <div class="flex items-center justify-end gap-1">
+                                                    <form method="POST" action="{{ route('sales.daily.move-line', [$log, $line]) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="direction" value="up">
+                                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900" title="Move up">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST" action="{{ route('sales.daily.move-line', [$log, $line]) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="direction" value="down">
+                                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900" title="Move down">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                                        </button>
+                                                    </form>
+                                                    <button type="button" @click="editingLineId = editingLineId === {{ $line->id }} ? null : {{ $line->id }}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-indigo-600 hover:bg-indigo-50 dark:border-gray-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20" title="Edit line">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a1 1 0 001 1h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                     </button>
-                                                </form>
+                                                    <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/20" title="Remove line">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         @endif
                                     </tr>
+                                    @if($log->canManageLineItems())
+                                        <tr x-show="editingLineId === {{ $line->id }}" x-cloak>
+                                            <td colspan="6" class="px-4 pb-4">
+                                                <form method="POST" action="{{ route('sales.daily.update-line', [$log, $line]) }}" class="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                                                        <div class="lg:col-span-2">
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                                                            <input type="text" name="description" value="{{ old('description', $line->description) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Qty</label>
+                                                            <input type="number" name="qty" min="1" value="{{ old('qty', $line->qty) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
+                                                            <input type="number" step="0.01" min="0" name="unit_price" value="{{ old('unit_price', $line->unit_price) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                                        </div>
+                                                        <div class="flex items-end">
+                                                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                                                <input type="hidden" name="is_gst_applicable" value="0">
+                                                                <input type="checkbox" name="is_gst_applicable" value="1" @checked($line->is_gst_applicable) class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                                                                GST 8%
+                                                            </label>
+                                                        </div>
+                                                        <div class="lg:col-span-2">
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
+                                                            <input type="text" name="note" value="{{ old('note', $line->note) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Warranty</label>
+                                                            <input type="number" min="1" name="warranty_value" value="{{ old('warranty_value', $line->warranty_value) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                                                            <select name="warranty_unit" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                                                <option value="">None</option>
+                                                                <option value="days" @selected(old('warranty_unit', $line->warranty_unit) === 'days')>Days</option>
+                                                                <option value="months" @selected(old('warranty_unit', $line->warranty_unit) === 'months')>Months</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-3 flex items-center justify-end gap-2">
+                                                        <button type="button" @click="editingLineId = null" class="px-3 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</button>
+                                                        <button type="submit" class="px-3 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Save Changes</button>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @endforeach
                             </tbody>
                         </table>
@@ -875,17 +946,85 @@
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0">
                                         <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ number_format($line->line_total + $line->gst_amount, 2) }}</span>
-                                        @if($log->canEditQuotation())
-                                            <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        @if($log->canManageLineItems())
+                                            <div class="flex items-center gap-1">
+                                                <form method="POST" action="{{ route('sales.daily.move-line', [$log, $line]) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="direction" value="up">
+                                                    <button type="submit" class="p-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ route('sales.daily.move-line', [$log, $line]) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="direction" value="down">
+                                                    <button type="submit" class="p-1.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                                    </button>
+                                                </form>
+                                                <button type="button" @click="editingLineId = editingLineId === {{ $line->id }} ? null : {{ $line->id }}" class="p-1.5 rounded border border-indigo-200 text-indigo-500 hover:bg-indigo-50 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/20">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a1 1 0 001 1h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                 </button>
-                                            </form>
+                                                <form method="POST" action="{{ route('sales.daily.remove-line', [$log, $line]) }}" onsubmit="return confirm('Remove this line?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
+                                @if($log->canManageLineItems())
+                                    <div x-show="editingLineId === {{ $line->id }}" x-cloak class="mt-3">
+                                        <form method="POST" action="{{ route('sales.daily.update-line', [$log, $line]) }}" class="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/40 space-y-3">
+                                            @csrf
+                                            @method('PATCH')
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                                                <input type="text" name="description" value="{{ old('description', $line->description) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Qty</label>
+                                                    <input type="number" name="qty" min="1" value="{{ old('qty', $line->qty) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price</label>
+                                                    <input type="number" step="0.01" min="0" name="unit_price" value="{{ old('unit_price', $line->unit_price) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
+                                                <input type="text" name="note" value="{{ old('note', $line->note) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Warranty</label>
+                                                    <input type="number" min="1" name="warranty_value" value="{{ old('warranty_value', $line->warranty_value) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                                                    <select name="warranty_unit" class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                                                        <option value="">None</option>
+                                                        <option value="days" @selected(old('warranty_unit', $line->warranty_unit) === 'days')>Days</option>
+                                                        <option value="months" @selected(old('warranty_unit', $line->warranty_unit) === 'months')>Months</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                                <input type="hidden" name="is_gst_applicable" value="0">
+                                                <input type="checkbox" name="is_gst_applicable" value="1" @checked($line->is_gst_applicable) class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                                                GST 8%
+                                            </label>
+                                            <div class="flex items-center justify-end gap-2">
+                                                <button type="button" @click="editingLineId = null" class="px-3 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</button>
+                                                <button type="submit" class="px-3 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

@@ -336,8 +336,8 @@ class DailySalesController extends Controller
 
     public function addLine(Request $request, DailySalesLog $dailySalesLog)
     {
-        if (!$dailySalesLog->canEditQuotation()) {
-            return back()->with('error', 'Cannot add lines after the quotation has been converted to an invoice.');
+        if (!$dailySalesLog->canManageLineItems()) {
+            return back()->with('error', 'Cannot add lines after payment has been recorded.');
         }
 
         $validated = $request->validate([
@@ -368,6 +368,7 @@ class DailySalesController extends Controller
 
         $dailySalesLog->lines()->create([
             'inventory_item_id' => $validated['inventory_item_id'] ?? null,
+            'sort_order' => ((int) $dailySalesLog->lines()->max('sort_order')) + 1,
             'description' => $description,
             'qty' => $qty,
             'unit_price' => $unitPrice,
@@ -381,16 +382,96 @@ class DailySalesController extends Controller
             'gst_amount' => $gstAmount,
         ]);
 
-        $dailySalesLog->syncWorkflowStatus();
-        $dailySalesLog->syncLinkedDraftJob();
+        $this->syncSalesDocuments($dailySalesLog);
 
         return back()->with('success', 'Line added.');
     }
 
+    public function updateLine(Request $request, DailySalesLog $dailySalesLog, DailySalesLine $line)
+    {
+        if (!$dailySalesLog->canManageLineItems()) {
+            return back()->with('error', 'Cannot edit lines after payment has been recorded.');
+        }
+
+        if ($line->daily_sales_log_id !== $dailySalesLog->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:255'],
+            'qty' => ['required', 'integer', 'min:1'],
+            'unit_price' => ['required', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string', 'max:1000'],
+            'warranty_value' => ['nullable', 'integer', 'min:1', 'required_with:warranty_unit'],
+            'warranty_unit' => ['nullable', 'in:days,months', 'required_with:warranty_value'],
+            'is_gst_applicable' => ['nullable', 'boolean'],
+        ]);
+
+        $qty = (int) $validated['qty'];
+        $unitPrice = (float) $validated['unit_price'];
+        $lineTotal = $qty * $unitPrice;
+        $isGst = !empty($validated['is_gst_applicable']);
+
+        $line->update([
+            'description' => trim((string) $validated['description']),
+            'qty' => $qty,
+            'unit_price' => $unitPrice,
+            'line_total' => $lineTotal,
+            'note' => $validated['note'] ?? null,
+            'warranty_value' => $validated['warranty_value'] ?? null,
+            'warranty_unit' => $validated['warranty_unit'] ?? null,
+            'is_gst_applicable' => $isGst,
+            'gst_amount' => $isGst ? round($lineTotal * 0.08, 2) : 0,
+        ]);
+
+        $this->syncSalesDocuments($dailySalesLog);
+
+        return back()->with('success', 'Line updated.');
+    }
+
+    public function moveLine(Request $request, DailySalesLog $dailySalesLog, DailySalesLine $line)
+    {
+        if (!$dailySalesLog->canManageLineItems()) {
+            return back()->with('error', 'Cannot reorder lines after payment has been recorded.');
+        }
+
+        if ($line->daily_sales_log_id !== $dailySalesLog->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'direction' => ['required', 'in:up,down'],
+        ]);
+
+        $orderedLines = $dailySalesLog->lines()->orderBy('sort_order')->orderBy('id')->get()->values();
+        $currentIndex = $orderedLines->search(fn ($item) => $item->id === $line->id);
+
+        if ($currentIndex === false) {
+            abort(404);
+        }
+
+        $swapIndex = $validated['direction'] === 'up' ? $currentIndex - 1 : $currentIndex + 1;
+
+        if (!isset($orderedLines[$swapIndex])) {
+            return back();
+        }
+
+        $swapLine = $orderedLines[$swapIndex];
+        $currentOrder = $line->sort_order ?? ($currentIndex + 1);
+        $swapOrder = $swapLine->sort_order ?? ($swapIndex + 1);
+
+        $line->update(['sort_order' => $swapOrder]);
+        $swapLine->update(['sort_order' => $currentOrder]);
+
+        $this->syncSalesDocuments($dailySalesLog);
+
+        return back()->with('success', 'Line order updated.');
+    }
+
     public function removeLine(DailySalesLog $dailySalesLog, DailySalesLine $line)
     {
-        if (!$dailySalesLog->canEditQuotation()) {
-            return back()->with('error', 'Cannot remove lines after the quotation has been converted to an invoice.');
+        if (!$dailySalesLog->canManageLineItems()) {
+            return back()->with('error', 'Cannot remove lines after payment has been recorded.');
         }
 
         if ($line->daily_sales_log_id !== $dailySalesLog->id) {
@@ -399,8 +480,8 @@ class DailySalesController extends Controller
 
         $line->delete();
 
-        $dailySalesLog->syncWorkflowStatus();
-        $dailySalesLog->syncLinkedDraftJob();
+        $this->normalizeLineOrder($dailySalesLog);
+        $this->syncSalesDocuments($dailySalesLog);
 
         return back()->with('success', 'Line removed.');
     }
@@ -717,5 +798,27 @@ class DailySalesController extends Controller
             'dailySummaries', 'totalCash', 'totalTransfer', 'grandTotal',
             'topItems', 'unitBreakdown'
         ));
+    }
+
+    private function syncSalesDocuments(DailySalesLog $dailySalesLog): void
+    {
+        $dailySalesLog->refresh();
+
+        if ($dailySalesLog->job_id) {
+            $job = $dailySalesLog->createOrUpdateInvoiceJob(false);
+            $dailySalesLog->syncWorkflowStatus($job);
+        } else {
+            $dailySalesLog->syncWorkflowStatus();
+            $dailySalesLog->syncLinkedDraftJob();
+        }
+    }
+
+    private function normalizeLineOrder(DailySalesLog $dailySalesLog): void
+    {
+        $dailySalesLog->lines()->orderBy('sort_order')->orderBy('id')->get()->values()->each(function (DailySalesLine $line, int $index) {
+            if ((int) $line->sort_order !== $index + 1) {
+                $line->update(['sort_order' => $index + 1]);
+            }
+        });
     }
 }
