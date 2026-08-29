@@ -1,138 +1,258 @@
 <x-app-layout>
+    @php
+        $themeStyles = [
+            'blue' => [
+                'card' => 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
+                'icon' => 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40',
+                'badge' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                'link' => 'text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40',
+            ],
+            'teal' => [
+                'card' => 'bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:border-teal-800',
+                'icon' => 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/40',
+                'badge' => 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+                'link' => 'text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/40',
+            ],
+            'green' => [
+                'card' => 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800',
+                'icon' => 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40',
+                'badge' => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                'link' => 'text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40',
+            ],
+            'yellow' => [
+                'card' => 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800',
+                'icon' => 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40',
+                'badge' => 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+                'link' => 'text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/40',
+            ],
+            'purple' => [
+                'card' => 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800',
+                'icon' => 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40',
+                'badge' => 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                'link' => 'text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40',
+            ],
+            'red' => [
+                'card' => 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
+                'icon' => 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40',
+                'badge' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                'link' => 'text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40',
+            ],
+            'orange' => [
+                'card' => 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800',
+                'icon' => 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/40',
+                'badge' => 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+                'link' => 'text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40',
+            ],
+            'slate' => [
+                'card' => 'bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-800',
+                'icon' => 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/40',
+                'badge' => 'bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300',
+                'link' => 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/40',
+            ],
+            'indigo' => [
+                'card' => 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800',
+                'icon' => 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/40',
+                'badge' => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+                'link' => 'text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40',
+            ],
+        ];
+
+        $snapshotCards = [
+            [
+                'label' => 'Revenue This Month',
+                'value' => 'MVR ' . number_format($monthRevenue, 2),
+                'note' => 'Completed jobs recognized this month',
+                'theme' => 'green',
+            ],
+            [
+                'label' => 'Expenses This Month',
+                'value' => 'MVR ' . number_format($monthExpenses, 2),
+                'note' => $expenseEntriesThisMonth . ' expense entries recorded',
+                'theme' => 'blue',
+            ],
+            [
+                'label' => 'Expenses This Week',
+                'value' => 'MVR ' . number_format($weekExpenses, 2),
+                'note' => 'Useful for short weekly stakeholder updates',
+                'theme' => 'teal',
+            ],
+            [
+                'label' => 'Low Stock Items',
+                'value' => number_format($lowStockCount),
+                'note' => 'Items at or below low-stock level',
+                'theme' => 'red',
+            ],
+            [
+                'label' => 'RW Expiring Soon',
+                'value' => number_format($rwExpiringSoonCount),
+                'note' => 'Vehicles due within the next 30 days',
+                'theme' => 'indigo',
+            ],
+        ];
+
+        $expenseMix = [
+            'cogs' => $expenseTypeBreakdown->get('cogs'),
+            'operating' => $expenseTypeBreakdown->get('operating'),
+            'other' => $expenseTypeBreakdown->get('other'),
+        ];
+    @endphp
+
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Reports') }}
-        </h2>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    {{ __('Reports') }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    A clean reporting hub for daily checks, monthly reviews, and stakeholder sharing.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('expenses.reports', ['period' => 'month']) }}" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                    Monthly Expense Pack
+                </a>
+                <a href="{{ route('reports.pnl', ['period' => 'month']) }}" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                    Monthly P&L
+                </a>
+            </div>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {{-- Road Worthiness Report --}}
-                        <a href="{{ route('reports.road-worthiness') }}" class="block p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Road Worthiness</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Track vehicle RW status and expirations</p>
-                                </div>
-                            </div>
+    <div class="py-6 sm:py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-6 text-white shadow-xl">
+                <div class="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.35),_transparent_55%)]"></div>
+                <div class="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+                    <div>
+                        <div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">
+                            Reporting Hub
+                        </div>
+                        <h3 class="mt-4 max-w-2xl text-2xl font-semibold leading-tight sm:text-3xl">
+                            Open the right report fast, and share clearer business updates with less digging.
+                        </h3>
+                        <p class="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
+                            Start with the expense dashboard for cost control, then move into P&amp;L and sales reports for a fuller stakeholder picture.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="{{ route('expenses.reports', ['period' => 'week']) }}" class="rounded-2xl bg-white/10 px-4 py-4 text-sm font-medium text-white transition hover:bg-white/15">
+                            This Week Expenses
                         </a>
-
-                        {{-- Daily Sales Report --}}
-                        <a href="{{ route('reports.daily-sales') }}" class="block p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Daily Sales</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">View sales by day with breakdowns</p>
-                                </div>
-                            </div>
+                        <a href="{{ route('expenses.reports', ['period' => 'month']) }}" class="rounded-2xl bg-white/10 px-4 py-4 text-sm font-medium text-white transition hover:bg-white/15">
+                            This Month Expenses
                         </a>
-
-                        {{-- Best Sellers Report --}}
-                        <a href="{{ route('reports.best-sellers') }}" class="block p-6 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Best Sellers</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Top selling products and services</p>
-                                </div>
-                            </div>
+                        <a href="{{ route('reports.daily-sales', ['date' => now()->toDateString()]) }}" class="rounded-2xl bg-white/10 px-4 py-4 text-sm font-medium text-white transition hover:bg-white/15">
+                            Today Sales
                         </a>
-
-                        {{-- Low Inventory Report --}}
-                        <a href="{{ route('reports.low-inventory') }}" class="block p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Low Inventory</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Items running low on stock</p>
-                                </div>
-                            </div>
+                        <a href="{{ route('reports.sales-trends', ['view' => 'month']) }}" class="rounded-2xl bg-white/10 px-4 py-4 text-sm font-medium text-white transition hover:bg-white/15">
+                            30-Day Trend
                         </a>
-
-                        {{-- Sales Trends Report --}}
-                        <a href="{{ route('reports.sales-trends') }}" class="block p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Sales Trends</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Sales performance over time</p>
-                                </div>
-                            </div>
-                        </a>
-
-                        {{-- Inventory Overview Report --}}
-                        <a href="{{ route('reports.inventory-overview') }}" class="block p-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-12 h-12 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Inventory Overview</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">All items, movements, and inventory details</p>
-                                </div>
-                            </div>
-                        </a>
-
-                        {{-- Profit & Loss Report --}}
-                        @if(auth()->user()->hasAnyRole(['admin', 'manager']))
-                            <a href="{{ route('reports.pnl') }}" class="block p-6 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/30 transition">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-shrink-0">
-                                        <svg class="w-12 h-12 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 15l3-3 4 4 6-6"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Profit & Loss</h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">Accrual summary by month, quarter, or year</p>
-                                    </div>
-                                </div>
-                            </a>
-
-                            <a href="{{ route('reports.fixed-assets.current-custody') }}" class="block p-6 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900/30 transition">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-shrink-0">
-                                        <svg class="w-12 h-12 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V3H9v2H6a2 2 0 00-2 2v6m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6m16 0H4"></path>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Fixed Assets</h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">Tools currently with staff and custody tracking</p>
-                                    </div>
-                                </div>
-                            </a>
-                        @endif
                     </div>
                 </div>
             </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                @foreach ($snapshotCards as $card)
+                    @php $style = $themeStyles[$card['theme']] ?? $themeStyles['blue']; @endphp
+                    <div class="rounded-2xl border p-4 shadow-sm {{ $style['card'] }}">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $card['label'] }}</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ $card['value'] }}</p>
+                        <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">{{ $card['note'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+                <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Expense Review Shortcuts</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Fast links for weekly and monthly cost reviews.</p>
+                        </div>
+                        <a href="{{ route('expenses.reports') }}" class="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                            Open full dashboard
+                        </a>
+                    </div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <a href="{{ route('expenses.reports', ['period' => 'today']) }}" class="rounded-2xl border border-gray-200 px-4 py-4 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:bg-blue-900/20">Today</a>
+                        <a href="{{ route('expenses.reports', ['period' => 'week']) }}" class="rounded-2xl border border-gray-200 px-4 py-4 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:bg-blue-900/20">This Week</a>
+                        <a href="{{ route('expenses.reports', ['period' => 'month']) }}" class="rounded-2xl border border-gray-200 px-4 py-4 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:bg-blue-900/20">This Month</a>
+                        <a href="{{ route('expenses.reports', ['period' => 'year']) }}" class="rounded-2xl border border-gray-200 px-4 py-4 text-sm font-medium text-gray-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:text-gray-200 dark:hover:border-blue-700 dark:hover:bg-blue-900/20">This Year</a>
+                    </div>
+                </div>
+
+                <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Monthly Expense Mix</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Useful for quick owner summaries.</p>
+                    <div class="mt-4 space-y-3">
+                        @foreach (['cogs' => 'COGS', 'operating' => 'Operating', 'other' => 'Other'] as $key => $label)
+                            @php $row = $expenseMix[$key]; @endphp
+                            <div class="rounded-2xl bg-gray-50 px-4 py-3 dark:bg-gray-900/50">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $label }}</span>
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        MVR {{ number_format((float) ($row->total ?? 0), 2) }}
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ number_format((int) ($row->entries ?? 0)) }} entries this month
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            @foreach ($reportGroups as $group)
+                <section class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $group['title'] }}</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $group['description'] }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($group['reports'] as $report)
+                            @php $style = $themeStyles[$report['theme']] ?? $themeStyles['blue']; @endphp
+                            <div class="flex h-full flex-col rounded-3xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md {{ $style['card'] }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $style['icon'] }}">
+                                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19h16M6 17V7m4 10V5m4 12v-7m4 7v-4"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide {{ $style['badge'] }}">
+                                        {{ $report['badge'] }}
+                                    </span>
+                                </div>
+
+                                <div class="mt-4">
+                                    <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $report['title'] }}</h4>
+                                    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ $report['description'] }}</p>
+                                </div>
+
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    @foreach ($report['links'] as $link)
+                                        <a href="{{ $link['url'] }}" class="rounded-full px-3 py-1.5 text-xs font-medium transition {{ $style['link'] }}">
+                                            {{ $link['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+
+                                <div class="mt-5 pt-4 border-t border-black/5 dark:border-white/10">
+                                    <a href="{{ $report['route'] }}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-gray-700 dark:text-gray-100 dark:hover:text-white">
+                                        Open report
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endforeach
         </div>
     </div>
 </x-app-layout>

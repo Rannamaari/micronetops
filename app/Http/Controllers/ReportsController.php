@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Job;
 use App\Models\JobItem;
 use App\Models\InventoryItem;
@@ -21,7 +23,187 @@ class ReportsController extends Controller
             abort(403, 'Unauthorized. You do not have permission to view reports.');
         }
 
-        return view('reports.index');
+        $today = now();
+        $monthStart = $today->copy()->startOfMonth();
+        $monthEnd = $today->copy()->endOfMonth();
+        $weekStart = $today->copy()->startOfWeek();
+        $weekEnd = $today->copy()->endOfWeek();
+
+        $monthRevenue = (float) Job::query()
+            ->where('status', Job::STATUS_COMPLETED)
+            ->where(function ($query) use ($monthStart, $monthEnd) {
+                $query->whereBetween('completed_at', [$monthStart, $monthEnd])
+                    ->orWhere(function ($q) use ($monthStart, $monthEnd) {
+                        $q->whereNull('completed_at')
+                            ->whereBetween('job_date', [$monthStart->toDateString(), $monthEnd->toDateString()]);
+                    });
+            })
+            ->sum('total_amount');
+
+        $monthExpenses = (float) Expense::query()
+            ->whereBetween('incurred_at', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->sum('amount');
+
+        $weekExpenses = (float) Expense::query()
+            ->whereBetween('incurred_at', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->sum('amount');
+
+        $expenseEntriesThisMonth = (int) Expense::query()
+            ->whereBetween('incurred_at', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->count();
+
+        $lowStockCount = (int) InventoryItem::query()
+            ->where('is_service', false)
+            ->where('is_active', true)
+            ->whereRaw('quantity <= low_stock_limit')
+            ->count();
+
+        $rwExpiringSoonCount = (int) Vehicle::query()
+            ->whereNotNull('road_worthiness_expires_at')
+            ->where('road_worthiness_expires_at', '>=', $today->copy()->startOfDay()->toDateTimeString())
+            ->where('road_worthiness_expires_at', '<=', $today->copy()->addDays(30)->endOfDay()->toDateTimeString())
+            ->count();
+
+        $expenseTypeBreakdown = Expense::query()
+            ->select('expense_categories.type', DB::raw('SUM(expenses.amount) as total'), DB::raw('COUNT(*) as entries'))
+            ->join('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
+            ->whereBetween('expenses.incurred_at', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->groupBy('expense_categories.type')
+            ->get()
+            ->keyBy('type');
+
+        $reportGroups = [
+            [
+                'title' => 'Financial',
+                'description' => 'Share-ready financial views for month-end and weekly reviews.',
+                'reports' => [
+                    [
+                        'title' => 'Expense Dashboard',
+                        'description' => 'Full expense reporting with filters, month-wise totals, vendors, accounts, and category summaries.',
+                        'route' => route('expenses.reports'),
+                        'badge' => 'New',
+                        'theme' => 'blue',
+                        'links' => [
+                            ['label' => 'Today', 'url' => route('expenses.reports', ['period' => 'today'])],
+                            ['label' => 'This Week', 'url' => route('expenses.reports', ['period' => 'week'])],
+                            ['label' => 'This Month', 'url' => route('expenses.reports', ['period' => 'month'])],
+                            ['label' => 'This Year', 'url' => route('expenses.reports', ['period' => 'year'])],
+                        ],
+                    ],
+                    [
+                        'title' => 'Profit & Loss',
+                        'description' => 'Accrual summary by month, quarter, or year for owner and stakeholder review.',
+                        'route' => route('reports.pnl'),
+                        'badge' => 'Core',
+                        'theme' => 'teal',
+                        'links' => [
+                            ['label' => 'Month', 'url' => route('reports.pnl', ['period' => 'month'])],
+                            ['label' => 'Quarter', 'url' => route('reports.pnl', ['period' => 'quarter'])],
+                            ['label' => 'Year', 'url' => route('reports.pnl', ['period' => 'year'])],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Sales & Operations',
+                'description' => 'Daily monitoring and performance snapshots for operational follow-up.',
+                'reports' => [
+                    [
+                        'title' => 'Daily Sales',
+                        'description' => 'Review daily completed jobs and sales totals with revenue breakdowns.',
+                        'route' => route('reports.daily-sales'),
+                        'badge' => 'Operations',
+                        'theme' => 'green',
+                        'links' => [
+                            ['label' => 'Today', 'url' => route('reports.daily-sales', ['date' => $today->toDateString()])],
+                            ['label' => 'Yesterday', 'url' => route('reports.daily-sales', ['date' => $today->copy()->subDay()->toDateString()])],
+                        ],
+                    ],
+                    [
+                        'title' => 'Sales Trends',
+                        'description' => 'Understand sales movement over the day, week, and month.',
+                        'route' => route('reports.sales-trends'),
+                        'badge' => 'Trend',
+                        'theme' => 'yellow',
+                        'links' => [
+                            ['label' => '24 Hours', 'url' => route('reports.sales-trends', ['view' => 'day'])],
+                            ['label' => '7 Days', 'url' => route('reports.sales-trends', ['view' => 'week'])],
+                            ['label' => '30 Days', 'url' => route('reports.sales-trends', ['view' => 'month'])],
+                        ],
+                    ],
+                    [
+                        'title' => 'Best Sellers',
+                        'description' => 'See which items and services are driving demand.',
+                        'route' => route('reports.best-sellers'),
+                        'badge' => 'Sales',
+                        'theme' => 'purple',
+                        'links' => [
+                            ['label' => 'This Month', 'url' => route('reports.best-sellers', ['period' => 'month'])],
+                            ['label' => 'This Week', 'url' => route('reports.best-sellers', ['period' => 'week'])],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Assets & Compliance',
+                'description' => 'Inventory, tools, and compliance reports for control and planning.',
+                'reports' => [
+                    [
+                        'title' => 'Low Inventory',
+                        'description' => 'Highlight items that need replenishment soon.',
+                        'route' => route('reports.low-inventory'),
+                        'badge' => 'Stock',
+                        'theme' => 'red',
+                        'links' => [
+                            ['label' => 'All', 'url' => route('reports.low-inventory')],
+                            ['label' => 'Moto', 'url' => route('reports.low-inventory', ['category' => 'moto'])],
+                            ['label' => 'AC', 'url' => route('reports.low-inventory', ['category' => 'ac'])],
+                        ],
+                    ],
+                    [
+                        'title' => 'Inventory Overview',
+                        'description' => 'Broad inventory view covering items, movements, and totals.',
+                        'route' => route('reports.inventory-overview'),
+                        'badge' => 'Inventory',
+                        'theme' => 'orange',
+                        'links' => [
+                            ['label' => 'Open', 'url' => route('reports.inventory-overview')],
+                        ],
+                    ],
+                    [
+                        'title' => 'Fixed Assets',
+                        'description' => 'Track tools currently with staff and custody history.',
+                        'route' => route('reports.fixed-assets.current-custody'),
+                        'badge' => 'Assets',
+                        'theme' => 'slate',
+                        'links' => [
+                            ['label' => 'Current Custody', 'url' => route('reports.fixed-assets.current-custody')],
+                        ],
+                    ],
+                    [
+                        'title' => 'Road Worthiness',
+                        'description' => 'Monitor vehicle road worthiness expirations and newly issued records.',
+                        'route' => route('reports.road-worthiness'),
+                        'badge' => 'Compliance',
+                        'theme' => 'indigo',
+                        'links' => [
+                            ['label' => 'This Month', 'url' => route('reports.road-worthiness', ['month' => $today->format('Y-m')])],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        return view('reports.index', compact(
+            'monthRevenue',
+            'monthExpenses',
+            'weekExpenses',
+            'expenseEntriesThisMonth',
+            'lowStockCount',
+            'rwExpiringSoonCount',
+            'expenseTypeBreakdown',
+            'reportGroups'
+        ));
     }
 
     /**

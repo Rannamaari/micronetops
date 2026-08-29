@@ -9,6 +9,7 @@ use App\Models\InventoryItem;
 use App\Models\Job;
 use App\Models\JobItem;
 use App\Models\Lead;
+use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\PettyCash;
 use Carbon\Carbon;
@@ -63,6 +64,11 @@ class DashboardController extends Controller
             ->where('jobs.job_date', '>=', $startOfMonth)
             ->where('jobs.job_type', 'moto')
             ->sum('payments.amount');
+
+        // Expenses this week
+        $expensesThisWeek = Expense::query()
+            ->whereBetween('incurred_at', [$startOfWeek->toDateString(), $now->copy()->endOfWeek()->toDateString()])
+            ->sum('amount');
 
         // Total inventory items
         $totalInventoryItems = InventoryItem::active()
@@ -138,6 +144,7 @@ class DashboardController extends Controller
             'salesThisMonth',
             'salesThisMonthAC',
             'salesThisMonthMoto',
+            'expensesThisWeek',
             'totalInventoryItems',
             'lowStockItems',
             'pettyCashBalance',

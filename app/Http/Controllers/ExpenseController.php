@@ -137,6 +137,49 @@ class ExpenseController extends Controller
             ->sortByDesc('month_key')
             ->values();
 
+        $unitChart = [
+            'labels' => $unitSummary->pluck('label')->values()->all(),
+            'amounts' => $unitSummary->pluck('amount')->map(fn ($value) => round((float) $value, 2))->values()->all(),
+            'entries' => $unitSummary->pluck('count')->values()->all(),
+        ];
+
+        $monthlyUnitGroups = $expenses
+            ->groupBy(fn (Expense $expense) => optional($expense->incurred_at)->format('Y-m'))
+            ->sortKeys();
+
+        $monthlyUnitChart = [
+            'labels' => $monthlyUnitGroups->keys()->map(function ($monthKey) {
+                return Carbon::createFromFormat('Y-m', $monthKey)->format('M Y');
+            })->values()->all(),
+            'datasets' => [],
+        ];
+
+        $chartPalette = [
+            Expense::UNIT_MOTO => ['label' => Expense::getBusinessUnits()[Expense::UNIT_MOTO], 'background' => 'rgba(249, 115, 22, 0.75)', 'border' => 'rgb(249, 115, 22)'],
+            Expense::UNIT_AC => ['label' => Expense::getBusinessUnits()[Expense::UNIT_AC], 'background' => 'rgba(16, 185, 129, 0.75)', 'border' => 'rgb(16, 185, 129)'],
+            Expense::UNIT_IT => ['label' => Expense::getBusinessUnits()[Expense::UNIT_IT], 'background' => 'rgba(59, 130, 246, 0.75)', 'border' => 'rgb(59, 130, 246)'],
+            Expense::UNIT_EASYFIX => ['label' => Expense::getBusinessUnits()[Expense::UNIT_EASYFIX], 'background' => 'rgba(139, 92, 246, 0.75)', 'border' => 'rgb(139, 92, 246)'],
+            Expense::UNIT_SHARED => ['label' => Expense::getBusinessUnits()[Expense::UNIT_SHARED], 'background' => 'rgba(107, 114, 128, 0.75)', 'border' => 'rgb(107, 114, 128)'],
+        ];
+
+        foreach ($chartPalette as $unitKey => $style) {
+            $values = $monthlyUnitGroups->map(function ($group) use ($unitKey) {
+                return round((float) $group->where('business_unit', $unitKey)->sum('amount'), 2);
+            })->values()->all();
+
+            if (collect($values)->sum() <= 0) {
+                continue;
+            }
+
+            $monthlyUnitChart['datasets'][] = [
+                'label' => $style['label'],
+                'data' => $values,
+                'backgroundColor' => $style['background'],
+                'borderColor' => $style['border'],
+                'borderWidth' => 1,
+            ];
+        }
+
         return view('expenses.reports', array_merge(
             compact(
                 'expenses',
@@ -154,7 +197,9 @@ class ExpenseController extends Controller
                 'categorySummary',
                 'vendorSummary',
                 'accountSummary',
-                'monthlySummary'
+                'monthlySummary',
+                'unitChart',
+                'monthlyUnitChart'
             ),
             $filters
         ));

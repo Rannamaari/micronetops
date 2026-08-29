@@ -104,6 +104,32 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl p-4 sm:p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Business Unit Expense Chart</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Quick view of how spending is split across all business units for the selected filter.</p>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="expenseBusinessUnitChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl p-4 sm:p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">Month-Wise Unit Trend</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">See how each business unit’s expenses moved month by month.</p>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="expenseMonthlyUnitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl overflow-hidden">
                     <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">By Business Unit</h3>
@@ -293,4 +319,115 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const axisColor = isDarkMode ? '#9CA3AF' : '#4B5563';
+        const gridColor = isDarkMode ? '#374151' : '#E5E7EB';
+
+        const businessUnitCanvas = document.getElementById('expenseBusinessUnitChart');
+        if (businessUnitCanvas && @json(count($unitChart['labels'])) > 0) {
+            new Chart(businessUnitCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: @json($unitChart['labels']),
+                    datasets: [{
+                        label: 'Expense Amount (MVR)',
+                        data: @json($unitChart['amounts']),
+                        backgroundColor: [
+                            'rgba(249, 115, 22, 0.75)',
+                            'rgba(16, 185, 129, 0.75)',
+                            'rgba(59, 130, 246, 0.75)',
+                            'rgba(139, 92, 246, 0.75)',
+                            'rgba(107, 114, 128, 0.75)',
+                        ],
+                        borderColor: [
+                            'rgb(249, 115, 22)',
+                            'rgb(16, 185, 129)',
+                            'rgb(59, 130, 246)',
+                            'rgb(139, 92, 246)',
+                            'rgb(107, 114, 128)',
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 10,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `MVR ${Number(context.raw || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: axisColor },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: axisColor },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        const monthlyUnitCanvas = document.getElementById('expenseMonthlyUnitChart');
+        if (monthlyUnitCanvas && @json(count($monthlyUnitChart['labels'])) > 0 && @json(count($monthlyUnitChart['datasets'])) > 0) {
+            new Chart(monthlyUnitCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: @json($monthlyUnitChart['labels']),
+                    datasets: @json($monthlyUnitChart['datasets']).map((dataset) => ({
+                        ...dataset,
+                        tension: 0.35,
+                        fill: false,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                    })),
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: axisColor
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: MVR ${Number(context.raw || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: axisColor },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: axisColor },
+                            grid: { color: gridColor }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
 </x-app-layout>

@@ -43,7 +43,7 @@
             @endif
 
             {{-- Key Metrics Cards --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
                 {{-- Total Customers --}}
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
@@ -109,6 +109,26 @@
                                 </svg>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {{-- Expenses This Week --}}
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Expenses This Week</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">MVR {{ number_format($expensesThisWeek, 2) }}</p>
+                            </div>
+                            <div class="p-3 bg-rose-100 dark:bg-rose-900 rounded-full">
+                                <svg class="w-8 h-8 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m0-6h2m0 0h2m-2 0v2m0-2V7M7 13h6m-6 4h4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <a href="{{ route('expenses.reports', ['period' => 'week']) }}" class="mt-2 text-sm text-rose-600 dark:text-rose-400 hover:underline inline-block">
+                            View weekly expense report →
+                        </a>
                     </div>
                 </div>
             </div>
