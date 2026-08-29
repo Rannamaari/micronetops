@@ -437,6 +437,7 @@ Route::middleware('auth')->group(function () {
         Route::post('account-transfers', [AccountTransferController::class, 'store'])->name('accounts.transfers.store');
 
         Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::get('expenses/reports', [ExpenseController::class, 'reports'])->name('expenses.reports');
         Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
         Route::get('expenses/create-cogs', [ExpenseController::class, 'createCogs'])->name('expenses.create-cogs');
         Route::get('expenses/create-operating', [ExpenseController::class, 'createOperating'])->name('expenses.create-operating');

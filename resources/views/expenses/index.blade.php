@@ -5,6 +5,9 @@
                 {{ __('Expenses') }}
             </h2>
             <div class="flex flex-wrap gap-2">
+                <a href="{{ route('expenses.reports') }}" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
+                    Reports
+                </a>
                 <a href="{{ route('expenses.create-cogs') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                     Add COGS
                 </a>

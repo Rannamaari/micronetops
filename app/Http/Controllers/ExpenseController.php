@@ -12,50 +12,18 @@ use App\Models\InventoryCategory;
 use App\Models\InventoryPurchase;
 use App\Models\ActivityLog;
 use App\Models\InventoryLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Expense::with(['category', 'vendorEntity', 'account']);
-
-        $businessUnit = $request->query('business_unit', 'all');
-        $type = $request->query('type', 'all');
-        $search = $request->query('search');
-        $period = $request->query('period', 'all');
-
-        if ($businessUnit !== 'all') {
-            $query->where('business_unit', $businessUnit);
-        }
-
-        if ($type !== 'all') {
-            $query->whereHas('category', function ($q) use ($type) {
-                $q->where('type', $type);
-            });
-        }
-
-        if ($search) {
-            $s = mb_strtolower($search);
-            $query->where(function ($q) use ($s) {
-                $q->whereRaw('lower(vendor) like ?', ["%{$s}%"])
-                    ->orWhereRaw('lower(reference) like ?', ["%{$s}%"])
-                    ->orWhereRaw('lower(notes) like ?', ["%{$s}%"]);
-            });
-        }
-
-        if ($period !== 'all') {
-            $today = now()->startOfDay();
-            match ($period) {
-                'today' => $query->whereDate('incurred_at', $today),
-                'yesterday' => $query->whereDate('incurred_at', $today->copy()->subDay()),
-                'week' => $query->whereBetween('incurred_at', [$today->copy()->startOfWeek(), $today->copy()->endOfWeek()]),
-                'month' => $query->whereBetween('incurred_at', [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()]),
-                default => null,
-            };
-        }
+        $filters = $this->expenseFilters($request, 'all');
+        $query = $this->buildExpenseQuery($filters)->with(['category', 'vendorEntity', 'account']);
 
         $expenses = $query->orderByDesc('incurred_at')->paginate(10)->withQueryString();
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
@@ -63,7 +31,133 @@ class ExpenseController extends Controller
         $businessUnits = Expense::getBusinessUnits();
         $types = ExpenseCategory::getTypes();
 
-        return view('expenses.index', compact('expenses', 'categories', 'vendors', 'businessUnits', 'types', 'businessUnit', 'type', 'search', 'period'));
+        return view('expenses.index', array_merge(
+            compact('expenses', 'categories', 'vendors', 'businessUnits', 'types'),
+            $filters
+        ));
+    }
+
+    public function reports(Request $request)
+    {
+        if (!Gate::allows('view-reports')) {
+            abort(403, 'Unauthorized. You do not have permission to view reports.');
+        }
+
+        $filters = $this->expenseFilters($request, 'month');
+        $expenses = $this->buildExpenseQuery($filters)
+            ->with(['category', 'vendorEntity', 'account', 'inventoryPurchases'])
+            ->orderByDesc('incurred_at')
+            ->get();
+
+        $businessUnits = Expense::getBusinessUnits();
+        $types = ExpenseCategory::getTypes();
+        $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
+        $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
+
+        $totalExpenses = round((float) $expenses->sum('amount'), 2);
+        $cogsTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_COGS)->sum('amount'), 2);
+        $operatingTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OPERATING)->sum('amount'), 2);
+        $otherTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OTHER)->sum('amount'), 2);
+        $averageExpense = $expenses->count() > 0 ? round($totalExpenses / $expenses->count(), 2) : 0;
+        $cogsPurchaseTotal = round((float) $expenses->flatMap->inventoryPurchases->sum('total_cost'), 2);
+
+        $unitSummary = $expenses
+            ->groupBy('business_unit')
+            ->map(function ($group, $unit) use ($businessUnits) {
+                return [
+                    'label' => $businessUnits[$unit] ?? strtoupper((string) $unit),
+                    'count' => $group->count(),
+                    'amount' => round((float) $group->sum('amount'), 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $categorySummary = $expenses
+            ->groupBy(fn (Expense $expense) => $expense->category?->name ?? 'Uncategorized')
+            ->map(function ($group, $name) {
+                $first = $group->first();
+
+                return [
+                    'name' => $name,
+                    'type' => $first?->category?->type ?? ExpenseCategory::TYPE_OTHER,
+                    'count' => $group->count(),
+                    'amount' => round((float) $group->sum('amount'), 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $vendorSummary = $expenses
+            ->groupBy(fn (Expense $expense) => $expense->vendorEntity?->name ?? $expense->vendor ?? 'Unknown Vendor')
+            ->map(function ($group, $name) {
+                $lastDate = $group
+                    ->pluck('incurred_at')
+                    ->filter()
+                    ->sortDesc()
+                    ->first();
+
+                return [
+                    'name' => $name,
+                    'count' => $group->count(),
+                    'amount' => round((float) $group->sum('amount'), 2),
+                    'last_incurred_at' => $lastDate ? $lastDate->format('d M Y') : '-',
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $accountSummary = $expenses
+            ->groupBy(fn (Expense $expense) => $expense->account?->name ?? 'No Account')
+            ->map(function ($group, $name) {
+                return [
+                    'name' => $name,
+                    'count' => $group->count(),
+                    'amount' => round((float) $group->sum('amount'), 2),
+                ];
+            })
+            ->sortByDesc('amount')
+            ->values();
+
+        $monthlySummary = $expenses
+            ->groupBy(fn (Expense $expense) => optional($expense->incurred_at)->format('Y-m'))
+            ->map(function ($group, $monthKey) {
+                $month = $group->pluck('incurred_at')->filter()->sortDesc()->first();
+
+                return [
+                    'month_key' => $monthKey,
+                    'label' => $month ? $month->copy()->startOfMonth()->format('M Y') : 'Unknown',
+                    'count' => $group->count(),
+                    'amount' => round((float) $group->sum('amount'), 2),
+                    'cogs_amount' => round((float) $group->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_COGS)->sum('amount'), 2),
+                    'operating_amount' => round((float) $group->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OPERATING)->sum('amount'), 2),
+                    'other_amount' => round((float) $group->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OTHER)->sum('amount'), 2),
+                ];
+            })
+            ->sortByDesc('month_key')
+            ->values();
+
+        return view('expenses.reports', array_merge(
+            compact(
+                'expenses',
+                'businessUnits',
+                'types',
+                'categories',
+                'vendors',
+                'totalExpenses',
+                'cogsTotal',
+                'operatingTotal',
+                'otherTotal',
+                'averageExpense',
+                'cogsPurchaseTotal',
+                'unitSummary',
+                'categorySummary',
+                'vendorSummary',
+                'accountSummary',
+                'monthlySummary'
+            ),
+            $filters
+        ));
     }
 
     public function show(Expense $expense)
@@ -541,6 +635,70 @@ class ExpenseController extends Controller
     private function purchaseError(int $index, string $message): array
     {
         return ['rows' => [], 'error' => ['index' => $index, 'message' => $message]];
+    }
+
+    private function expenseFilters(Request $request, string $defaultPeriod = 'month'): array
+    {
+        $period = $request->query('period', $defaultPeriod);
+        $businessUnit = $request->query('business_unit', 'all');
+        $type = $request->query('type', 'all');
+        $search = trim((string) $request->query('search', ''));
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
+
+        return compact('period', 'businessUnit', 'type', 'search', 'fromDate', 'toDate');
+    }
+
+    private function buildExpenseQuery(array $filters)
+    {
+        $query = Expense::query();
+
+        if (($filters['businessUnit'] ?? 'all') !== 'all') {
+            $query->where('business_unit', $filters['businessUnit']);
+        }
+
+        if (($filters['type'] ?? 'all') !== 'all') {
+            $query->whereHas('category', function ($q) use ($filters) {
+                $q->where('type', $filters['type']);
+            });
+        }
+
+        if (($filters['search'] ?? '') !== '') {
+            $s = mb_strtolower($filters['search']);
+            $query->where(function ($q) use ($s) {
+                $q->whereRaw('lower(vendor) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(reference) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(notes) like ?', ["%{$s}%"]);
+            });
+        }
+
+        if (!empty($filters['fromDate']) || !empty($filters['toDate'])) {
+            $from = !empty($filters['fromDate']) ? Carbon::parse($filters['fromDate'])->toDateString() : null;
+            $to = !empty($filters['toDate']) ? Carbon::parse($filters['toDate'])->toDateString() : null;
+
+            if ($from) {
+                $query->whereDate('incurred_at', '>=', $from);
+            }
+
+            if ($to) {
+                $query->whereDate('incurred_at', '<=', $to);
+            }
+
+            return $query;
+        }
+
+        $today = now()->startOfDay();
+
+        match ($filters['period'] ?? 'all') {
+            'today' => $query->whereDate('incurred_at', $today),
+            'yesterday' => $query->whereDate('incurred_at', $today->copy()->subDay()),
+            'week' => $query->whereBetween('incurred_at', [$today->copy()->startOfWeek(), $today->copy()->endOfWeek()]),
+            'month' => $query->whereBetween('incurred_at', [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()]),
+            'year' => $query->whereBetween('incurred_at', [$today->copy()->startOfYear(), $today->copy()->endOfYear()]),
+            default => null,
+        };
+
+        return $query;
     }
 
 }
