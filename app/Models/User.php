@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->hasMany(PettyCash::class, 'approved_by');
     }
 
+    public function pettyCashAccount()
+    {
+        return $this->hasOne(Account::class, 'custodian_user_id');
+    }
+
     public function inventoryLogs()
     {
         return $this->hasMany(InventoryLog::class);
@@ -221,19 +226,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user can approve expenses (admin only)
+     * Check if user can approve petty cash (admin or manager)
      */
     public function canApproveExpenses(): bool
     {
-        return $this->isAdmin();
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
     }
 
     /**
-     * Check if user can manage top-ups (admin only)
+     * Check if user can manage top-ups (admin or manager)
      */
     public function canManageTopUps(): bool
     {
-        return $this->isAdmin();
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
     }
 
     /**

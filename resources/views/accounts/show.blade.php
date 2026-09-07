@@ -4,7 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ $account->name }}
             </h2>
-            <a href="{{ route('accounts.edit', $account) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Edit</a>
+            @unless($account->is_petty_cash)
+                <a href="{{ route('accounts.edit', $account) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Edit</a>
+            @endunless
         </div>
     </x-slot>
 
@@ -14,7 +16,7 @@
                 <div class="p-6 text-gray-900 dark:text-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <div class="text-sm text-gray-500">Type</div>
-                        <div class="font-medium">{{ ucfirst($account->type) }}</div>
+                        <div class="font-medium">{{ $account->is_petty_cash ? 'Staff Petty Cash' : ucfirst($account->type) }}</div>
                     </div>
                     <div>
                         <div class="text-sm text-gray-500">Balance</div>
@@ -27,6 +29,7 @@
                 </div>
             </div>
 
+            @unless($account->is_petty_cash)
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">Adjust Balance</h3>
@@ -50,6 +53,11 @@
                     </form>
                 </div>
             </div>
+            @else
+                <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-800 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200">
+                    This balance is managed automatically through staff top-ups and recorded expenses.
+                </div>
+            @endunless
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">

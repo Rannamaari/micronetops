@@ -17,6 +17,8 @@ class Account extends Model
         'type',
         'is_active',
         'is_system',
+        'is_petty_cash',
+        'custodian_user_id',
         'balance',
         'notes',
     ];
@@ -24,12 +26,18 @@ class Account extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_system' => 'boolean',
+        'is_petty_cash' => 'boolean',
         'balance' => 'decimal:2',
     ];
 
     public function transactions()
     {
         return $this->hasMany(AccountTransaction::class);
+    }
+
+    public function custodian()
+    {
+        return $this->belongsTo(User::class, 'custodian_user_id');
     }
 
     public static function getTypes(): array

@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Petty Cash - Admin Dashboard
+                Staff Petty Cash
             </h2>
             <a href="{{ route('petty-cash.index') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition">

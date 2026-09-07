@@ -44,7 +44,19 @@ class AccountTransferController extends Controller
             $from = Account::lockForUpdate()->find($validated['from_account_id']);
             $to = Account::lockForUpdate()->find($validated['to_account_id']);
 
+            if ($from->is_petty_cash || $to->is_petty_cash) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'from_account_id' => 'Staff petty cash must be managed through Petty Cash top-ups and Expenses.',
+                ]);
+            }
+
             $amount = (float) $validated['amount'];
+
+            if ((float) $from->balance < $amount) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'amount' => 'The source account has insufficient funds.',
+                ]);
+            }
 
             $transfer = AccountTransfer::create([
                 'from_account_id' => $from->id,

@@ -14,6 +14,7 @@ use App\Models\InventoryLog;
 use App\Models\InventoryPurchase;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\PettyCashAccountService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,10 @@ use Illuminate\Validation\ValidationException;
 
 class BusinessExpenseController extends Controller
 {
+    public function __construct(private PettyCashAccountService $pettyCashAccounts)
+    {
+    }
+
     public function businessUnits(): JsonResponse
     {
         return response()->json([
@@ -113,15 +118,19 @@ class BusinessExpenseController extends Controller
     public function accounts(): JsonResponse
     {
         $accounts = Account::where('is_active', true)
-            ->where('is_system', false)
+            ->where(function ($query) {
+                $query->where('is_system', false)->orWhere('is_petty_cash', true);
+            })
             ->orderBy('name')
-            ->get(['id', 'name', 'balance']);
+            ->get(['id', 'name', 'balance', 'is_petty_cash', 'custodian_user_id']);
 
         return response()->json([
             'data' => $accounts->map(fn($a) => [
                 'id'      => $a->id,
                 'name'    => $a->name,
                 'balance' => number_format((float) $a->balance, 2),
+                'is_petty_cash' => (bool) $a->is_petty_cash,
+                'custodian_user_id' => $a->custodian_user_id,
             ]),
         ]);
     }
@@ -305,10 +314,16 @@ class BusinessExpenseController extends Controller
 
         // --- Resolve account ---
         if (!empty($validated['account_id'])) {
-            $account = Account::where('is_active', true)->where('is_system', false)->find($validated['account_id']);
+            $account = Account::where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('is_system', false)->orWhere('is_petty_cash', true);
+                })
+                ->find($validated['account_id']);
         } else {
             $account = Account::where('is_active', true)
-                ->where('is_system', false)
+                ->where(function ($query) {
+                    $query->where('is_system', false)->orWhere('is_petty_cash', true);
+                })
                 ->whereRaw('lower(name) like ?', ['%' . strtolower($validated['account']) . '%'])
                 ->first();
         }
@@ -363,6 +378,8 @@ class BusinessExpenseController extends Controller
                     'related_id'   => $expense->id,
                     'created_by'   => $actor?->id,
                 ]);
+
+                $this->pettyCashAccounts->syncExpense($expense, $account);
 
                 // Apply inventory purchases for COGS
                 if ($category->type === ExpenseCategory::TYPE_COGS && !empty($validated['items'])) {
@@ -495,6 +512,8 @@ class BusinessExpenseController extends Controller
 
         try {
             DB::transaction(function () use ($expense, $actor) {
+                $this->pettyCashAccounts->reverseExpense($expense);
+
                 // --- Reverse account balance ---
                 if ($expense->account_id) {
                     $account = Account::find($expense->account_id);

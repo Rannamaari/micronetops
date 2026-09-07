@@ -84,6 +84,11 @@ class AccountController extends Controller
 
     public function edit(Account $account)
     {
+        if ($account->is_petty_cash) {
+            return redirect()->route('accounts.show', $account)
+                ->with('error', 'Staff petty cash accounts are managed through Petty Cash and Expenses.');
+        }
+
         $types = Account::getTypes();
 
         return view('accounts.edit', compact('account', 'types'));
@@ -91,6 +96,11 @@ class AccountController extends Controller
 
     public function update(Request $request, Account $account)
     {
+        if ($account->is_petty_cash) {
+            return redirect()->route('accounts.show', $account)
+                ->with('error', 'Staff petty cash accounts cannot be edited manually.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:' . implode(',', array_keys(Account::getTypes()))],
@@ -107,6 +117,10 @@ class AccountController extends Controller
 
     public function adjust(Request $request, Account $account)
     {
+        if ($account->is_petty_cash) {
+            return back()->with('error', 'Use Petty Cash top-ups or Expenses to change this balance.');
+        }
+
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'not_in:0'],
             'occurred_at' => ['required', 'date'],

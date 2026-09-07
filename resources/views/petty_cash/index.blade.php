@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 Petty Cash
             </h2>
-            @if(Auth::user()->isAdmin())
+            @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                 <a href="{{ route('petty-cash.admin-dashboard') }}"
                    class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +24,7 @@
                     <div>
                         <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
                             My Petty Cash Balance
-                            @if(Auth::user()->isAdmin())
+                            @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                                 <span class="text-xs text-indigo-600 dark:text-indigo-400">(Personal)</span>
                             @endif
                         </h3>
@@ -156,107 +156,28 @@
                 </div>
             </div>
 
-            {{-- Top-up + Expense forms --}}
-            <div class="grid grid-cols-1 {{ Auth::user()->canManageTopUps() ? 'md:grid-cols-2' : '' }} gap-4">
-                {{-- Add Top-up form - Admin only --}}
-                @if(Auth::user()->canManageTopUps())
-                    <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                            Add Top-up
-                        </h3>
-                        <form method="POST" action="{{ route('petty-cash.store') }}" class="space-y-3">
-                            @csrf
-                            <input type="hidden" name="type" value="topup">
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Amount (MVR)
-                                </label>
-                                <input type="number" step="0.01" name="amount" required
-                                       class="block w-full rounded-md border-gray-300 text-sm
-                                              focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Category (optional)
-                                </label>
-                                <input type="text" name="category" placeholder="e.g. Bank withdrawal"
-                                       class="block w-full rounded-md border-gray-300 text-sm
-                                              focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Purpose
-                                </label>
-                                <textarea name="purpose" rows="2" required
-                                          class="block w-full rounded-md border-gray-300 text-sm
-                                                 focus:border-indigo-500 focus:ring-indigo-500"
-                                          placeholder="Reason for top-up"></textarea>
-                            </div>
-
-                            <button type="submit"
-                                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md
-                                           font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700
-                                           focus:outline-none">
-                                Add Top-up
-                            </button>
-                        </form>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @if(Auth::user()->hasAnyRole(['admin', 'manager']))
+                    <a href="{{ route('petty-cash.admin-dashboard') }}" class="rounded-xl bg-indigo-600 p-5 text-white shadow-sm hover:bg-indigo-700 transition">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-indigo-100">Staff Funds</p>
+                        <h3 class="mt-1 text-lg font-semibold">Top Up Petty Cash</h3>
+                        <p class="mt-2 text-sm text-indigo-100">Transfer money from a company account to a staff petty cash account.</p>
+                    </a>
+                    <a href="{{ route('expenses.create-cogs') }}" class="rounded-xl bg-emerald-600 p-5 text-white shadow-sm hover:bg-emerald-700 transition">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Stock Purchase</p>
+                        <h3 class="mt-1 text-lg font-semibold">Record COGS</h3>
+                        <p class="mt-2 text-sm text-emerald-100">Deduct staff petty cash and add purchased parts to inventory.</p>
+                    </a>
+                    <a href="{{ route('expenses.create-operating') }}" class="rounded-xl bg-amber-500 p-5 text-white shadow-sm hover:bg-amber-600 transition">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-50">General Spending</p>
+                        <h3 class="mt-1 text-lg font-semibold">Operating Expense</h3>
+                        <p class="mt-2 text-sm text-amber-50">Record fuel, food, transport and other staff-paid expenses.</p>
+                    </a>
+                @else
+                    <div class="md:col-span-3 rounded-xl border border-blue-200 bg-blue-50 p-5 text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-100">
+                        Submit your receipt to a manager. The manager will record it as a COGS or Operating Expense against your petty cash account.
                     </div>
                 @endif
-
-                {{-- Record Expense form --}}
-                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                        Record Expense
-                    </h3>
-                    <form method="POST" action="{{ route('petty-cash.store') }}" class="space-y-3">
-                        @csrf
-                        <input type="hidden" name="type" value="expense">
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Amount (MVR)
-                            </label>
-                            <input type="number" step="0.01" name="amount" required
-                                   class="block w-full rounded-md border-gray-300 text-sm
-                                          focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Category
-                            </label>
-                            <select name="category"
-                                    class="block w-full rounded-md border-gray-300 text-sm
-                                           focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">Select category</option>
-                                <option value="fuel">Fuel</option>
-                                <option value="parts">Parts</option>
-                                <option value="food">Food</option>
-                                <option value="misc">Misc</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Purpose
-                            </label>
-                            <textarea name="purpose" rows="2" required
-                                      class="block w-full rounded-md border-gray-300 text-sm
-                                             focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="What was this expense for?"></textarea>
-                        </div>
-
-                        <button type="submit"
-                                class="w-full inline-flex justify-center items-center px-4 py-2 bg-red-600 border border-transparent rounded-md
-                                       font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700
-                                       focus:outline-none">
-                            Record Expense
-                        </button>
-                    </form>
-                </div>
             </div>
 
             {{-- Table of entries --}}
@@ -367,4 +288,3 @@
         </div>
     </div>
 </x-app-layout>
-

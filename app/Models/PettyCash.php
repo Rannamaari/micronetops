@@ -23,6 +23,8 @@ class PettyCash extends Model
         'status',          // pending / approved / rejected
         'paid_at',
         'source_payment_id', // link to payment if created from cash payment
+        'source_account_id',
+        'expense_id',
     ];
 
     protected $casts = [
@@ -50,6 +52,16 @@ class PettyCash extends Model
         return $this->belongsTo(Payment::class, 'source_payment_id');
     }
 
+    public function sourceAccount()
+    {
+        return $this->belongsTo(Account::class, 'source_account_id');
+    }
+
+    public function expense()
+    {
+        return $this->belongsTo(Expense::class);
+    }
+
     /** Scope for approved only */
     public function scopeApproved($query)
     {
@@ -67,6 +79,19 @@ class PettyCash extends Model
 
     /** Compute balance for a specific user */
     public static function userBalance(User $user): float
+    {
+        $account = Account::where('custodian_user_id', $user->id)
+            ->where('is_petty_cash', true)
+            ->first();
+
+        if ($account) {
+            return (float) $account->balance;
+        }
+
+        return static::legacyUserBalance($user);
+    }
+
+    public static function legacyUserBalance(User $user): float
     {
         $topups = static::approved()
             ->where('type', 'topup')

@@ -12,6 +12,7 @@ use App\Models\InventoryCategory;
 use App\Models\InventoryPurchase;
 use App\Models\ActivityLog;
 use App\Models\InventoryLog;
+use App\Services\PettyCashAccountService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\Gate;
 
 class ExpenseController extends Controller
 {
+    public function __construct(private PettyCashAccountService $pettyCashAccounts)
+    {
+    }
+
     public function index(Request $request)
     {
         $filters = $this->expenseFilters($request, 'all');
@@ -218,7 +223,7 @@ class ExpenseController extends Controller
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
-        $accounts = Account::where('is_active', true)->where('is_system', false)->orderBy('name')->get();
+        $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $vendorsJson = $vendors->map(function ($vendor) {
@@ -241,7 +246,7 @@ class ExpenseController extends Controller
             ->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
-        $accounts = Account::where('is_active', true)->where('is_system', false)->orderBy('name')->get();
+        $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $vendorsJson = $vendors->map(function ($vendor) {
@@ -264,7 +269,7 @@ class ExpenseController extends Controller
             ->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
-        $accounts = Account::where('is_active', true)->where('is_system', false)->orderBy('name')->get();
+        $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $vendorsJson = $vendors->map(function ($vendor) {
@@ -356,6 +361,8 @@ class ExpenseController extends Controller
                     'created_by' => Auth::id(),
                 ]);
 
+                $this->pettyCashAccounts->syncExpense($expense, $account);
+
                 $this->applyInventoryPurchases($expense, $validated);
             });
         } catch (\RuntimeException $e) {
@@ -373,7 +380,7 @@ class ExpenseController extends Controller
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
-        $accounts = Account::where('is_active', true)->where('is_system', false)->orderBy('name')->get();
+        $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $vendorsJson = $vendors->map(function ($vendor) {
@@ -454,8 +461,21 @@ class ExpenseController extends Controller
                     if ($prevAccount) {
                         $prevAccount->balance = (float) $prevAccount->balance + $previousAmount;
                         $prevAccount->save();
+
+                        AccountTransaction::create([
+                            'account_id' => $prevAccount->id,
+                            'type' => 'expense_reversal',
+                            'amount' => $previousAmount,
+                            'occurred_at' => $validated['incurred_at'],
+                            'description' => 'Expense amendment reversal: #' . $expense->id,
+                            'related_type' => Expense::class,
+                            'related_id' => $expense->id,
+                            'created_by' => Auth::id(),
+                        ]);
                     }
                 }
+
+                $this->reverseInventoryPurchases($expense);
 
                 $account = Account::lockForUpdate()->find($validated['account_id']);
                 $amount = (float) $validated['amount'];
@@ -477,6 +497,8 @@ class ExpenseController extends Controller
                     'related_id' => $expense->id,
                     'created_by' => Auth::id(),
                 ]);
+
+                $this->pettyCashAccounts->syncExpense($expense, $account);
 
                 $this->applyInventoryPurchases($expense, $validated);
             });
@@ -500,6 +522,8 @@ class ExpenseController extends Controller
         $accountName  = $expense->account?->name;
 
         DB::transaction(function () use ($expense, $expenseId, $amount, $categoryName, $accountName) {
+            $this->pettyCashAccounts->reverseExpense($expense);
+
             // Restore account balance and write a reversal transaction (keeps audit trail)
             if ($expense->account_id) {
                 $account = Account::lockForUpdate()->find($expense->account_id);
@@ -521,20 +545,7 @@ class ExpenseController extends Controller
             }
 
             // Reverse COGS inventory purchases
-            $purchases = InventoryPurchase::where('expense_id', $expenseId)->get();
-            foreach ($purchases as $purchase) {
-                $item = InventoryItem::find($purchase->inventory_item_id);
-                if ($item) {
-                    $item->quantity = max(0, (float) $item->quantity - (float) $purchase->quantity);
-                    $item->save();
-                }
-
-                InventoryLog::where('inventory_item_id', $purchase->inventory_item_id)
-                    ->where('notes', 'Purchase for expense #' . $expenseId)
-                    ->delete();
-
-                $purchase->delete();
-            }
+            $this->reverseInventoryPurchases($expense);
 
             $expense->delete();
         });
@@ -628,6 +639,25 @@ class ExpenseController extends Controller
         }
     }
 
+    private function reverseInventoryPurchases(Expense $expense): void
+    {
+        $purchases = InventoryPurchase::where('expense_id', $expense->id)->get();
+
+        foreach ($purchases as $purchase) {
+            $item = InventoryItem::find($purchase->inventory_item_id);
+            if ($item) {
+                $item->quantity = max(0, (float) $item->quantity - (float) $purchase->quantity);
+                $item->save();
+            }
+
+            InventoryLog::where('inventory_item_id', $purchase->inventory_item_id)
+                ->where('notes', 'Purchase for expense #' . $expense->id)
+                ->delete();
+
+            $purchase->delete();
+        }
+    }
+
     private function sanitizePurchases(Request $request): array
     {
         $rows = $request->input('purchases', []);
@@ -680,6 +710,19 @@ class ExpenseController extends Controller
     private function purchaseError(int $index, string $message): array
     {
         return ['rows' => [], 'error' => ['index' => $index, 'message' => $message]];
+    }
+
+    private function availableExpenseAccounts()
+    {
+        return Account::with('custodian')
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('is_system', false)
+                    ->orWhere('is_petty_cash', true);
+            })
+            ->orderBy('is_petty_cash')
+            ->orderBy('name')
+            ->get();
     }
 
     private function expenseFilters(Request $request, string $defaultPeriod = 'month'): array

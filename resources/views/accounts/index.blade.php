@@ -27,7 +27,9 @@
                                 @foreach ($accounts as $account)
                                     <tr>
                                         <td class="px-4 py-2">{{ $account->name }}</td>
-                                        <td class="px-4 py-2">{{ ucfirst($account->type) }}</td>
+                                        <td class="px-4 py-2">
+                                            {{ $account->is_petty_cash ? 'Staff Petty Cash' : ucfirst($account->type) }}
+                                        </td>
                                         <td class="px-4 py-2 text-right">{{ number_format($account->balance, 2) }}</td>
                                         <td class="px-4 py-2">
                                             <span class="px-2 py-1 rounded text-xs {{ $account->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">

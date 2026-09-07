@@ -42,6 +42,25 @@
                 <form method="POST" action="{{ route('petty-cash.top-up-user', $user) }}" class="space-y-6">
                     @csrf
 
+                    <div>
+                        <label for="source_account_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Transfer From <span class="text-red-500">*</span>
+                        </label>
+                        <select name="source_account_id" id="source_account_id" required
+                                class="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select company account</option>
+                            @foreach ($sourceAccounts as $account)
+                                <option value="{{ $account->id }}" @selected((string) old('source_account_id') === (string) $account->id)>
+                                    {{ $account->name }} — MVR {{ number_format($account->balance, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The top-up is transferred from this company account into {{ $user->name }}'s petty cash account.</p>
+                        @error('source_account_id')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     {{-- Amount Field --}}
                     <div>
                         <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

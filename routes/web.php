@@ -360,18 +360,22 @@ Route::middleware('auth')->group(function () {
         Route::post('petty-cash', [PettyCashController::class, 'store'])->name('petty-cash.store');
     });
 
-    // Petty Cash Approval - Admin only
-    Route::middleware('role:admin')->group(function () {
+    // Petty Cash Approval - Admin and Manager
+    Route::middleware('role:admin,manager')->group(function () {
         Route::post('petty-cash/{pettyCash}/approve', [PettyCashController::class, 'approve'])
             ->name('petty-cash.approve');
         Route::post('petty-cash/{pettyCash}/reject', [PettyCashController::class, 'reject'])
             ->name('petty-cash.reject');
+    });
+
+    // Petty Cash deletion - Admin only
+    Route::middleware('role:admin')->group(function () {
         Route::delete('petty-cash/{pettyCash}', [PettyCashController::class, 'destroy'])
             ->name('petty-cash.destroy');
     });
 
-    // Petty Cash Admin Dashboard - Admin only
-    Route::middleware('role:admin')->group(function () {
+    // Petty Cash Management Dashboard - Admin and Manager
+    Route::middleware('role:admin,manager')->group(function () {
         Route::get('petty-cash/admin', [PettyCashController::class, 'adminDashboard'])
             ->name('petty-cash.admin-dashboard');
         Route::get('petty-cash/admin/users/{user}/top-up', [PettyCashController::class, 'showTopUpForm'])

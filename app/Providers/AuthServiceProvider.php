@@ -35,7 +35,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('approve-petty-cash', function ($user) {
-            return $user->isAdmin();
+            return $user->hasAnyRole(['admin', 'manager']);
         });
 
         Gate::define('view-reports', function ($user) {

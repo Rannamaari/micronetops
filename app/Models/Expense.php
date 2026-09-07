@@ -54,6 +54,11 @@ class Expense extends Model
         return $this->hasMany(InventoryPurchase::class);
     }
 
+    public function pettyCashEntry()
+    {
+        return $this->hasOne(PettyCash::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

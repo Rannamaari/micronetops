@@ -3,14 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Account;
 use App\Models\PettyCash;
 use App\Models\User;
+use App\Services\PettyCashAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class PettyCashController extends Controller
 {
+    public function __construct(private PettyCashAccountService $pettyCashAccounts)
+    {
+    }
+
     /** List petty cash entries + balance */
     public function index(Request $request)
     {
@@ -145,7 +152,7 @@ class PettyCashController extends Controller
     public function adminDashboard(Request $request)
     {
         if (!Gate::allows('approve-petty-cash')) {
-            abort(403, 'Unauthorized. Only admin can access this page.');
+            abort(403, 'Unauthorized. Admin or manager access is required.');
         }
 
         $userBalances = PettyCash::allUserBalances();
@@ -158,36 +165,42 @@ class PettyCashController extends Controller
     public function showTopUpForm(User $user)
     {
         if (!Gate::allows('approve-petty-cash')) {
-            abort(403, 'Unauthorized. Only admin can top up users.');
+            abort(403, 'Unauthorized. Admin or manager access is required.');
         }
 
         $currentBalance = PettyCash::userBalance($user);
+        $sourceAccounts = Account::where('is_active', true)
+            ->where('is_petty_cash', false)
+            ->orderBy('name')
+            ->get();
 
-        return view('petty_cash.top-up-user', compact('user', 'currentBalance'));
+        return view('petty_cash.top-up-user', compact('user', 'currentBalance', 'sourceAccounts'));
     }
 
     /** Process top-up for a specific user */
     public function topUpUser(Request $request, User $user)
     {
         if (!Gate::allows('approve-petty-cash')) {
-            abort(403, 'Unauthorized. Only admin can top up users.');
+            abort(403, 'Unauthorized. Admin or manager access is required.');
         }
 
         $validated = $request->validate([
+            'source_account_id' => ['required', 'exists:accounts,id'],
             'amount'  => ['required', 'numeric', 'min:0.01'],
             'purpose' => ['required', 'string', 'max:255'],
         ]);
 
-        PettyCash::create([
-            'user_id'     => Auth::id(),
-            'assigned_to' => $user->id,
-            'type'        => 'topup',
-            'amount'      => $validated['amount'],
-            'purpose'     => $validated['purpose'],
-            'status'      => 'approved',
-            'approved_by' => Auth::id(),
-            'paid_at'     => now(),
-        ]);
+        $sourceAccount = Account::findOrFail($validated['source_account_id']);
+        try {
+            $this->pettyCashAccounts->topUp(
+                $user,
+                $sourceAccount,
+                (float) $validated['amount'],
+                $validated['purpose']
+            );
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['source_account_id' => $e->getMessage()])->withInput();
+        }
 
         return redirect()
             ->route('petty-cash.admin-dashboard')
@@ -198,7 +211,7 @@ class PettyCashController extends Controller
     public function userHistory(User $user)
     {
         if (!Gate::allows('approve-petty-cash')) {
-            abort(403, 'Unauthorized. Only admin can view user history.');
+            abort(403, 'Unauthorized. Admin or manager access is required.');
         }
 
         $transactions = PettyCash::with(['user', 'approver'])
@@ -222,30 +235,11 @@ class PettyCashController extends Controller
     /** Store a new petty cash record (topup or expense request) */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'type'     => ['required', 'in:topup,expense'],
-            'amount'   => ['required', 'numeric', 'min:0.01'],
-            'category' => ['nullable', 'string', 'max:100'],
-            'purpose'  => ['required', 'string', 'max:255'],
-        ]);
+        return redirect()->route('petty-cash.index')->with(
+            'error',
+            'Use Staff Petty Cash to issue funds, or record spending through COGS / Operating Expenses.'
+        );
 
-        $entry = PettyCash::create([
-            'user_id'     => Auth::id(),
-            'assigned_to' => Auth::id(), // Assign to current user
-            'type'        => $validated['type'],
-            'amount'      => $validated['amount'],
-            'category'    => $validated['category'] ?? null,
-            'purpose'     => $validated['purpose'],
-            'status'      => $validated['type'] === 'topup' ? 'approved' : 'pending',
-            'approved_by' => $validated['type'] === 'topup' ? Auth::id() : null,
-            'paid_at'     => $validated['type'] === 'topup' ? now() : null,
-        ]);
-
-        ActivityLog::record('petty_cash.created', ucfirst($entry->type) . " petty cash MVR " . number_format($entry->amount, 2) . " — {$entry->purpose}", $entry);
-
-        return redirect()
-            ->route('petty-cash.index')
-            ->with('success', 'Petty cash entry created.');
     }
 
     /** Approve an expense (admin/manager only) */
@@ -270,10 +264,29 @@ class PettyCashController extends Controller
             }
         }
 
-        $pettyCash->status = 'approved';
-        $pettyCash->approved_by = Auth::id();
-        $pettyCash->paid_at = now();
-        $pettyCash->save();
+        DB::transaction(function () use ($pettyCash) {
+            if ($pettyCash->type === 'expense' && $pettyCash->assignedUser) {
+                $account = $this->pettyCashAccounts->accountFor($pettyCash->assignedUser);
+                $account = Account::lockForUpdate()->findOrFail($account->id);
+                $account->decrement('balance', (float) $pettyCash->amount);
+
+                \App\Models\AccountTransaction::create([
+                    'account_id' => $account->id,
+                    'type' => 'legacy_petty_cash_expense',
+                    'amount' => -(float) $pettyCash->amount,
+                    'occurred_at' => now()->toDateString(),
+                    'description' => $pettyCash->purpose,
+                    'related_type' => PettyCash::class,
+                    'related_id' => $pettyCash->id,
+                    'created_by' => Auth::id(),
+                ]);
+            }
+
+            $pettyCash->status = 'approved';
+            $pettyCash->approved_by = Auth::id();
+            $pettyCash->paid_at = now();
+            $pettyCash->save();
+        });
 
         ActivityLog::record('petty_cash.approved', "Petty cash #{$pettyCash->id} approved — MVR " . number_format($pettyCash->amount, 2) . " ({$pettyCash->purpose})", $pettyCash);
 
@@ -285,6 +298,10 @@ class PettyCashController extends Controller
     {
         if (!Auth::user()->isAdmin()) {
             abort(403, 'Only admins can delete petty cash entries.');
+        }
+
+        if ($pettyCash->source_account_id || $pettyCash->expense_id) {
+            return back()->with('error', 'This entry is linked to an account transaction and cannot be deleted. Reverse the source transaction instead.');
         }
 
         $desc = ucfirst($pettyCash->type) . " #{$pettyCash->id} (MVR " . number_format($pettyCash->amount, 2) . ", {$pettyCash->purpose})";

@@ -58,12 +58,9 @@
                         <div>
                             <label class="block text-sm font-medium">Paid From Account</label>
                             <select name="account_id" class="mt-1 w-full rounded border-gray-300" required>
-                                <option value="">Select account</option>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}" @selected((string) old('account_id') === (string) $account->id)>{{ $account->name }} ({{ number_format($account->balance, 2) }})</option>
-                                @endforeach
+                                <x-expense-account-options :accounts="$accounts" />
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">Balance is shown in parentheses.</p>
+                            <p class="text-xs text-gray-500 mt-1">Choose the staff petty cash account when these items were bought using staff-held cash.</p>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
