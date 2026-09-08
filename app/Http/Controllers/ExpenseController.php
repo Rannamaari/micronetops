@@ -218,7 +218,7 @@ class ExpenseController extends Controller
         return view('expenses.show', compact('expense', 'businessUnits'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
@@ -226,6 +226,7 @@ class ExpenseController extends Controller
         $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
+        $defaultDate = $this->requestedExpenseDate($request);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -235,10 +236,10 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories'));
+        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
     }
 
-    public function createCogs()
+    public function createCogs(Request $request)
     {
         $categories = ExpenseCategory::where('is_active', true)
             ->where('type', ExpenseCategory::TYPE_COGS)
@@ -249,6 +250,7 @@ class ExpenseController extends Controller
         $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
+        $defaultDate = $this->requestedExpenseDate($request);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -258,10 +260,10 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories'));
+        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
     }
 
-    public function createOperating()
+    public function createOperating(Request $request)
     {
         $categories = ExpenseCategory::where('is_active', true)
             ->whereIn('type', [ExpenseCategory::TYPE_OPERATING, ExpenseCategory::TYPE_OTHER])
@@ -272,6 +274,7 @@ class ExpenseController extends Controller
         $accounts = $this->availableExpenseAccounts();
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
+        $defaultDate = $this->requestedExpenseDate($request);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -281,7 +284,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories'));
+        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
     }
 
     public function store(Request $request)
@@ -337,7 +340,7 @@ class ExpenseController extends Controller
         $validated['vendor'] = $vendor?->name;
 
         try {
-            DB::transaction(function () use ($validated) {
+            $expense = DB::transaction(function () use ($validated) {
                 $expense = Expense::create($validated);
 
                 $account = Account::lockForUpdate()->find($validated['account_id']);
@@ -364,6 +367,8 @@ class ExpenseController extends Controller
                 $this->pettyCashAccounts->syncExpense($expense, $account);
 
                 $this->applyInventoryPurchases($expense, $validated);
+
+                return $expense;
             });
         } catch (\RuntimeException $e) {
             return back()->withErrors(['account_id' => $e->getMessage()])->withInput();
@@ -371,8 +376,23 @@ class ExpenseController extends Controller
 
         ActivityLog::record('expense.created', "Expense recorded — {$validated['amount']} MVR via " . (Vendor::find($validated['vendor_id'])?->name ?? 'unknown vendor'));
 
+        $expense->loadMissing(['category', 'vendorEntity']);
+        $createRoute = $expense->category?->type === ExpenseCategory::TYPE_COGS
+            ? 'expenses.create-cogs'
+            : 'expenses.create-operating';
+
         return redirect()->route('expenses.index')
-            ->with('success', 'Expense recorded successfully.');
+            ->with('success', 'Expense recorded successfully.')
+            ->with('last_expense', [
+                'id' => $expense->id,
+                'amount' => (float) $expense->amount,
+                'date' => $expense->incurred_at->toDateString(),
+                'date_label' => $expense->incurred_at->format('d M Y'),
+                'vendor' => $expense->vendorEntity?->name ?? $expense->vendor ?? 'No vendor',
+                'category' => $expense->category?->name ?? 'Expense',
+                'invoice_number' => $expense->reference,
+                'add_another_url' => route($createRoute, ['date' => $expense->incurred_at->toDateString()]),
+            ]);
     }
 
     public function edit(Expense $expense)
@@ -723,6 +743,25 @@ class ExpenseController extends Controller
             ->orderBy('is_petty_cash')
             ->orderBy('name')
             ->get();
+    }
+
+    private function requestedExpenseDate(Request $request): string
+    {
+        $date = $request->query('date');
+
+        if (!$date) {
+            return now()->toDateString();
+        }
+
+        try {
+            $parsed = Carbon::createFromFormat('Y-m-d', $date);
+
+            return $parsed->toDateString() === $date
+                ? $parsed->toDateString()
+                : now()->toDateString();
+        } catch (\Throwable) {
+            return now()->toDateString();
+        }
     }
 
     private function expenseFilters(Request $request, string $defaultPeriod = 'month'): array

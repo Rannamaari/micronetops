@@ -62,7 +62,7 @@
                     </div>
                     <div class="xl:col-span-2">
                         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
-                        <input type="text" name="search" value="{{ $search }}" placeholder="Vendor, reference, notes" class="w-full rounded-lg border-gray-300 text-sm h-11 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                        <input type="text" name="search" value="{{ $search }}" placeholder="Vendor, invoice/bill number, notes" class="w-full rounded-lg border-gray-300 text-sm h-11 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                     </div>
                     <div class="md:col-span-2 xl:col-span-6 flex flex-wrap gap-2 pt-1">
                         <button type="submit" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">

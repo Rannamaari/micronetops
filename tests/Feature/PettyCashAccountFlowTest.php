@@ -61,6 +61,12 @@ class PettyCashAccountFlowTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('expenses.index'));
+        $response->assertSessionHas('last_expense', function (array $lastExpense) {
+            return $lastExpense['date'] === '2026-09-07'
+                && str_contains($lastExpense['add_another_url'], 'expenses/create-operating?date=2026-09-07')
+                && $lastExpense['invoice_number'] === 'RCPT-100';
+        });
         $expense = Expense::latest('id')->firstOrFail();
         $this->assertEquals(700.00, (float) $staffAccount->fresh()->balance);
         $this->assertDatabaseHas('petty_cash', [
@@ -70,6 +76,19 @@ class PettyCashAccountFlowTest extends TestCase
             'status' => 'approved',
         ]);
         $this->assertEquals(700.00, PettyCash::userBalance($staff));
+
+        $this->actingAs($manager)
+            ->get(route('expenses.index'))
+            ->assertOk()
+            ->assertSee('Last expense added successfully')
+            ->assertSee('Add Another Expense');
+
+        $this->actingAs($manager)
+            ->get(route('expenses.create-operating', ['date' => '2026-09-07']))
+            ->assertOk()
+            ->assertSee('Invoice / Bill Number')
+            ->assertSee('id="vendor-search"', false)
+            ->assertSee('value="2026-09-07"', false);
     }
 
     public function test_cogs_expense_deducts_staff_cash_and_adds_inventory(): void

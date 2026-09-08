@@ -51,20 +51,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <label class="block text-sm font-medium">Vendor</label>
-                                <button type="button" id="open-vendor-modal" class="text-sm text-blue-600 hover:underline">Add Vendor</button>
-                            </div>
-                            <div class="mt-2">
-                                <select id="vendor-select" name="vendor_id" class="mt-1 w-full rounded border-gray-300" required>
-                                    <option value="">Select vendor</option>
-                                    @foreach ($vendors as $vendor)
-                                        <option value="{{ $vendor->id }}" @selected((string) old('vendor_id') === (string) $vendor->id)>{{ $vendor->name }} ({{ $vendor->phone }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+                        <x-expense-vendor-picker :vendors="$vendors" />
                         <div>
                             <label class="block text-sm font-medium">Business Unit</label>
                             <select id="business-unit" name="business_unit" class="mt-1 w-full rounded border-gray-300" required>
@@ -87,12 +74,12 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium">Incurred At</label>
-                                <input type="date" name="incurred_at" class="mt-1 w-full rounded border-gray-300" value="{{ old('incurred_at', now()->toDateString()) }}" required>
+                                <input type="date" name="incurred_at" class="mt-1 w-full rounded border-gray-300" value="{{ old('incurred_at', $defaultDate) }}" required>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium">Reference</label>
-                            <input name="reference" class="mt-1 w-full rounded border-gray-300" value="{{ old('reference') }}">
+                            <label class="block text-sm font-medium">Invoice / Bill Number</label>
+                            <input name="reference" class="mt-1 w-full rounded border-gray-300" value="{{ old('reference') }}" placeholder="Enter supplier invoice or bill number">
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Notes</label>

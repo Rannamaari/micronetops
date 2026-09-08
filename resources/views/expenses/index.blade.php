@@ -22,6 +22,41 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-4 sm:p-6 text-gray-900 dark:text-gray-100">
+                    @if (session('last_expense'))
+                        @php($lastExpense = session('last_expense'))
+                        <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5 dark:border-emerald-800 dark:bg-emerald-900/20">
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <p class="font-semibold">Last expense added successfully</p>
+                                    </div>
+                                    <p class="mt-1 text-sm text-emerald-900 dark:text-emerald-100">
+                                        {{ $lastExpense['category'] }} from {{ $lastExpense['vendor'] }} —
+                                        MVR {{ number_format($lastExpense['amount'], 2) }} on {{ $lastExpense['date_label'] }}
+                                    </p>
+                                    @if ($lastExpense['invoice_number'])
+                                        <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Invoice / Bill Number: {{ $lastExpense['invoice_number'] }}</p>
+                                    @endif
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{{ route('expenses.show', $lastExpense['id']) }}" class="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-transparent dark:text-emerald-200">
+                                        View Expense
+                                    </a>
+                                    <a href="{{ $lastExpense['add_another_url'] }}" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">
+                                        Add Another Expense
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif (session('success'))
+                        <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
                     {{-- Recurring expenses banner --}}
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <div class="text-sm text-gray-600 dark:text-gray-300">
@@ -77,7 +112,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium mb-1">Search</label>
-                            <input name="search" value="{{ $search }}" class="w-full rounded border-gray-300 text-sm h-10" placeholder="Vendor, ref...">
+                            <input name="search" value="{{ $search }}" class="w-full rounded border-gray-300 text-sm h-10" placeholder="Vendor, invoice/bill no...">
                         </div>
                         <div class="flex items-end">
                             <button class="w-full h-10 bg-gray-900 text-white rounded-lg text-sm">Filter</button>
@@ -93,7 +128,7 @@
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendor</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Ref</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Invoice / Bill No.</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Account</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
                                     <th class="px-4 py-2"></th>
@@ -162,7 +197,7 @@
                                     </div>
                                 </div>
                                 @if ($expense->reference)
-                                    <div class="text-xs text-gray-400 mt-1.5">Ref: {{ $expense->reference }}</div>
+                                    <div class="text-xs text-gray-400 mt-1.5">Invoice / Bill No: {{ $expense->reference }}</div>
                                 @endif
                                 @if(Auth::user()->isAdmin())
                                     <form method="POST" action="{{ route('expenses.destroy', $expense) }}" class="mt-2"
