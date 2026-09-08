@@ -25,7 +25,9 @@
                         <div>
                             <div class="flex items-center justify-between">
                                 <label class="block text-sm font-medium">Operating/Other Category</label>
-                                <a href="{{ route('expense-categories.create') }}" class="text-sm text-blue-600 hover:underline">Add New Category</a>
+                                @unless(Auth::user()->isOperationsStaff())
+                                    <a href="{{ route('expense-categories.create') }}" class="text-sm text-blue-600 hover:underline">Add New Category</a>
+                                @endunless
                             </div>
                             <input id="category-search" type="text" placeholder="Search category..." class="mt-1 w-full rounded border-gray-300" />
                             <select id="category-select" name="expense_category_id" class="mt-2 w-full rounded border-gray-300" required>

@@ -28,7 +28,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $homeRoute = $request->user()->isOperationsStaff()
+            ? 'sales.daily.index'
+            : 'dashboard';
+
+        return redirect()->intended(route($homeRoute, absolute: false));
     }
 
     /**

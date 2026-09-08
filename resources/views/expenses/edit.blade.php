@@ -25,7 +25,9 @@
                         <div>
                             <div class="flex items-center justify-between">
                                 <label class="block text-sm font-medium">Category</label>
-                                <a href="{{ route('expense-categories.create') }}" class="text-sm text-blue-600 hover:underline">Add New Category</a>
+                                @unless(Auth::user()->isOperationsStaff())
+                                    <a href="{{ route('expense-categories.create') }}" class="text-sm text-blue-600 hover:underline">Add New Category</a>
+                                @endunless
                             </div>
                             <div class="mt-2 flex flex-wrap gap-3 text-sm">
                                 <label class="inline-flex items-center gap-2">

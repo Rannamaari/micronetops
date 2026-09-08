@@ -5,9 +5,11 @@
                 {{ __('Expenses') }}
             </h2>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('expenses.reports') }}" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
-                    Reports
-                </a>
+                @if(Auth::user()->canViewReports())
+                    <a href="{{ route('expenses.reports') }}" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
+                        Reports
+                    </a>
+                @endif
                 <a href="{{ route('expenses.create-cogs') }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                     Add COGS
                 </a>
@@ -66,23 +68,25 @@
                         </a>
                     @endif
 
-                    {{-- Recurring expenses banner --}}
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-300">
-                            Recurring expenses can be auto-generated for due dates.
+                    @unless(Auth::user()->isOperationsStaff())
+                        {{-- Recurring expenses banner --}}
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-300">
+                                Recurring expenses can be auto-generated for due dates.
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{{ route('recurring-expenses.index') }}" class="px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50">
+                                    Manage Recurring
+                                </a>
+                                <form method="POST" action="{{ route('recurring-expenses.generate') }}">
+                                    @csrf
+                                    <button class="px-3 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800">
+                                        Generate Due
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <a href="{{ route('recurring-expenses.index') }}" class="px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50">
-                                Manage Recurring
-                            </a>
-                            <form method="POST" action="{{ route('recurring-expenses.generate') }}">
-                                @csrf
-                                <button class="px-3 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800">
-                                    Generate Due
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                    @endunless
 
                     {{-- Date preset chips --}}
                     <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
@@ -258,12 +262,10 @@
                     </div>
 
                     <div class="mt-5 text-sm text-gray-500">
-                        Manage
-                        <a href="{{ route('expense-categories.index') }}" class="text-blue-600 hover:underline">Expense Categories</a>,
-                        <a href="{{ route('vendors.index') }}" class="text-blue-600 hover:underline">Vendors</a>,
-                        <a href="{{ route('accounts.index') }}" class="text-blue-600 hover:underline">Accounts</a>,
-                        and
-                        <a href="{{ route('recurring-expenses.index') }}" class="text-blue-600 hover:underline">Recurring Expenses</a>.
+                        Manage <a href="{{ route('vendors.index') }}" class="text-blue-600 hover:underline">Vendors</a>@unless(Auth::user()->isOperationsStaff()),
+                            <a href="{{ route('expense-categories.index') }}" class="text-blue-600 hover:underline">Expense Categories</a>,
+                            <a href="{{ route('accounts.index') }}" class="text-blue-600 hover:underline">Accounts</a>, and
+                            <a href="{{ route('recurring-expenses.index') }}" class="text-blue-600 hover:underline">Recurring Expenses</a>@endunless.
                     </div>
                 </div>
             </div>

@@ -24,6 +24,10 @@ class DashboardController extends Controller
             return redirect()->route('hr.dashboard');
         }
 
+        if (!auth()->user()->canViewDashboard()) {
+            return redirect()->route('sales.daily.index');
+        }
+
         $now = Carbon::now();
         $startOfWeek = $now->copy()->startOfWeek();
         $startOfMonth = $now->copy()->startOfMonth();

@@ -41,6 +41,7 @@
                             </span>
                         </div>
                     </div>
+                    @if(Auth::user()->canManageInventory())
                     <div class="flex gap-2">
                         @if(!$inventoryItem->is_service)
                             <a href="{{ route('inventory.purchases.create', $inventoryItem) }}"
@@ -53,6 +54,7 @@
                             Edit
                         </a>
                     </div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -100,7 +102,7 @@
                 </div>
             </div>
 
-            @if(!$inventoryItem->is_service)
+            @if(!$inventoryItem->is_service && Auth::user()->canManageInventory())
                 {{-- Stock Adjustment Form --}}
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4 sm:p-6">
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">

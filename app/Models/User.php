@@ -119,6 +119,7 @@ class User extends Authenticatable
     public const ROLE_MOTO_MECHANIC = 'moto_mechanic';
     public const ROLE_AC_MECHANIC = 'ac_mechanic';
     public const ROLE_CASHIER = 'cashier';
+    public const ROLE_OPERATIONS_STAFF = 'operations_staff';
     public const ROLE_HR = 'hr';
     public const ROLE_CUSTOMER = 'customer'; // Regular users (Rattehin users)
 
@@ -201,6 +202,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_CASHIER;
     }
 
+    public function isOperationsStaff(): bool
+    {
+        return $this->role === self::ROLE_OPERATIONS_STAFF;
+    }
+
     /**
      * Check if user is HR
      */
@@ -246,7 +252,7 @@ class User extends Authenticatable
      */
     public function canCreateJobs(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF]);
     }
 
     /**
@@ -254,7 +260,7 @@ class User extends Authenticatable
      */
     public function canViewCustomers(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF]);
     }
 
     /**
@@ -262,7 +268,7 @@ class User extends Authenticatable
      */
     public function canEditCustomers(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_OPERATIONS_STAFF]);
     }
 
     /**
@@ -278,7 +284,27 @@ class User extends Authenticatable
      */
     public function canCreateExpenses(): bool
     {
-        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC]);
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF]);
+    }
+
+    public function canManageOperationalExpenses(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_OPERATIONS_STAFF]);
+    }
+
+    public function canCreateInventory(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_OPERATIONS_STAFF]);
+    }
+
+    public function canManageInventory(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    public function canViewDashboard(): bool
+    {
+        return $this->canAccessOperations() && !$this->isOperationsStaff();
     }
 
     /**
@@ -324,7 +350,8 @@ class User extends Authenticatable
             self::ROLE_MANAGER,
             self::ROLE_MOTO_MECHANIC,
             self::ROLE_AC_MECHANIC,
-            self::ROLE_CASHIER
+            self::ROLE_CASHIER,
+            self::ROLE_OPERATIONS_STAFF,
         ]);
     }
 

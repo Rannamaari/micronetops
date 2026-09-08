@@ -74,6 +74,7 @@
                             <option value="moto_mechanic" {{ old('role') === 'moto_mechanic' ? 'selected' : '' }}>Moto Mechanic - Micro Moto sales & jobs only</option>
                             <option value="ac_mechanic" {{ old('role') === 'ac_mechanic' ? 'selected' : '' }}>AC Mechanic - Micro Cool sales & jobs only</option>
                             <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier - Dashboard and petty cash history only</option>
+                            <option value="operations_staff" {{ old('role') === 'operations_staff' ? 'selected' : '' }}>Operations Staff - Sales, payments, customers, inventory, expenses, and vendors only</option>
                             <option value="hr" {{ old('role') === 'hr' ? 'selected' : '' }}>HR - Employees, payroll, and loans management only</option>
                         </select>
                         @error('role')
@@ -96,4 +97,3 @@
         </div>
     </div>
 </x-app-layout>
-

@@ -69,10 +69,7 @@ class InventoryController extends Controller
      */
     public function create()
     {
-        if (!Gate::allows('manage-inventory')) {
-            abort(403, 'Unauthorized. You do not have permission to manage inventory.');
-        }
-        if (!Gate::allows('manage-inventory')) {
+        if (!Gate::allows('create-inventory')) {
             abort(403, 'Unauthorized. You do not have permission to manage inventory.');
         }
         $categories = InventoryCategory::active()->orderBy('name')->get();
@@ -84,10 +81,7 @@ class InventoryController extends Controller
      */
     public function store(Request $request)
     {
-        if (!Gate::allows('manage-inventory')) {
-            abort(403, 'Unauthorized. You do not have permission to manage inventory.');
-        }
-        if (!Gate::allows('manage-inventory')) {
+        if (!Gate::allows('create-inventory')) {
             abort(403, 'Unauthorized. You do not have permission to manage inventory.');
         }
         $validated = $request->validate([

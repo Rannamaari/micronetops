@@ -19,7 +19,7 @@ class UserManagementController extends Controller
             abort(403, 'Unauthorized. You do not have permission to manage users.');
         }
 
-        $roleFilter = $request->query('role', 'all'); // all | customer | admin | manager | moto_mechanic | ac_mechanic | cashier | hr
+        $roleFilter = $request->query('role', 'all');
 
         $query = User::query()->orderBy('name');
 
@@ -39,6 +39,7 @@ class UserManagementController extends Controller
             'moto_mechanic' => User::where('role', 'moto_mechanic')->count(),
             'ac_mechanic' => User::where('role', 'ac_mechanic')->count(),
             'cashier' => User::where('role', 'cashier')->count(),
+            'operations_staff' => User::where('role', 'operations_staff')->count(),
             'hr' => User::where('role', 'hr')->count(),
         ];
 
@@ -68,7 +69,7 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role'     => ['required', 'in:admin,manager,moto_mechanic,ac_mechanic,cashier,hr'],
+            'role'     => ['required', 'in:admin,manager,moto_mechanic,ac_mechanic,cashier,operations_staff,hr'],
         ]);
 
         $user = User::create([
@@ -106,7 +107,7 @@ class UserManagementController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'role'     => ['required', 'in:admin,manager,moto_mechanic,ac_mechanic,cashier,hr,customer'],
+            'role'     => ['required', 'in:admin,manager,moto_mechanic,ac_mechanic,cashier,operations_staff,hr,customer'],
             'is_premium' => ['nullable', 'boolean'],
             'premium_features' => ['nullable', 'array'],
             'premium_features.*' => ['in:bill_upload,bill_sharing,expense_tracking,advanced_reports'],

@@ -38,6 +38,7 @@
                                 'moto_mechanic' => 'Moto Mechanics',
                                 'ac_mechanic' => 'AC Mechanics',
                                 'cashier' => 'Cashiers',
+                                'operations_staff' => 'Operations Staff',
                                 'hr' => 'HR',
                             ];
                         @endphp
@@ -119,7 +120,7 @@
                                 <td class="px-4 py-4">
                                     @if($user->role)
                                         <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                            {{ ucfirst($user->role) }}
+                                            {{ $user->role === 'operations_staff' ? 'Operations Staff' : str($user->role)->replace('_', ' ')->title() }}
                                         </span>
                                     @else
                                         <span class="text-xs text-gray-400">No role</span>
@@ -167,4 +168,3 @@
         </div>
     </div>
 </x-app-layout>
-

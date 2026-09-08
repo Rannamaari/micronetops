@@ -51,6 +51,12 @@ class RoleController extends Controller
                 'users_count' => \App\Models\User::where('role', 'cashier')->count(),
             ],
             [
+                'name' => 'Operations Staff',
+                'slug' => 'operations_staff',
+                'description' => 'All-company sales, payments, customers, inventory entry, expenses, and vendors. No dashboard, reports, HR, or management modules',
+                'users_count' => \App\Models\User::where('role', 'operations_staff')->count(),
+            ],
+            [
                 'name' => 'HR',
                 'slug' => 'hr',
                 'description' => 'Employee management, payroll, attendance, loans',

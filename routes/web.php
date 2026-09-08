@@ -76,6 +76,9 @@ Route::get('/', function () {
         if (auth()->user()->isCustomer()) {
             return redirect()->route('rattehin.index');
         }
+        if (auth()->user()->isOperationsStaff()) {
+            return redirect()->route('sales.daily.index');
+        }
         return redirect()->route('dashboard');
     }
     return view('home');
@@ -94,6 +97,9 @@ Route::get('/ops', function () {
         // Redirect customers to Rattehin (they can't access operations)
         if (auth()->user()->isCustomer()) {
             return redirect()->route('rattehin.index');
+        }
+        if (auth()->user()->isOperationsStaff()) {
+            return redirect()->route('sales.daily.index');
         }
         return redirect()->route('dashboard');
     }
@@ -168,8 +174,8 @@ Route::middleware('auth')->group(function () {
             ->name('sms.cancel');
     });
 
-    // Jobs - Admin, Manager, Moto Mechanic, AC Mechanic
-    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
+    // Jobs and sales entry
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic,operations_staff')->group(function () {
         // Job list & CRUD
         Route::get('jobs', [JobController::class, 'index'])->name('jobs.index');
         Route::get('jobs/create', [JobController::class, 'create'])->name('jobs.create');
@@ -223,27 +229,34 @@ Route::middleware('auth')->group(function () {
         Route::get('sales/daily/{dailySalesLog}/quotation', [DailySalesController::class, 'quotation'])->name('sales.daily.quotation');
         Route::post('sales/daily/{dailySalesLog}/reopen', [DailySalesController::class, 'reopen'])->name('sales.daily.reopen');
         Route::delete('sales/daily/{dailySalesLog}', [DailySalesController::class, 'destroy'])->name('sales.daily.destroy');
-        Route::get('sales/reports', [DailySalesController::class, 'reports'])->name('sales.reports');
+        Route::get('sales/reports', [DailySalesController::class, 'reports'])
+            ->middleware('role:admin,manager,moto_mechanic,ac_mechanic')
+            ->name('sales.reports');
         Route::get('sales/search', [SalesSearchController::class, 'index'])->name('sales.search');
-        Route::get('sales/purchase-orders', [PurchaseOrderController::class, 'index'])->name('sales.purchase-orders.index');
-        Route::get('sales/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('sales.purchase-orders.create');
-        Route::post('sales/purchase-orders', [PurchaseOrderController::class, 'store'])->name('sales.purchase-orders.store');
-        Route::get('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('sales.purchase-orders.show');
-        Route::get('sales/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('sales.purchase-orders.print');
-        Route::get('sales/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('sales.purchase-orders.edit');
-        Route::patch('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('sales.purchase-orders.update');
-        Route::patch('sales/purchase-orders/{purchaseOrder}/number', [PurchaseOrderController::class, 'updateNumber'])->name('sales.purchase-orders.update-number');
-        Route::post('sales/purchase-orders/{purchaseOrder}/resubmit', [PurchaseOrderController::class, 'resubmit'])->name('sales.purchase-orders.resubmit');
-        Route::post('sales/purchase-orders/{purchaseOrder}/issue', [PurchaseOrderController::class, 'issue'])->name('sales.purchase-orders.issue');
-        Route::post('sales/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('sales.purchase-orders.cancel');
+
+        Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
+            Route::get('sales/purchase-orders', [PurchaseOrderController::class, 'index'])->name('sales.purchase-orders.index');
+            Route::get('sales/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('sales.purchase-orders.create');
+            Route::post('sales/purchase-orders', [PurchaseOrderController::class, 'store'])->name('sales.purchase-orders.store');
+            Route::get('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('sales.purchase-orders.show');
+            Route::get('sales/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('sales.purchase-orders.print');
+            Route::get('sales/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('sales.purchase-orders.edit');
+            Route::patch('sales/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('sales.purchase-orders.update');
+            Route::patch('sales/purchase-orders/{purchaseOrder}/number', [PurchaseOrderController::class, 'updateNumber'])->name('sales.purchase-orders.update-number');
+            Route::post('sales/purchase-orders/{purchaseOrder}/resubmit', [PurchaseOrderController::class, 'resubmit'])->name('sales.purchase-orders.resubmit');
+            Route::post('sales/purchase-orders/{purchaseOrder}/issue', [PurchaseOrderController::class, 'issue'])->name('sales.purchase-orders.issue');
+            Route::post('sales/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('sales.purchase-orders.cancel');
+        });
 
         // End of Day
-        Route::get('sales/eod', [EodController::class, 'index'])->name('sales.eod.index');
-        Route::post('sales/eod', [EodController::class, 'create'])->name('sales.eod.create');
-        Route::get('sales/eod/{eod}', [EodController::class, 'show'])->name('sales.eod.show');
-        Route::post('sales/eod/{eod}/close', [EodController::class, 'close'])->name('sales.eod.close');
-        Route::post('sales/eod/{eod}/deposit', [EodController::class, 'deposit'])->name('sales.eod.deposit');
-        Route::post('sales/eod/{eod}/reopen', [EodController::class, 'reopen'])->name('sales.eod.reopen');
+        Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
+            Route::get('sales/eod', [EodController::class, 'index'])->name('sales.eod.index');
+            Route::post('sales/eod', [EodController::class, 'create'])->name('sales.eod.create');
+            Route::get('sales/eod/{eod}', [EodController::class, 'show'])->name('sales.eod.show');
+            Route::post('sales/eod/{eod}/close', [EodController::class, 'close'])->name('sales.eod.close');
+            Route::post('sales/eod/{eod}/deposit', [EodController::class, 'deposit'])->name('sales.eod.deposit');
+            Route::post('sales/eod/{eod}/reopen', [EodController::class, 'reopen'])->name('sales.eod.reopen');
+        });
 
         // Invoice & Quotation
         Route::get('jobs/{job}/invoice', [JobController::class, 'invoice'])
@@ -276,8 +289,8 @@ Route::middleware('auth')->group(function () {
             ->name('jobs.payments.destroy');
     });
 
-    // Customers - Admin, Manager, Moto Mechanic, AC Mechanic
-    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic')->group(function () {
+    // Customers
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic,operations_staff')->group(function () {
         Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
         Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
@@ -338,8 +351,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     });
 
-    // Fault Tickets - All authenticated operations users
-    Route::middleware('operations')->group(function () {
+    // Fault Tickets - existing operations roles (restricted entry staff excluded)
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic,cashier')->group(function () {
         Route::get('faults', [FaultTicketController::class, 'index'])->name('faults.index');
         Route::get('faults/create', [FaultTicketController::class, 'create'])->name('faults.create');
         Route::post('faults', [FaultTicketController::class, 'store'])->name('faults.store');
@@ -348,8 +361,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('faults/{faultTicket}', [FaultTicketController::class, 'update'])->name('faults.update');
     });
 
-    // Petty Cash History - Operations users only
-    Route::middleware('operations')->group(function () {
+    // Petty Cash History - existing operations roles only
+    Route::middleware('role:admin,manager,moto_mechanic,ac_mechanic,cashier')->group(function () {
         Route::get('petty-cash/history', [PettyCashController::class, 'history'])->name('petty-cash.history');
     });
 
@@ -396,12 +409,16 @@ Route::middleware('auth')->group(function () {
         Route::resource('roles', RoleController::class);
     });
 
-    // Inventory Management - Admin, Manager only
-    Route::middleware('role:admin,manager')->group(function () {
+    // Inventory viewing and entry
+    Route::middleware('role:admin,manager,operations_staff')->group(function () {
         Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::get('inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
         Route::post('inventory', [InventoryController::class, 'store'])->name('inventory.store');
         Route::get('inventory/{inventory}', [InventoryController::class, 'show'])->name('inventory.show');
+    });
+
+    // Inventory maintenance - Admin and Manager only
+    Route::middleware('role:admin,manager')->group(function () {
         Route::get('inventory/{inventory}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
         Route::patch('inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update');
         Route::post('inventory/{inventory}/toggle-active', [InventoryController::class, 'toggleActive'])
@@ -425,7 +442,7 @@ Route::middleware('auth')->group(function () {
         Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
     });
 
-    // Finance & P&L - Admin, Manager only
+    // Finance management and reports - Admin, Manager only
     Route::middleware('role:admin,manager')->group(function () {
         Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
         Route::get('accounts/logs', [AccountController::class, 'logs'])->name('accounts.logs');
@@ -440,16 +457,7 @@ Route::middleware('auth')->group(function () {
         Route::get('account-transfers/create', [AccountTransferController::class, 'create'])->name('accounts.transfers.create');
         Route::post('account-transfers', [AccountTransferController::class, 'store'])->name('accounts.transfers.store');
 
-        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
         Route::get('expenses/reports', [ExpenseController::class, 'reports'])->name('expenses.reports');
-        Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
-        Route::get('expenses/create-cogs', [ExpenseController::class, 'createCogs'])->name('expenses.create-cogs');
-        Route::get('expenses/create-operating', [ExpenseController::class, 'createOperating'])->name('expenses.create-operating');
-        Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
-        Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
-        Route::get('expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
-        Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
-        Route::post('expenses/{expense}/mark-paid', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
         Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
         Route::get('recurring-expenses', [RecurringExpenseController::class, 'index'])->name('recurring-expenses.index');
@@ -459,12 +467,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('recurring-expenses/{recurringExpense}', [RecurringExpenseController::class, 'update'])->name('recurring-expenses.update');
         Route::post('recurring-expenses/generate', [RecurringExpenseController::class, 'generate'])->name('recurring-expenses.generate');
 
-        Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
-        Route::get('vendors/create', [VendorController::class, 'create'])->name('vendors.create');
-        Route::post('vendors', [VendorController::class, 'store'])->name('vendors.store');
-        Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
-        Route::patch('vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
-
         Route::get('expense-categories', [ExpenseCategoryController::class, 'index'])->name('expense-categories.index');
         Route::get('expense-categories/create', [ExpenseCategoryController::class, 'create'])->name('expense-categories.create');
         Route::post('expense-categories', [ExpenseCategoryController::class, 'store'])->name('expense-categories.store');
@@ -472,6 +474,25 @@ Route::middleware('auth')->group(function () {
         Route::patch('expense-categories/{expenseCategory}', [ExpenseCategoryController::class, 'update'])->name('expense-categories.update');
 
         Route::get('reports/pnl', [PnLController::class, 'index'])->name('reports.pnl');
+    });
+
+    // Day-to-day expense and vendor entry
+    Route::middleware('role:admin,manager,operations_staff')->group(function () {
+        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+        Route::get('expenses/create-cogs', [ExpenseController::class, 'createCogs'])->name('expenses.create-cogs');
+        Route::get('expenses/create-operating', [ExpenseController::class, 'createOperating'])->name('expenses.create-operating');
+        Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+        Route::get('expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
+        Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::post('expenses/{expense}/mark-paid', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
+
+        Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
+        Route::get('vendors/create', [VendorController::class, 'create'])->name('vendors.create');
+        Route::post('vendors', [VendorController::class, 'store'])->name('vendors.store');
+        Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
+        Route::patch('vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
     });
 
     // Employee Management - Admin and HR

@@ -73,9 +73,9 @@
                            class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none">
                             Edit Profile
                         </a>
-                        <a href="{{ route('dashboard') }}" 
+                        <a href="{{ Auth::user()->isOperationsStaff() ? route('sales.daily.index') : route('dashboard') }}"
                            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:outline-none dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                            Back to Dashboard
+                            {{ Auth::user()->isOperationsStaff() ? 'Back to Daily Sales' : 'Back to Dashboard' }}
                         </a>
                     </div>
                 </div>
@@ -83,4 +83,3 @@
         </div>
     </div>
 </x-app-layout>
-

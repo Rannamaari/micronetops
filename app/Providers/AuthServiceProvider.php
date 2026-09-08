@@ -34,6 +34,10 @@ class AuthServiceProvider extends ServiceProvider
             return $user->hasAnyRole(['admin', 'manager']);
         });
 
+        Gate::define('create-inventory', function ($user) {
+            return $user->canCreateInventory();
+        });
+
         Gate::define('approve-petty-cash', function ($user) {
             return $user->hasAnyRole(['admin', 'manager']);
         });
@@ -43,11 +47,11 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('manage-jobs', function ($user) {
-            return $user->hasAnyRole(['admin', 'manager', 'moto_mechanic', 'ac_mechanic']);
+            return $user->hasAnyRole(['admin', 'manager', 'moto_mechanic', 'ac_mechanic', 'operations_staff']);
         });
 
         Gate::define('manage-payments', function ($user) {
-            return $user->hasAnyRole(['admin', 'manager', 'cashier']);
+            return $user->hasAnyRole(['admin', 'manager', 'cashier', 'operations_staff']);
         });
     }
 }
