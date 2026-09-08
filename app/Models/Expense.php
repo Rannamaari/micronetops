@@ -21,7 +21,10 @@ class Expense extends Model
         'account_id',
         'business_unit',
         'amount',
+        'is_paid',
         'incurred_at',
+        'due_date',
+        'paid_at',
         'vendor',
         'reference',
         'notes',
@@ -31,7 +34,10 @@ class Expense extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'is_paid' => 'boolean',
         'incurred_at' => 'date',
+        'due_date' => 'date',
+        'paid_at' => 'date',
     ];
 
     public function category()

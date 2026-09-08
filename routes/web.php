@@ -449,6 +449,7 @@ Route::middleware('auth')->group(function () {
         Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
         Route::get('expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
         Route::patch('expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::post('expenses/{expense}/mark-paid', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
         Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
         Route::get('recurring-expenses', [RecurringExpenseController::class, 'index'])->name('recurring-expenses.index');

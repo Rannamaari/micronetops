@@ -12,6 +12,9 @@
                     {{ $expense->category?->type === 'cogs' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : ($expense->category?->type === 'operating' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300') }}">
                     {{ strtoupper($expense->category?->type) }}
                 </span>
+                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $expense->is_paid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' }}">
+                    {{ $expense->is_paid ? 'Paid' : 'Due' }}
+                </span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <a href="{{ route('expenses.edit', $expense) }}" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
@@ -19,7 +22,7 @@
                 </a>
                 @if(Auth::user()->isAdmin())
                     <form method="POST" action="{{ route('expenses.destroy', $expense) }}"
-                          onsubmit="return confirm('Delete Expense #{{ $expense->id }}?\n\nThis will:\n• Restore the account balance (MVR {{ number_format($expense->amount, 2) }})\n• Reverse any inventory stock changes\n\nThis cannot be undone.');">
+                          onsubmit="return confirm('Delete Expense #{{ $expense->id }}?\n\nThis will {{ $expense->is_paid ? 'restore the account balance and ' : '' }}reverse any inventory stock changes. This cannot be undone.');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
@@ -33,6 +36,43 @@
 
     <div class="py-4 sm:py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
+            @if (session('success'))
+                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
+            @if (!$expense->is_paid)
+                <div class="overflow-hidden rounded-xl border border-amber-200 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-900/20">
+                    <div class="p-4 sm:p-6">
+                        <h3 class="font-semibold text-amber-950 dark:text-amber-100">Payment is due</h3>
+                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">Record payment when the supplier is paid. The selected account will be deducted once.</p>
+                        <form method="POST" action="{{ route('expenses.mark-paid', $expense) }}" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+                            @csrf
+                            <div>
+                                <label for="payment-account" class="block text-sm font-medium text-gray-800 dark:text-gray-100">Paid From Account <span class="text-red-500">*</span></label>
+                                <select id="payment-account" name="account_id" required class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900">
+                                    <x-expense-account-options :accounts="$accounts" :selected="old('account_id', $expense->account_id)" />
+                                </select>
+                            </div>
+                            <div>
+                                <label for="paid-at" class="block text-sm font-medium text-gray-800 dark:text-gray-100">Payment Date <span class="text-red-500">*</span></label>
+                                <input id="paid-at" type="date" name="paid_at" value="{{ old('paid_at', now()->toDateString()) }}" required class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900">
+                            </div>
+                            <button type="submit" class="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 sm:col-span-2" onclick="return confirm('Mark this expense as paid and deduct MVR {{ number_format($expense->amount, 2) }} from the selected account?')">
+                                Mark as Paid
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             {{-- Expense Summary --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                 <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-4 sm:px-6 py-3">
@@ -61,9 +101,24 @@
                             <dd class="mt-1 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 tabular-nums">MVR {{ number_format($expense->amount, 2) }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Paid From</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $expense->account?->name ?? '-' }}</dd>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment Status</dt>
+                            <dd class="mt-1 text-sm font-semibold {{ $expense->is_paid ? 'text-emerald-700' : 'text-amber-700' }}">{{ $expense->is_paid ? 'Paid' : 'Due' }}</dd>
                         </div>
+                        <div>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $expense->is_paid ? 'Paid From' : 'Planned Account' }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $expense->account?->name ?? ($expense->is_paid ? '-' : 'Not selected') }}</dd>
+                        </div>
+                        @if ($expense->is_paid && $expense->paid_at)
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Paid Date</dt>
+                                <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $expense->paid_at->format('d M Y') }}</dd>
+                            </div>
+                        @elseif (!$expense->is_paid && $expense->due_date)
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Due Date</dt>
+                                <dd class="mt-1 text-sm {{ $expense->due_date->isPast() ? 'font-semibold text-red-600' : 'text-gray-900 dark:text-gray-100' }}">{{ $expense->due_date->format('d M Y') }}</dd>
+                            </div>
+                        @endif
                         @if ($expense->reference)
                             <div>
                                 <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Invoice / Bill Number</dt>

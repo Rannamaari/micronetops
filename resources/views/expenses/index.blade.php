@@ -36,6 +36,7 @@
                                     <p class="mt-1 text-sm text-emerald-900 dark:text-emerald-100">
                                         {{ $lastExpense['category'] }} from {{ $lastExpense['vendor'] }} —
                                         MVR {{ number_format($lastExpense['amount'], 2) }} on {{ $lastExpense['date_label'] }}
+                                        <span class="font-semibold">({{ $lastExpense['is_paid'] ? 'Paid' : 'Due' }})</span>
                                     </p>
                                     @if ($lastExpense['invoice_number'])
                                         <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Invoice / Bill Number: {{ $lastExpense['invoice_number'] }}</p>
@@ -55,6 +56,14 @@
                         <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
                             {{ session('success') }}
                         </div>
+                    @endif
+
+                    @if ($dueExpenseCount > 0)
+                        <a href="{{ route('expenses.index', ['payment_status' => 'due']) }}"
+                           class="mb-5 flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 transition hover:bg-amber-100 sm:flex-row sm:items-center sm:justify-between dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
+                            <span class="text-sm font-semibold">{{ $dueExpenseCount }} unpaid {{ Str::plural('expense', $dueExpenseCount) }}</span>
+                            <span class="text-sm">Outstanding: <strong>MVR {{ number_format($dueExpenseTotal, 2) }}</strong> · View all due</span>
+                        </a>
                     @endif
 
                     {{-- Recurring expenses banner --}}
@@ -88,7 +97,7 @@
                     </div>
 
                     {{-- Filters --}}
-                    <form method="GET" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    <form method="GET" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
                         @if ($period !== 'all')
                             <input type="hidden" name="period" value="{{ $period }}">
                         @endif
@@ -111,6 +120,14 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-xs font-medium mb-1">Payment</label>
+                            <select name="payment_status" class="w-full rounded border-gray-300 text-sm h-10">
+                                <option value="all">All</option>
+                                <option value="paid" @selected($paymentStatus === 'paid')>Paid</option>
+                                <option value="due" @selected($paymentStatus === 'due')>Due</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-xs font-medium mb-1">Search</label>
                             <input name="search" value="{{ $search }}" class="w-full rounded border-gray-300 text-sm h-10" placeholder="Vendor, invoice/bill no...">
                         </div>
@@ -130,6 +147,7 @@
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Vendor</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Invoice / Bill No.</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Account</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Payment</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
                                     <th class="px-4 py-2"></th>
                                 </tr>
@@ -148,7 +166,17 @@
                                         <td class="px-4 py-3 text-sm">{{ $businessUnits[$expense->business_unit] ?? $expense->business_unit }}</td>
                                         <td class="px-4 py-3 text-sm">{{ $expense->vendorEntity?->name ?? $expense->vendor ?? '-' }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{{ $expense->reference ?? '-' }}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{{ $expense->account?->name ?? '-' }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{{ $expense->is_paid ? ($expense->account?->name ?? '-') : 'Not paid' }}</td>
+                                        <td class="px-4 py-3 text-sm">
+                                            @if ($expense->is_paid)
+                                                <span class="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Paid</span>
+                                            @else
+                                                <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">Due</span>
+                                                @if ($expense->due_date)
+                                                    <div class="mt-1 text-xs {{ $expense->due_date->isPast() ? 'text-red-600' : 'text-gray-500' }}">{{ $expense->due_date->format('d M Y') }}</div>
+                                                @endif
+                                            @endif
+                                        </td>
                                         <td class="px-4 py-3 text-sm text-right font-medium tabular-nums">{{ number_format($expense->amount, 2) }}</td>
                                         <td class="px-4 py-3 text-right whitespace-nowrap">
                                             <a href="{{ route('expenses.show', $expense) }}" class="text-blue-600 hover:underline text-sm" onclick="event.stopPropagation()">View</a>
@@ -165,7 +193,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="px-4 py-6 text-center text-gray-500">No expenses found.</td>
+                                        <td colspan="9" class="px-4 py-6 text-center text-gray-500">No expenses found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -184,6 +212,9 @@
                                                 {{ $expense->category?->type === 'cogs' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : ($expense->category?->type === 'operating' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300') }}">
                                                 {{ strtoupper($expense->category?->type) }}
                                             </span>
+                                            <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $expense->is_paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800' }}">
+                                                {{ $expense->is_paid ? 'Paid' : 'Due' }}
+                                            </span>
                                         </div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                             {{ $expense->vendorEntity?->name ?? $expense->vendor ?? 'No vendor' }}
@@ -198,6 +229,9 @@
                                 </div>
                                 @if ($expense->reference)
                                     <div class="text-xs text-gray-400 mt-1.5">Invoice / Bill No: {{ $expense->reference }}</div>
+                                @endif
+                                @if (!$expense->is_paid && $expense->due_date)
+                                    <div class="mt-1.5 text-xs {{ $expense->due_date->isPast() ? 'font-medium text-red-600' : 'text-amber-700' }}">Due {{ $expense->due_date->format('d M Y') }}</div>
                                 @endif
                                 @if(Auth::user()->isAdmin())
                                     <form method="POST" action="{{ route('expenses.destroy', $expense) }}" class="mt-2"

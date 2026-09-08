@@ -35,9 +35,11 @@ class ExpenseController extends Controller
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
         $types = ExpenseCategory::getTypes();
+        $dueExpenseCount = Expense::where('is_paid', false)->count();
+        $dueExpenseTotal = round((float) Expense::where('is_paid', false)->sum('amount'), 2);
 
         return view('expenses.index', array_merge(
-            compact('expenses', 'categories', 'vendors', 'businessUnits', 'types'),
+            compact('expenses', 'categories', 'vendors', 'businessUnits', 'types', 'dueExpenseCount', 'dueExpenseTotal'),
             $filters
         ));
     }
@@ -214,8 +216,9 @@ class ExpenseController extends Controller
     {
         $expense->load(['category', 'vendorEntity', 'account', 'creator', 'updater', 'inventoryPurchases.inventoryItem']);
         $businessUnits = Expense::getBusinessUnits();
+        $accounts = $this->availableExpenseAccounts();
 
-        return view('expenses.show', compact('expense', 'businessUnits'));
+        return view('expenses.show', compact('expense', 'businessUnits', 'accounts'));
     }
 
     public function create(Request $request)
@@ -289,13 +292,19 @@ class ExpenseController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'is_paid' => $request->has('is_paid') ? $request->boolean('is_paid') : true,
+        ]);
+
         $validated = $request->validate([
             'expense_category_id' => ['required', 'exists:expense_categories,id'],
             'vendor_id' => ['required', 'exists:vendors,id'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'is_paid' => ['required', 'boolean'],
+            'account_id' => ['nullable', 'required_if:is_paid,1', 'exists:accounts,id'],
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'incurred_at' => ['required', 'date'],
+            'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'purchases' => ['nullable', 'array'],
@@ -336,6 +345,8 @@ class ExpenseController extends Controller
         }
         $validated['created_by'] = Auth::id();
         $validated['updated_by'] = Auth::id();
+        $validated['paid_at'] = $validated['is_paid'] ? $validated['incurred_at'] : null;
+        $validated['due_date'] = $validated['is_paid'] ? null : ($validated['due_date'] ?? null);
         $vendor = Vendor::find($validated['vendor_id']);
         $validated['vendor'] = $vendor?->name;
 
@@ -343,28 +354,30 @@ class ExpenseController extends Controller
             $expense = DB::transaction(function () use ($validated) {
                 $expense = Expense::create($validated);
 
-                $account = Account::lockForUpdate()->find($validated['account_id']);
-                $amount = (float) $validated['amount'];
+                if ($validated['is_paid']) {
+                    $account = Account::lockForUpdate()->findOrFail($validated['account_id']);
+                    $amount = (float) $validated['amount'];
 
-                if ($account->balance < $amount) {
-                    throw new \RuntimeException('Selected account has no available balance.');
+                    if ($account->balance < $amount) {
+                        throw new \RuntimeException('Selected account has no available balance.');
+                    }
+
+                    $account->balance = (float) $account->balance - $amount;
+                    $account->save();
+
+                    AccountTransaction::create([
+                        'account_id' => $account->id,
+                        'type' => 'expense',
+                        'amount' => -$amount,
+                        'occurred_at' => $validated['incurred_at'],
+                        'description' => 'Expense: ' . ($expense->category?->name ?? 'Expense'),
+                        'related_type' => Expense::class,
+                        'related_id' => $expense->id,
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $this->pettyCashAccounts->syncExpense($expense, $account);
                 }
-
-                $account->balance = (float) $account->balance - $amount;
-                $account->save();
-
-                AccountTransaction::create([
-                    'account_id' => $account->id,
-                    'type' => 'expense',
-                    'amount' => -$amount,
-                    'occurred_at' => $validated['incurred_at'],
-                    'description' => 'Expense: ' . ($expense->category?->name ?? 'Expense'),
-                    'related_type' => Expense::class,
-                    'related_id' => $expense->id,
-                    'created_by' => Auth::id(),
-                ]);
-
-                $this->pettyCashAccounts->syncExpense($expense, $account);
 
                 $this->applyInventoryPurchases($expense, $validated);
 
@@ -374,7 +387,8 @@ class ExpenseController extends Controller
             return back()->withErrors(['account_id' => $e->getMessage()])->withInput();
         }
 
-        ActivityLog::record('expense.created', "Expense recorded — {$validated['amount']} MVR via " . (Vendor::find($validated['vendor_id'])?->name ?? 'unknown vendor'));
+        $paymentLabel = $validated['is_paid'] ? 'paid' : 'due';
+        ActivityLog::record('expense.created', "Expense recorded — {$validated['amount']} MVR ({$paymentLabel}) via " . (Vendor::find($validated['vendor_id'])?->name ?? 'unknown vendor'));
 
         $expense->loadMissing(['category', 'vendorEntity']);
         $createRoute = $expense->category?->type === ExpenseCategory::TYPE_COGS
@@ -391,6 +405,7 @@ class ExpenseController extends Controller
                 'vendor' => $expense->vendorEntity?->name ?? $expense->vendor ?? 'No vendor',
                 'category' => $expense->category?->name ?? 'Expense',
                 'invoice_number' => $expense->reference,
+                'is_paid' => $expense->is_paid,
                 'add_another_url' => route($createRoute, ['date' => $expense->incurred_at->toDateString()]),
             ]);
     }
@@ -419,13 +434,19 @@ class ExpenseController extends Controller
 
     public function update(Request $request, Expense $expense)
     {
+        $request->merge([
+            'is_paid' => $request->has('is_paid') ? $request->boolean('is_paid') : true,
+        ]);
+
         $validated = $request->validate([
             'expense_category_id' => ['required', 'exists:expense_categories,id'],
             'vendor_id' => ['required', 'exists:vendors,id'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'is_paid' => ['required', 'boolean'],
+            'account_id' => ['nullable', 'required_if:is_paid,1', 'exists:accounts,id'],
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'incurred_at' => ['required', 'date'],
+            'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'purchases' => ['nullable', 'array'],
@@ -465,6 +486,10 @@ class ExpenseController extends Controller
                 ->withInput();
         }
         $validated['updated_by'] = Auth::id();
+        $validated['paid_at'] = $validated['is_paid']
+            ? ($expense->is_paid ? ($expense->paid_at?->toDateString() ?? $validated['incurred_at']) : now()->toDateString())
+            : null;
+        $validated['due_date'] = $validated['is_paid'] ? null : ($validated['due_date'] ?? null);
         $vendor = Vendor::find($validated['vendor_id']);
         $validated['vendor'] = $vendor?->name;
 
@@ -472,11 +497,10 @@ class ExpenseController extends Controller
             DB::transaction(function () use ($validated, $expense) {
                 $previousAccountId = $expense->account_id;
                 $previousAmount = (float) $expense->amount;
-
-                $expense->update($validated);
+                $wasPaid = (bool) $expense->is_paid;
 
                 // Revert previous account impact if it existed
-                if ($previousAccountId) {
+                if ($wasPaid && $previousAccountId) {
                     $prevAccount = Account::lockForUpdate()->find($previousAccountId);
                     if ($prevAccount) {
                         $prevAccount->balance = (float) $prevAccount->balance + $previousAmount;
@@ -495,30 +519,34 @@ class ExpenseController extends Controller
                     }
                 }
 
+                $this->pettyCashAccounts->reverseExpense($expense);
                 $this->reverseInventoryPurchases($expense);
+                $expense->update($validated);
 
-                $account = Account::lockForUpdate()->find($validated['account_id']);
-                $amount = (float) $validated['amount'];
+                if ($validated['is_paid']) {
+                    $account = Account::lockForUpdate()->findOrFail($validated['account_id']);
+                    $amount = (float) $validated['amount'];
 
-                if ($account->balance < $amount) {
-                    throw new \RuntimeException('Selected account has no available balance.');
+                    if ($account->balance < $amount) {
+                        throw new \RuntimeException('Selected account has no available balance.');
+                    }
+
+                    $account->balance = (float) $account->balance - $amount;
+                    $account->save();
+
+                    AccountTransaction::create([
+                        'account_id' => $account->id,
+                        'type' => 'expense',
+                        'amount' => -$amount,
+                        'occurred_at' => $validated['paid_at'],
+                        'description' => 'Expense update: ' . ($expense->category?->name ?? 'Expense'),
+                        'related_type' => Expense::class,
+                        'related_id' => $expense->id,
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $this->pettyCashAccounts->syncExpense($expense, $account);
                 }
-
-                $account->balance = (float) $account->balance - $amount;
-                $account->save();
-
-                AccountTransaction::create([
-                    'account_id' => $account->id,
-                    'type' => 'expense',
-                    'amount' => -$amount,
-                    'occurred_at' => $validated['incurred_at'],
-                    'description' => 'Expense update: ' . ($expense->category?->name ?? 'Expense'),
-                    'related_type' => Expense::class,
-                    'related_id' => $expense->id,
-                    'created_by' => Auth::id(),
-                ]);
-
-                $this->pettyCashAccounts->syncExpense($expense, $account);
 
                 $this->applyInventoryPurchases($expense, $validated);
             });
@@ -528,6 +556,63 @@ class ExpenseController extends Controller
 
         return redirect()->route('expenses.index')
             ->with('success', 'Expense updated successfully.');
+    }
+
+    public function markPaid(Request $request, Expense $expense)
+    {
+        if ($expense->is_paid) {
+            return back()->withErrors(['payment' => 'This expense is already marked as paid.']);
+        }
+
+        $validated = $request->validate([
+            'account_id' => ['required', 'exists:accounts,id'],
+            'paid_at' => ['required', 'date'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($validated, $expense) {
+                $lockedExpense = Expense::lockForUpdate()->findOrFail($expense->id);
+                if ($lockedExpense->is_paid) {
+                    throw new \RuntimeException('This expense has already been paid.');
+                }
+
+                $account = Account::lockForUpdate()->findOrFail($validated['account_id']);
+                $amount = (float) $lockedExpense->amount;
+                if ((float) $account->balance < $amount) {
+                    throw new \RuntimeException('Selected account has no available balance.');
+                }
+
+                $account->balance = (float) $account->balance - $amount;
+                $account->save();
+
+                $lockedExpense->update([
+                    'account_id' => $account->id,
+                    'is_paid' => true,
+                    'paid_at' => $validated['paid_at'],
+                    'updated_by' => Auth::id(),
+                ]);
+
+                AccountTransaction::create([
+                    'account_id' => $account->id,
+                    'type' => 'expense',
+                    'amount' => -$amount,
+                    'occurred_at' => $validated['paid_at'],
+                    'description' => 'Payment for expense #' . $lockedExpense->id,
+                    'related_type' => Expense::class,
+                    'related_id' => $lockedExpense->id,
+                    'created_by' => Auth::id(),
+                ]);
+
+                $this->pettyCashAccounts->syncExpense($lockedExpense, $account);
+            });
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['account_id' => $e->getMessage()])->withInput();
+        }
+
+        ActivityLog::record('expense.paid', "Expense #{$expense->id} marked paid — MVR {$expense->amount}");
+
+        return redirect()->route('expenses.show', $expense)
+            ->with('success', 'Expense marked as paid and the account balance was updated.');
     }
 
     public function destroy(Expense $expense)
@@ -545,7 +630,7 @@ class ExpenseController extends Controller
             $this->pettyCashAccounts->reverseExpense($expense);
 
             // Restore account balance and write a reversal transaction (keeps audit trail)
-            if ($expense->account_id) {
+            if ($expense->is_paid && $expense->account_id) {
                 $account = Account::lockForUpdate()->find($expense->account_id);
                 if ($account) {
                     $account->balance = (float) $account->balance + $amount;
@@ -578,7 +663,9 @@ class ExpenseController extends Controller
         );
 
         return redirect()->route('expenses.index')
-            ->with('success', 'Expense deleted and account balance restored.');
+            ->with('success', $expense->is_paid
+                ? 'Expense deleted and account balance restored.'
+                : 'Due expense deleted. No account balance was changed.');
     }
 
     private function applyInventoryPurchases(Expense $expense, array $validated): void
@@ -769,11 +856,12 @@ class ExpenseController extends Controller
         $period = $request->query('period', $defaultPeriod);
         $businessUnit = $request->query('business_unit', 'all');
         $type = $request->query('type', 'all');
+        $paymentStatus = $request->query('payment_status', 'all');
         $search = trim((string) $request->query('search', ''));
         $fromDate = $request->query('from_date');
         $toDate = $request->query('to_date');
 
-        return compact('period', 'businessUnit', 'type', 'search', 'fromDate', 'toDate');
+        return compact('period', 'businessUnit', 'type', 'paymentStatus', 'search', 'fromDate', 'toDate');
     }
 
     private function buildExpenseQuery(array $filters)
@@ -788,6 +876,12 @@ class ExpenseController extends Controller
             $query->whereHas('category', function ($q) use ($filters) {
                 $q->where('type', $filters['type']);
             });
+        }
+
+        if (($filters['paymentStatus'] ?? 'all') === 'paid') {
+            $query->where('is_paid', true);
+        } elseif (($filters['paymentStatus'] ?? 'all') === 'due') {
+            $query->where('is_paid', false);
         }
 
         if (($filters['search'] ?? '') !== '') {

@@ -357,7 +357,9 @@ class BusinessExpenseController extends Controller
                     'account_id'          => $account->id,
                     'business_unit'       => $validated['business_unit'],
                     'amount'              => $amount,
+                    'is_paid'             => true,
                     'incurred_at'         => $validated['incurred_at'] ?? now()->toDateString(),
+                    'paid_at'             => $validated['incurred_at'] ?? now()->toDateString(),
                     'reference'           => $validated['reference'] ?? null,
                     'notes'               => $validated['notes'] ?? null,
                     'created_by'          => $actor?->id,
@@ -515,7 +517,7 @@ class BusinessExpenseController extends Controller
                 $this->pettyCashAccounts->reverseExpense($expense);
 
                 // --- Reverse account balance ---
-                if ($expense->account_id) {
+                if ($expense->is_paid && $expense->account_id) {
                     $account = Account::find($expense->account_id);
                     if ($account) {
                         $account->balance = (float) $account->balance + (float) $expense->amount;

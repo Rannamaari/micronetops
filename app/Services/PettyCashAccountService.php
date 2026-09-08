@@ -135,7 +135,7 @@ class PettyCashAccountService
             'purpose' => 'Expense #' . $expense->id . ': ' . ($expense->vendor ?: 'Purchase'),
             'status' => 'approved',
             'approved_by' => Auth::id(),
-            'paid_at' => $expense->incurred_at,
+            'paid_at' => $expense->paid_at ?? $expense->incurred_at,
             'expense_id' => $expense->id,
         ];
 

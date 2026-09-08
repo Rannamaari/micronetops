@@ -193,6 +193,118 @@ class PettyCashAccountFlowTest extends TestCase
         );
     }
 
+    public function test_credit_expense_is_due_without_deducting_an_account(): void
+    {
+        [$manager, , $source] = $this->baseRecords();
+        [$category, $vendor] = $this->expenseRecords(ExpenseCategory::TYPE_OPERATING);
+
+        $response = $this->actingAs($manager)->post(route('expenses.store'), [
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_MOTO,
+            'amount' => 725,
+            'is_paid' => 0,
+            'incurred_at' => '2026-09-08',
+            'due_date' => '2026-09-30',
+            'reference' => 'CREDIT-725',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $expense = Expense::latest('id')->firstOrFail();
+
+        $this->assertFalse($expense->is_paid);
+        $this->assertNull($expense->account_id);
+        $this->assertNull($expense->paid_at);
+        $this->assertSame('2026-09-30', $expense->due_date->toDateString());
+        $this->assertEquals(5000.00, (float) $source->fresh()->balance);
+        $this->assertDatabaseMissing('account_transactions', [
+            'related_type' => Expense::class,
+            'related_id' => $expense->id,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('expenses.index', ['payment_status' => 'due']))
+            ->assertOk()
+            ->assertSee('CREDIT-725')
+            ->assertSee('Outstanding:');
+    }
+
+    public function test_due_expense_can_be_marked_paid_exactly_once(): void
+    {
+        [$manager, , $source] = $this->baseRecords();
+        [$category, $vendor] = $this->expenseRecords(ExpenseCategory::TYPE_OPERATING);
+
+        $expense = Expense::create([
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_MOTO,
+            'amount' => 600,
+            'is_paid' => false,
+            'incurred_at' => '2026-09-01',
+            'due_date' => '2026-09-15',
+            'vendor' => $vendor->name,
+            'created_by' => $manager->id,
+            'updated_by' => $manager->id,
+        ]);
+
+        $response = $this->actingAs($manager)->post(route('expenses.mark-paid', $expense), [
+            'account_id' => $source->id,
+            'paid_at' => '2026-09-08',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertTrue($expense->fresh()->is_paid);
+        $this->assertSame('2026-09-08', $expense->fresh()->paid_at->toDateString());
+        $this->assertEquals(4400.00, (float) $source->fresh()->balance);
+
+        $this->actingAs($manager)->post(route('expenses.mark-paid', $expense), [
+            'account_id' => $source->id,
+            'paid_at' => '2026-09-08',
+        ])->assertSessionHasErrors('payment');
+
+        $this->assertEquals(4400.00, (float) $source->fresh()->balance);
+        $this->assertDatabaseCount('account_transactions', 1);
+    }
+
+    public function test_credit_cogs_adds_received_stock_without_deducting_cash(): void
+    {
+        [$manager, , $source] = $this->baseRecords();
+        [$category, $vendor] = $this->expenseRecords(ExpenseCategory::TYPE_COGS);
+        $inventoryCategory = InventoryCategory::create(['name' => 'Credit Stock', 'is_active' => true]);
+        $item = InventoryItem::create([
+            'category' => 'moto',
+            'inventory_category_id' => $inventoryCategory->id,
+            'name' => 'Credit Purchase Item',
+            'sku' => 'CREDIT-ITEM-1',
+            'unit' => 'pcs',
+            'quantity' => 1,
+            'cost_price' => 50,
+            'sell_price' => 80,
+            'low_stock_limit' => 1,
+            'is_active' => true,
+            'is_service' => false,
+        ]);
+
+        $response = $this->actingAs($manager)->post(route('expenses.store'), [
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_MOTO,
+            'amount' => 200,
+            'is_paid' => 0,
+            'incurred_at' => '2026-09-08',
+            'purchases' => [[
+                'inventory_item_id' => $item->id,
+                'quantity' => 4,
+                'unit_cost' => 50,
+            ]],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertEquals(5, (float) $item->fresh()->quantity);
+        $this->assertEquals(5000.00, (float) $source->fresh()->balance);
+        $this->assertFalse(Expense::latest('id')->firstOrFail()->is_paid);
+    }
+
     private function baseRecords(): array
     {
         $manager = User::factory()->create(['role' => User::ROLE_MANAGER]);

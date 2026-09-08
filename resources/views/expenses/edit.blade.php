@@ -63,13 +63,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium">Paid From Account</label>
-                            <select name="account_id" class="mt-1 w-full rounded border-gray-300" required>
-                                <x-expense-account-options :accounts="$accounts" :selected="$expense->account_id" />
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Select a company account or the staff member's petty cash account.</p>
-                        </div>
+                        <x-expense-payment-fields :accounts="$accounts" :selected="$expense->account_id" :is-paid="$expense->is_paid" :due-date="$expense->due_date" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium">Amount</label>
