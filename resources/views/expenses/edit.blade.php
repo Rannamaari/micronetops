@@ -76,7 +76,7 @@
                                 <input type="date" name="incurred_at" class="mt-1 w-full rounded border-gray-300" value="{{ old('incurred_at', $expense->incurred_at->toDateString()) }}" required>
                             </div>
                         </div>
-                        <x-expense-gst-fields :is-gst="$expense->is_gst_applicable" :subtotal="$expense->subtotal_amount" />
+                        <x-expense-gst-fields :is-gst="$expense->is_gst_applicable" :subtotal="$expense->subtotal_amount" :expenditure-type="$expense->gst_expenditure_type" />
                         <div>
                             <label class="block text-sm font-medium">Invoice / Bill Number</label>
                             <input name="reference" class="mt-1 w-full rounded border-gray-300" value="{{ old('reference', $expense->reference) }}" placeholder="Enter supplier invoice or bill number">

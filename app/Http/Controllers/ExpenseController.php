@@ -329,6 +329,7 @@ class ExpenseController extends Controller
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'is_gst_applicable' => ['required', 'boolean'],
+            'gst_expenditure_type' => ['nullable', 'in:revenue,capital'],
             'incurred_at' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -434,6 +435,7 @@ class ExpenseController extends Controller
             'business_unit' => $expense->business_unit,
             'is_paid' => $expense->is_paid ? 1 : 0,
             'is_gst_applicable' => $expense->is_gst_applicable ? 1 : 0,
+            'gst_expenditure_type' => $expense->gst_expenditure_type,
         ]);
 
         return redirect($nextExpenseUrl)
@@ -488,6 +490,7 @@ class ExpenseController extends Controller
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'is_gst_applicable' => ['required', 'boolean'],
+            'gst_expenditure_type' => ['nullable', 'in:revenue,capital'],
             'incurred_at' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -933,6 +936,9 @@ class ExpenseController extends Controller
         $validated['subtotal_amount'] = $subtotal;
         $validated['gst_rate'] = $gstRate;
         $validated['gst_amount'] = $gstAmount;
+        $validated['gst_expenditure_type'] = $validated['is_gst_applicable']
+            ? ($validated['gst_expenditure_type'] ?? 'revenue')
+            : null;
         $validated['amount'] = round($subtotal + $gstAmount, 2);
 
         return $validated;

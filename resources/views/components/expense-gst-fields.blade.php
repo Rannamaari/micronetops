@@ -1,6 +1,7 @@
 @props([
     'isGst' => false,
     'subtotal' => null,
+    'expenditureType' => null,
 ])
 
 @php($gstSelected = (bool) old('is_gst_applicable', $isGst))
@@ -30,6 +31,14 @@
             <p class="mt-1 font-semibold text-emerald-800 dark:text-emerald-200">MVR <span id="expense-gst-total">0.00</span></p>
         </div>
     </div>
+    <div id="expense-gst-expenditure" class="mt-4 {{ $gstSelected ? '' : 'hidden' }}">
+        <label for="gst_expenditure_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">MIRA expenditure type</label>
+        <select id="gst_expenditure_type" name="gst_expenditure_type" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 sm:max-w-xs">
+            <option value="revenue" @selected(old('gst_expenditure_type', $expenditureType ?? 'revenue') === 'revenue')>Revenue expenditure</option>
+            <option value="capital" @selected(old('gst_expenditure_type', $expenditureType) === 'capital')>Capital expenditure</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Required for the MIRA Input Tax Statement.</p>
+    </div>
     <p id="expense-gst-vendor-warning" class="mt-3 hidden text-sm font-medium text-amber-700 dark:text-amber-300">
         Add the selected vendor's GST TIN before recording this tax invoice.
     </p>
@@ -46,6 +55,7 @@
             const totalOutput = document.getElementById('expense-gst-total');
             const vendor = document.getElementById('vendor-select');
             const warning = document.getElementById('expense-gst-vendor-warning');
+            const expenditure = document.getElementById('expense-gst-expenditure');
             if (!checkbox || !amount || !summary) return;
 
             const update = () => {
@@ -55,6 +65,7 @@
                 gstOutput.textContent = gst.toFixed(2);
                 totalOutput.textContent = (subtotal + gst).toFixed(2);
                 summary.classList.toggle('hidden', !checkbox.checked);
+                expenditure?.classList.toggle('hidden', !checkbox.checked);
 
                 const selectedVendor = vendor?.selectedOptions?.[0];
                 const missingTin = checkbox.checked && vendor?.value && !selectedVendor?.dataset?.gstNumber;

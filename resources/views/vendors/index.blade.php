@@ -44,7 +44,11 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($vendors as $vendor)
                                     <tr>
-                                        <td class="px-4 py-2">{{ $vendor->name }}</td>
+                                        <td class="px-4 py-2">
+                                            <a href="{{ route('vendors.show', $vendor) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400">
+                                                {{ $vendor->name }}
+                                            </a>
+                                        </td>
                                         <td class="px-4 py-2">{{ $vendor->phone }}</td>
                                         <td class="px-4 py-2">{{ $vendor->contact_name ?? '—' }}</td>
                                         <td class="px-4 py-2 whitespace-nowrap">
@@ -62,7 +66,8 @@
                                             </span>
                                         </td>
                                         <td class="px-4 py-2 text-right">
-                                            <a href="{{ route('vendors.edit', $vendor) }}" class="text-blue-600 hover:underline">Edit</a>
+                                            <a href="{{ route('vendors.show', $vendor) }}" class="text-gray-600 hover:underline dark:text-gray-300">View</a>
+                                            <a href="{{ route('vendors.edit', $vendor) }}" class="ml-3 text-blue-600 hover:underline">Edit</a>
                                         </td>
                                     </tr>
                                 @empty

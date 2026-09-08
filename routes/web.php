@@ -15,6 +15,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AccountTransferController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\GstReportController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\FixedAssetBrandController;
 use App\Http\Controllers\FixedAssetCategoryController;
@@ -458,6 +459,8 @@ Route::middleware('auth')->group(function () {
         Route::post('account-transfers', [AccountTransferController::class, 'store'])->name('accounts.transfers.store');
 
         Route::get('expenses/reports', [ExpenseController::class, 'reports'])->name('expenses.reports');
+        Route::get('reports/gst', [GstReportController::class, 'index'])->name('reports.gst');
+        Route::get('reports/gst/export/{statement}', [GstReportController::class, 'export'])->name('reports.gst.export');
         Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
 
         Route::get('recurring-expenses', [RecurringExpenseController::class, 'index'])->name('recurring-expenses.index');
@@ -491,6 +494,7 @@ Route::middleware('auth')->group(function () {
         Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
         Route::get('vendors/create', [VendorController::class, 'create'])->name('vendors.create');
         Route::post('vendors', [VendorController::class, 'store'])->name('vendors.store');
+        Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('vendors.show');
         Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
         Route::patch('vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
     });
@@ -555,6 +559,7 @@ Route::middleware('auth')->group(function () {
     // System Settings & Admin Tools - Admin only
     Route::middleware('role:admin')->group(function () {
         Route::get('system/settings', [SystemController::class, 'settings'])->name('system.settings');
+        Route::patch('system/settings/gst', [SystemController::class, 'updateGstSettings'])->name('system.settings.gst.update');
         Route::post('system/purge', [SystemController::class, 'purgeAllData'])->name('system.purge');
     });
 

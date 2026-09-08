@@ -25,6 +25,7 @@ class Expense extends Model
         'is_gst_applicable',
         'gst_rate',
         'gst_amount',
+        'gst_expenditure_type',
         'is_paid',
         'incurred_at',
         'due_date',

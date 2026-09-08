@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GstSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,32 @@ class SystemController extends Controller
             abort(403, 'Unauthorized. Only administrators can access system settings.');
         }
 
-        return view('system.settings');
+        $gstSetting = GstSetting::query()->first();
+
+        return view('system.settings', compact('gstSetting'));
+    }
+
+    public function updateGstSettings(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized. Only administrators can update GST settings.');
+        }
+
+        $validated = $request->validate([
+            'taxpayer_tin' => ['required', 'string', 'max:50', 'regex:/^\d{7}GST\d{3}$/i'],
+            'activity_number_moto' => ['nullable', 'string', 'max:50'],
+            'activity_number_cool' => ['nullable', 'string', 'max:50'],
+            'activity_number_it' => ['nullable', 'string', 'max:50'],
+            'activity_number_easyfix' => ['nullable', 'string', 'max:50'],
+            'activity_number_shared' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $validated = collect($validated)->map(fn ($value) => is_string($value) ? (blank($value) ? null : strtoupper(trim($value))) : $value)->all();
+        $validated['updated_by'] = auth()->id();
+
+        GstSetting::query()->updateOrCreate(['id' => 1], $validated);
+
+        return back()->with('success', 'GST reporting settings updated successfully.');
     }
 
     /**

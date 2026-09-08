@@ -78,6 +78,17 @@ class ReportsController extends Controller
                 'description' => 'Share-ready financial views for month-end and weekly reviews.',
                 'reports' => [
                     [
+                        'title' => 'GST Input & Output',
+                        'description' => 'Monthly or quarterly GST reconciliation with MIRA v25.1 preparation exports.',
+                        'route' => route('reports.gst'),
+                        'badge' => 'Tax',
+                        'theme' => 'indigo',
+                        'links' => [
+                            ['label' => 'Monthly', 'url' => route('reports.gst', ['period_type' => 'monthly'])],
+                            ['label' => 'Quarterly', 'url' => route('reports.gst', ['period_type' => 'quarterly'])],
+                        ],
+                    ],
+                    [
                         'title' => 'Expense Dashboard',
                         'description' => 'Full expense reporting with filters, month-wise totals, vendors, accounts, and category summaries.',
                         'route' => route('expenses.reports'),

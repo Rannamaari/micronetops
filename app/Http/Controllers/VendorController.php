@@ -32,6 +32,35 @@ class VendorController extends Controller
         return view('vendors.create');
     }
 
+    public function show(Request $request, Vendor $vendor)
+    {
+        $filters = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+
+        $expenseQuery = $vendor->expenses()
+            ->with(['category', 'account'])
+            ->when($filters['from_date'] ?? null, fn ($query, $date) => $query->whereDate('incurred_at', '>=', $date))
+            ->when($filters['to_date'] ?? null, fn ($query, $date) => $query->whereDate('incurred_at', '<=', $date));
+
+        $summary = [
+            'count' => (clone $expenseQuery)->count(),
+            'total' => (float) (clone $expenseQuery)->sum('amount'),
+            'paid' => (float) (clone $expenseQuery)->where('is_paid', true)->sum('amount'),
+            'due' => (float) (clone $expenseQuery)->where('is_paid', false)->sum('amount'),
+            'gst' => (float) (clone $expenseQuery)->sum('gst_amount'),
+        ];
+
+        $expenses = $expenseQuery
+            ->orderByDesc('incurred_at')
+            ->orderByDesc('id')
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('vendors.show', compact('vendor', 'expenses', 'summary', 'filters'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
