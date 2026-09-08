@@ -59,6 +59,25 @@ class OperationsStaffAccessTest extends TestCase
         }
     }
 
+    public function test_operations_staff_can_receive_petty_cash_without_accessing_the_module(): void
+    {
+        $manager = User::factory()->create(['role' => User::ROLE_MANAGER]);
+        $staff = User::factory()->create([
+            'role' => User::ROLE_OPERATIONS_STAFF,
+            'name' => 'Operations Recipient',
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('petty-cash.admin-dashboard'))
+            ->assertOk()
+            ->assertSee('Operations Recipient')
+            ->assertSee(route('petty-cash.show-top-up-form', $staff));
+
+        $this->actingAs($staff)
+            ->get(route('petty-cash.index'))
+            ->assertForbidden();
+    }
+
     public function test_operations_staff_cannot_maintain_existing_inventory_records(): void
     {
         $staff = User::factory()->create(['role' => User::ROLE_OPERATIONS_STAFF]);

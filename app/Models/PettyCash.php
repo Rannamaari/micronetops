@@ -109,7 +109,15 @@ class PettyCash extends Model
     /** Get all users with their balances (for admin dashboard) */
     public static function allUserBalances()
     {
-        $users = User::whereIn('role', ['admin', 'manager', 'moto_mechanic', 'ac_mechanic', 'cashier', 'hr'])
+        $users = User::whereIn('role', [
+            User::ROLE_ADMIN,
+            User::ROLE_MANAGER,
+            User::ROLE_MOTO_MECHANIC,
+            User::ROLE_AC_MECHANIC,
+            User::ROLE_CASHIER,
+            User::ROLE_HR,
+            User::ROLE_OPERATIONS_STAFF,
+        ])
             ->orderBy('name')
             ->get();
 
