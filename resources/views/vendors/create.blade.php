@@ -27,6 +27,11 @@
                             <label class="block text-sm font-medium">Address</label>
                             <input name="address" class="mt-1 w-full rounded border-gray-300">
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium">GST TIN / Registration Number</label>
+                            <input name="gst_number" class="mt-1 w-full rounded border-gray-300" value="{{ old('gst_number') }}" placeholder="Required for GST tax invoices">
+                            @error('gst_number')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                        </div>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" name="is_active" value="1" checked>
                             <label class="text-sm">Active</label>

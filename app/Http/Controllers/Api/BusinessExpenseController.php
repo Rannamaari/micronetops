@@ -60,7 +60,7 @@ class BusinessExpenseController extends Controller
     public function vendors(): JsonResponse
     {
         $vendors = Vendor::where('is_active', true)->orderBy('name')
-            ->get(['id', 'name', 'phone', 'contact_name', 'address']);
+            ->get(['id', 'name', 'phone', 'contact_name', 'address', 'gst_number']);
 
         return response()->json([
             'total' => $vendors->count(),
@@ -82,6 +82,7 @@ class BusinessExpenseController extends Controller
                 'phone'        => ['nullable', 'string', 'max:50'],
                 'contact_name' => ['nullable', 'string', 'max:255'],
                 'address'      => ['nullable', 'string', 'max:500'],
+                'gst_number'   => ['nullable', 'string', 'max:50'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
@@ -89,10 +90,14 @@ class BusinessExpenseController extends Controller
 
         $existing = Vendor::whereRaw('lower(name) = ?', [strtolower($validated['name'])])->first();
         if ($existing) {
+            if (blank($existing->gst_number) && filled($validated['gst_number'] ?? null)) {
+                $existing->update(['gst_number' => $validated['gst_number']]);
+            }
+
             return response()->json([
                 'created' => false,
                 'message' => 'Vendor already exists.',
-                'data'    => $existing->only(['id', 'name', 'phone', 'contact_name']),
+                'data'    => $existing->only(['id', 'name', 'phone', 'contact_name', 'address', 'gst_number']),
             ]);
         }
 
@@ -101,13 +106,14 @@ class BusinessExpenseController extends Controller
             'phone'        => $validated['phone'] ?? '',
             'contact_name' => $validated['contact_name'] ?? null,
             'address'      => $validated['address'] ?? null,
+            'gst_number'   => $validated['gst_number'] ?? null,
             'is_active'    => true,
         ]);
 
         return response()->json([
             'created' => true,
             'message' => "Vendor \"{$vendor->name}\" created.",
-            'data'    => $vendor->only(['id', 'name', 'phone', 'contact_name']),
+            'data'    => $vendor->only(['id', 'name', 'phone', 'contact_name', 'address', 'gst_number']),
         ], 201);
     }
 
@@ -143,7 +149,9 @@ class BusinessExpenseController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Expense::with('category:id,name,type', 'vendorEntity:id,name')->orderByDesc('incurred_at');
+        $query = Expense::with('category:id,name,type', 'vendorEntity:id,name,gst_number')
+            ->orderByDesc('incurred_at')
+            ->orderByDesc('id');
 
         if ($unit = $request->query('business_unit')) {
             $query->where('business_unit', $unit);
@@ -176,6 +184,9 @@ class BusinessExpenseController extends Controller
                 'vendor'        => $e->vendor,
                 'business_unit' => $e->business_unit,
                 'amount'        => number_format((float) $e->amount, 2),
+                'subtotal_amount' => number_format((float) ($e->subtotal_amount ?: $e->amount), 2),
+                'is_gst_applicable' => (bool) $e->is_gst_applicable,
+                'gst_amount'    => number_format((float) $e->gst_amount, 2),
                 'incurred_at'   => $e->incurred_at->format('Y-m-d'),
                 'reference'     => $e->reference,
                 'notes'         => $e->notes,
@@ -198,7 +209,9 @@ class BusinessExpenseController extends Controller
      *   "account_id":    2,                   // optional (recommended) exact account
      *   "account":       "Cash",              // account name to debit (fallback if account_id not provided)
      *   "business_unit": "moto",             // "moto", "ac", "it", "easyfix", or "shared"
-     *   "amount":        1500,
+     *   "amount":        1500,                // amount before GST
+     *   "is_gst_applicable": true,            // optional; adds 8%
+     *   "vendor_gst_number": "1234567GST501", // required for a new GST vendor
      *   "incurred_at":   "2026-03-07",        // defaults to today
      *   "reference":     "INV-001",
      *   "notes":         "Monthly parts restock",
@@ -229,10 +242,12 @@ class BusinessExpenseController extends Controller
                 'vendor'        => ['nullable', 'string', 'max:255'],
                 'vendor_phone'  => ['nullable', 'string', 'max:50'],
                 'vendor_contact'=> ['nullable', 'string', 'max:255'],
+                'vendor_gst_number' => ['nullable', 'string', 'max:50'],
                 'account_id'    => ['nullable', 'integer', 'exists:accounts,id'],
                 'account'       => ['nullable', 'string', 'max:255'],
                 'business_unit' => ['required', 'in:moto,ac,it,easyfix,shared'],
                 'amount'        => ['required', 'numeric', 'min:0.01'],
+                'is_gst_applicable' => ['nullable', 'boolean'],
                 'incurred_at'   => ['nullable', 'date'],
                 'reference'     => ['nullable', 'string', 'max:255'],
                 'notes'         => ['nullable', 'string', 'max:1000'],
@@ -306,10 +321,22 @@ class BusinessExpenseController extends Controller
                     'name'         => $validated['vendor'],
                     'phone'        => $validated['vendor_phone'] ?? '',
                     'contact_name' => $validated['vendor_contact'] ?? null,
+                    'gst_number'   => $validated['vendor_gst_number'] ?? null,
                     'is_active'    => true,
                 ]);
                 $vendorCreated = true;
             }
+        }
+
+        $hasGst = (bool) ($validated['is_gst_applicable'] ?? false);
+        if ($hasGst && blank($vendor->gst_number) && filled($validated['vendor_gst_number'] ?? null)) {
+            $vendor->update(['gst_number' => $validated['vendor_gst_number']]);
+        }
+        if ($hasGst && blank($vendor->gst_number)) {
+            return response()->json(['error' => 'A vendor GST TIN is required for a GST tax invoice.'], 422);
+        }
+        if ($hasGst && blank($validated['reference'] ?? null)) {
+            return response()->json(['error' => 'Invoice / bill number is required for a GST tax invoice.'], 422);
         }
 
         // --- Resolve account ---
@@ -336,7 +363,9 @@ class BusinessExpenseController extends Controller
             ], 404);
         }
 
-        $amount = (float) $validated['amount'];
+        $subtotal = round((float) $validated['amount'], 2);
+        $gstAmount = $hasGst ? round($subtotal * 0.08, 2) : 0.00;
+        $amount = round($subtotal + $gstAmount, 2);
 
         if ($account->balance < $amount) {
             return response()->json([
@@ -349,7 +378,7 @@ class BusinessExpenseController extends Controller
         Auth::setUser($actor);
 
         try {
-            $expense = DB::transaction(function () use ($validated, $category, $vendor, $account, $amount, $actor) {
+            $expense = DB::transaction(function () use ($validated, $category, $vendor, $account, $amount, $subtotal, $gstAmount, $hasGst, $actor) {
                 $expense = Expense::create([
                     'expense_category_id' => $category->id,
                     'vendor_id'           => $vendor->id,
@@ -357,6 +386,10 @@ class BusinessExpenseController extends Controller
                     'account_id'          => $account->id,
                     'business_unit'       => $validated['business_unit'],
                     'amount'              => $amount,
+                    'subtotal_amount'     => $subtotal,
+                    'is_gst_applicable'  => $hasGst,
+                    'gst_rate'            => $hasGst ? 8.00 : 0.00,
+                    'gst_amount'          => $gstAmount,
                     'is_paid'             => true,
                     'incurred_at'         => $validated['incurred_at'] ?? now()->toDateString(),
                     'paid_at'             => $validated['incurred_at'] ?? now()->toDateString(),
@@ -407,6 +440,8 @@ class BusinessExpenseController extends Controller
             'account'        => $account->name,
             'business_unit'  => $expense->business_unit,
             'amount'         => number_format($amount, 2),
+            'subtotal_amount'=> number_format($subtotal, 2),
+            'gst_amount'     => number_format($gstAmount, 2),
             'incurred_at'    => $expense->incurred_at->format('Y-m-d'),
             'account_balance_after' => number_format((float) $account->fresh()->balance, 2),
         ], 201);

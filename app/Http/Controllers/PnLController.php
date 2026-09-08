@@ -53,7 +53,7 @@ class PnLController extends Controller
 
         // COGS expenses (non-inventory)
         $cogsExpenseByUnit = Expense::query()
-            ->select('expenses.business_unit', DB::raw('SUM(expenses.amount) as total'))
+            ->select('expenses.business_unit', DB::raw('SUM(COALESCE(NULLIF(expenses.subtotal_amount, 0), expenses.amount)) as total'))
             ->join('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
             ->where('expense_categories.type', ExpenseCategory::TYPE_COGS)
             ->whereBetween('incurred_at', [$startDate, $endDate])
@@ -67,7 +67,7 @@ class PnLController extends Controller
 
         // Operating expenses
         $opexByUnit = Expense::query()
-            ->select('expenses.business_unit', DB::raw('SUM(expenses.amount) as total'))
+            ->select('expenses.business_unit', DB::raw('SUM(COALESCE(NULLIF(expenses.subtotal_amount, 0), expenses.amount)) as total'))
             ->join('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
             ->where('expense_categories.type', ExpenseCategory::TYPE_OPERATING)
             ->whereBetween('incurred_at', [$startDate, $endDate])

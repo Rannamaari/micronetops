@@ -162,6 +162,9 @@
                                                 {{ $expense->category?->type === 'cogs' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : ($expense->category?->type === 'operating' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300') }}">
                                                 {{ strtoupper($expense->category?->type) }}
                                             </span>
+                                            @if ($expense->is_gst_applicable)
+                                                <span class="ml-1 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">GST 8%</span>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3 text-sm">{{ $businessUnits[$expense->business_unit] ?? $expense->business_unit }}</td>
                                         <td class="px-4 py-3 text-sm">{{ $expense->vendorEntity?->name ?? $expense->vendor ?? '-' }}</td>
@@ -215,6 +218,9 @@
                                             <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $expense->is_paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800' }}">
                                                 {{ $expense->is_paid ? 'Paid' : 'Due' }}
                                             </span>
+                                            @if ($expense->is_gst_applicable)
+                                                <span class="inline-flex rounded bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">GST 8%</span>
+                                            @endif
                                         </div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                             {{ $expense->vendorEntity?->name ?? $expense->vendor ?? 'No vendor' }}

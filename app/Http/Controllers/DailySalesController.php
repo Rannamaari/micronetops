@@ -13,6 +13,7 @@ use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DailySalesController extends Controller
 {
@@ -37,12 +38,18 @@ class DailySalesController extends Controller
         }
 
         $logs = $query
-            ->with('lines', 'createdByUser', 'customer')
+            ->with('lines', 'createdByUser', 'customer', 'customerAddress')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
 
-        return view('sales.daily-index', compact('date', 'logs', 'search'));
+        $accounts = Account::query()
+            ->where('is_active', true)
+            ->where('is_system', false)
+            ->orderBy('name')
+            ->get();
+
+        return view('sales.daily-index', compact('date', 'logs', 'search', 'accounts'));
     }
 
     public function destroy(DailySalesLog $dailySalesLog)
@@ -498,7 +505,13 @@ class DailySalesController extends Controller
         $validated = $request->validate([
             'payment_method' => ['required', 'in:cash,transfer'],
             'cash_tendered' => ['nullable', 'required_if:payment_method,cash', 'numeric', 'min:' . $grandTotal],
-            'transfer_account_id' => ['nullable', 'required_if:payment_method,transfer', 'exists:accounts,id'],
+            'transfer_account_id' => [
+                'nullable',
+                'required_if:payment_method,transfer',
+                Rule::exists('accounts', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where('is_system', false)),
+            ],
         ]);
 
         $dailySalesLog->submit(

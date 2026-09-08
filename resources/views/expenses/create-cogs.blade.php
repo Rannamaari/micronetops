@@ -46,7 +46,7 @@
                         <x-expense-payment-fields :accounts="$accounts" :selected="$defaultAccountId" :is-paid="$defaultIsPaid" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium">Amount</label>
+                                <label class="block text-sm font-medium">Amount Before GST</label>
                                 <input id="expense-amount" type="number" step="0.01" name="amount" class="mt-1 w-full rounded border-gray-300" value="{{ old('amount') }}" required>
                             </div>
                             <div>
@@ -54,16 +54,18 @@
                                 <input type="date" name="incurred_at" class="mt-1 w-full rounded border-gray-300" value="{{ old('incurred_at', $defaultDate) }}" required>
                             </div>
                         </div>
+                        <x-expense-gst-fields :is-gst="$defaultIsGst" />
                         <div>
                             <label class="block text-sm font-medium">Invoice / Bill Number</label>
                             <input name="reference" class="mt-1 w-full rounded border-gray-300" value="{{ old('reference') }}" placeholder="Enter supplier invoice or bill number">
+                            @error('reference')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Notes</label>
                             <textarea name="notes" rows="3" class="mt-1 w-full rounded border-gray-300">{{ old('notes') }}</textarea>
                         </div>
                         @php
-                            $cogsGrid = 'grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)]';
+                            $cogsGrid = 'grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)]';
                             $cogsInput = 'w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                             $cogsSelect = 'w-full h-11 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pl-3 pr-10 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                             $cogsReadonly = 'w-full h-11 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 px-3 text-sm text-right tabular-nums font-medium';
@@ -98,7 +100,6 @@
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Qty</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Unit Cost</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right flex items-center justify-end gap-1">Sell Price {!! $cogsTip !!}Auto-filled for existing items{!! $cogsTipEnd !!}</div>
-                                            <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-center flex items-center gap-1">GST {!! $cogsTip !!}Add 8% GST to cost{!! $cogsTipEnd !!}</div>
                                             <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide text-right">Total</div>
                                         </div>
 
@@ -173,14 +174,6 @@
                                                             <label class="{{ $cogsLabel }}">Sell Price</label>
                                                             <input name="purchases[{{ $index }}][sell_price]" type="number" step="0.01" class="{{ $cogsInput }} text-right sell-price" value="{{ $purchase['sell_price'] ?? '' }}" placeholder="0.00">
                                                             <p class="mt-0.5 text-[10px] tabular-nums text-right margin-display text-gray-400">&nbsp;</p>
-                                                        </div>
-                                                        {{-- GST 8% --}}
-                                                        <div class="flex items-center lg:justify-center">
-                                                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                                                                <input type="hidden" name="purchases[{{ $index }}][has_gst]" value="0">
-                                                                <input type="checkbox" name="purchases[{{ $index }}][has_gst]" value="1" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 gst-checkbox" @checked(old("purchases.$index.has_gst"))>
-                                                                <span class="text-xs text-gray-500 dark:text-gray-400 lg:hidden">+8% GST</span>
-                                                            </label>
                                                         </div>
                                                         {{-- Line Total --}}
                                                         <div>
@@ -312,9 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const qty = parseFloat(row.querySelector('[name$="[quantity]"]').value || 0);
             const unitCost = parseFloat(row.querySelector('[name$="[unit_cost]"]').value || 0);
             const sellPrice = parseFloat(row.querySelector('.sell-price')?.value || 0);
-            const hasGst = row.querySelector('.gst-checkbox')?.checked || false;
-            const multiplier = hasGst ? 1.08 : 1;
-            const effectiveCost = unitCost * multiplier;
+            const effectiveCost = unitCost;
             const lineTotal = qty * effectiveCost;
             setLineTotal(row, lineTotal.toFixed(2));
             total += lineTotal;
@@ -335,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (autoCalcAmount && autoCalcAmount.checked && amountInput) {
             amountInput.value = total.toFixed(2);
+            amountInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
     };
 
@@ -387,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         row.querySelectorAll('input').forEach(input => input.addEventListener('input', calcTotals));
-        row.querySelector('.gst-checkbox')?.addEventListener('change', calcTotals);
         row.querySelector('.remove-row').addEventListener('click', () => {
             row.remove();
             toggleEmptyState();
@@ -425,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <button type="button" class="remove-row absolute top-3 right-3 lg:top-1/2 lg:-translate-y-1/2 z-10 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition lg:opacity-0 lg:group-hover/row:opacity-100 focus:opacity-100" title="Remove item">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
-            <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(50px,auto)_minmax(110px,1fr)] lg:items-center">
+            <div class="grid grid-cols-2 gap-3 p-4 pr-12 lg:pr-14 lg:px-5 lg:py-3 lg:grid-cols-[minmax(200px,2fr)_minmax(160px,1.5fr)_minmax(100px,1fr)_minmax(140px,1.2fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(110px,1fr)] lg:items-center">
                 <div class="col-span-2 lg:col-auto">
                     <label class="${cogsLabelCls}">Item</label>
                     <input type="hidden" name="purchases[${index}][inventory_item_id]" class="inventory-item-id" value="">
@@ -464,13 +455,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     <label class="${cogsLabelCls}">Sell Price</label>
                     <input name="purchases[${index}][sell_price]" type="number" step="0.01" class="${cogsInputCls} text-right sell-price" placeholder="0.00">
                     <p class="mt-0.5 text-[10px] tabular-nums text-right margin-display text-gray-400">&nbsp;</p>
-                </div>
-                <div class="flex items-center lg:justify-center">
-                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                        <input type="hidden" name="purchases[${index}][has_gst]" value="0">
-                        <input type="checkbox" name="purchases[${index}][has_gst]" value="1" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 gst-checkbox">
-                        <span class="text-xs text-gray-500 dark:text-gray-400 lg:hidden">+8% GST</span>
-                    </label>
                 </div>
                 <div>
                     <label class="${cogsLabelCls}">Total</label>
@@ -526,8 +510,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const option = document.createElement('option');
                 option.value = data.id;
                 option.textContent = `${data.name} (${data.phone})`;
+                option.dataset.gstNumber = data.gst_number || '';
+                option.dataset.search = `${data.name} ${data.phone} ${data.gst_number || ''}`.toLowerCase();
                 vendorSelect.appendChild(option);
                 vendorSelect.value = data.id;
+                vendorSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 vendorForm.reset();
                 vendorModal.classList.add('hidden');
             } catch (err) {
@@ -560,6 +547,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <div>
                 <label class="block text-sm font-medium">Address</label>
                 <input name="address" class="mt-1 w-full rounded border-gray-300">
+            </div>
+            <div>
+                <label class="block text-sm font-medium">GST TIN / Registration Number</label>
+                <input name="gst_number" class="mt-1 w-full rounded border-gray-300" placeholder="Required for GST invoices">
             </div>
             <p id="vendor-error" class="text-sm text-red-600"></p>
             <div class="flex justify-end gap-3 pt-2">

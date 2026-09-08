@@ -14,7 +14,7 @@
                     MVR {{ number_format($lastExpense['amount'], 2) }} on {{ $lastExpense['date_label'] }}
                     <span class="font-semibold">({{ $lastExpense['is_paid'] ? 'Paid' : 'Due' }})</span>
                 </p>
-                <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">The date, category, account, business unit, and payment choice are kept below.</p>
+                <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">The date, category, account, business unit, payment choice, and GST choice are kept below.</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('expenses.show', $lastExpense['id']) }}" class="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-transparent dark:text-emerald-200">

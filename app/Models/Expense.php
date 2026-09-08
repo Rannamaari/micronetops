@@ -21,6 +21,10 @@ class Expense extends Model
         'account_id',
         'business_unit',
         'amount',
+        'subtotal_amount',
+        'is_gst_applicable',
+        'gst_rate',
+        'gst_amount',
         'is_paid',
         'incurred_at',
         'due_date',
@@ -34,6 +38,10 @@ class Expense extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'subtotal_amount' => 'decimal:2',
+        'is_gst_applicable' => 'boolean',
+        'gst_rate' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
         'is_paid' => 'boolean',
         'incurred_at' => 'date',
         'due_date' => 'date',

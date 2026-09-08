@@ -17,7 +17,8 @@ class VendorController extends Controller
             $query->where(function ($q) use ($s) {
                 $q->whereRaw('lower(name) like ?', ["%{$s}%"])
                     ->orWhereRaw('lower(phone) like ?', ["%{$s}%"])
-                    ->orWhereRaw('lower(contact_name) like ?', ["%{$s}%"]);
+                    ->orWhereRaw('lower(contact_name) like ?', ["%{$s}%"])
+                    ->orWhereRaw('lower(gst_number) like ?', ["%{$s}%"]);
             });
         }
 
@@ -38,6 +39,7 @@ class VendorController extends Controller
             'phone' => ['required', 'string', 'max:50'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
+            'gst_number' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -49,8 +51,20 @@ class VendorController extends Controller
                 'name' => $existing->name ?: $validated['name'],
                 'contact_name' => $existing->contact_name ?: $validated['contact_name'],
                 'address' => $existing->address ?: $validated['address'],
+                'gst_number' => $existing->gst_number ?: ($validated['gst_number'] ?? null),
                 'is_active' => $existing->is_active || $validated['is_active'],
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $existing->id,
+                    'name' => $existing->name,
+                    'phone' => $existing->phone,
+                    'contact_name' => $existing->contact_name,
+                    'address' => $existing->address,
+                    'gst_number' => $existing->gst_number,
+                ]);
+            }
 
             return redirect()->route('vendors.edit', $existing)
                 ->with('success', 'Vendor already exists. Updated missing details.');
@@ -66,6 +80,7 @@ class VendorController extends Controller
                 'phone' => $vendor?->phone ?? $validated['phone'],
                 'contact_name' => $vendor?->contact_name ?? $validated['contact_name'] ?? null,
                 'address' => $vendor?->address ?? $validated['address'] ?? null,
+                'gst_number' => $vendor?->gst_number ?? $validated['gst_number'] ?? null,
             ]);
         }
 
@@ -84,6 +99,7 @@ class VendorController extends Controller
             'phone' => ['required', 'string', 'max:50'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
+            'gst_number' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -93,4 +109,5 @@ class VendorController extends Controller
 
         return redirect()->route('vendors.index')->with('success', 'Vendor updated successfully.');
     }
+
 }

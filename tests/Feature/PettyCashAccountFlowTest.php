@@ -67,6 +67,7 @@ class PettyCashAccountFlowTest extends TestCase
             'account_id' => $staffAccount->id,
             'business_unit' => Expense::UNIT_MOTO,
             'is_paid' => 1,
+            'is_gst_applicable' => 0,
         ]));
         $response->assertSessionHas('last_expense', function (array $lastExpense) {
             return $lastExpense['date'] === '2026-09-07'
@@ -314,6 +315,93 @@ class PettyCashAccountFlowTest extends TestCase
         $this->assertEquals(5, (float) $item->fresh()->quantity);
         $this->assertEquals(5000.00, (float) $source->fresh()->balance);
         $this->assertFalse(Expense::latest('id')->firstOrFail()->is_paid);
+    }
+
+    public function test_gst_expense_adds_eight_percent_and_deducts_the_total_payable(): void
+    {
+        [$manager, , $source] = $this->baseRecords();
+        [$category, $vendor] = $this->expenseRecords(ExpenseCategory::TYPE_OPERATING);
+        $vendor->update(['gst_number' => '1234567GST501']);
+
+        $response = $this->actingAs($manager)->post(route('expenses.store'), [
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'account_id' => $source->id,
+            'business_unit' => Expense::UNIT_IT,
+            'amount' => 100,
+            'is_paid' => 1,
+            'is_gst_applicable' => 1,
+            'incurred_at' => '2026-09-08',
+            'reference' => 'GST-INV-100',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $expense = Expense::latest('id')->firstOrFail();
+        $this->assertTrue($expense->is_gst_applicable);
+        $this->assertEquals(100.00, (float) $expense->subtotal_amount);
+        $this->assertEquals(8.00, (float) $expense->gst_amount);
+        $this->assertEquals(108.00, (float) $expense->amount);
+        $this->assertEquals(4892.00, (float) $source->fresh()->balance);
+
+        $this->actingAs($manager)
+            ->get(route('expenses.reports', ['period' => 'all']))
+            ->assertOk()
+            ->assertSee('GST Input Tax Summary')
+            ->assertSee('GST-INV-100')
+            ->assertSee('MVR 8.00');
+
+        $export = $this->actingAs($manager)
+            ->get(route('expenses.reports', ['period' => 'all', 'export' => 'gst_csv']));
+        $export->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('1234567GST501', $export->streamedContent());
+        $this->assertStringContainsString('GST-INV-100', $export->streamedContent());
+    }
+
+    public function test_gst_expense_requires_vendor_tin_and_invoice_number(): void
+    {
+        [$manager, , $source] = $this->baseRecords();
+        [$category, $vendor] = $this->expenseRecords(ExpenseCategory::TYPE_OPERATING);
+
+        $payload = [
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'account_id' => $source->id,
+            'business_unit' => Expense::UNIT_IT,
+            'amount' => 100,
+            'is_paid' => 1,
+            'is_gst_applicable' => 1,
+            'incurred_at' => '2026-09-08',
+        ];
+
+        $this->actingAs($manager)
+            ->post(route('expenses.store'), $payload)
+            ->assertSessionHasErrors('vendor_id');
+
+        $vendor->update(['gst_number' => '7654321GST501']);
+        $this->actingAs($manager)
+            ->post(route('expenses.store'), $payload)
+            ->assertSessionHasErrors('reference');
+
+        $this->assertDatabaseCount('expenses', 0);
+        $this->assertEquals(5000.00, (float) $source->fresh()->balance);
+    }
+
+    public function test_manager_can_store_vendor_gst_number_from_expense_form(): void
+    {
+        $manager = User::factory()->create(['role' => User::ROLE_MANAGER]);
+
+        $response = $this->actingAs($manager)->postJson(route('vendors.store'), [
+            'name' => 'GST Supplier',
+            'phone' => '7990000',
+            'gst_number' => '1112223GST501',
+            'is_active' => 1,
+        ]);
+
+        $response->assertOk()->assertJsonPath('gst_number', '1112223GST501');
+        $this->assertDatabaseHas('vendors', [
+            'phone' => '7990000',
+            'gst_number' => '1112223GST501',
+        ]);
     }
 
     private function baseRecords(): array

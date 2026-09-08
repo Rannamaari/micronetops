@@ -61,12 +61,22 @@ class ExpenseController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        if ($request->query('export') === 'gst_csv') {
+            return $this->exportGstCsv($expenses);
+        }
+
         $businessUnits = Expense::getBusinessUnits();
         $types = ExpenseCategory::getTypes();
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
 
         $totalExpenses = round((float) $expenses->sum('amount'), 2);
+        $netExpenseTotal = round((float) $expenses->sum(fn (Expense $expense) => (float) ($expense->subtotal_amount ?: $expense->amount)), 2);
+        $gstExpenses = $expenses->where('is_gst_applicable', true)->values();
+        $gstExpenseCount = $gstExpenses->count();
+        $gstSubtotal = round((float) $gstExpenses->sum('subtotal_amount'), 2);
+        $gstTotal = round((float) $gstExpenses->sum('gst_amount'), 2);
+        $gstGrossTotal = round((float) $gstExpenses->sum('amount'), 2);
         $cogsTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_COGS)->sum('amount'), 2);
         $operatingTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OPERATING)->sum('amount'), 2);
         $otherTotal = round((float) $expenses->filter(fn (Expense $expense) => $expense->category?->type === ExpenseCategory::TYPE_OTHER)->sum('amount'), 2);
@@ -200,6 +210,12 @@ class ExpenseController extends Controller
                 'categories',
                 'vendors',
                 'totalExpenses',
+                'netExpenseTotal',
+                'gstExpenses',
+                'gstExpenseCount',
+                'gstSubtotal',
+                'gstTotal',
+                'gstGrossTotal',
                 'cogsTotal',
                 'operatingTotal',
                 'otherTotal',
@@ -235,7 +251,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
-        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid, $defaultIsGst] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -245,7 +261,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
+        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid', 'defaultIsGst'));
     }
 
     public function createCogs(Request $request)
@@ -260,7 +276,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
-        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid, $defaultIsGst] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -270,7 +286,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
+        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid', 'defaultIsGst'));
     }
 
     public function createOperating(Request $request)
@@ -285,7 +301,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
-        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid, $defaultIsGst] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -295,13 +311,14 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
+        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid', 'defaultIsGst'));
     }
 
     public function store(Request $request)
     {
         $request->merge([
             'is_paid' => $request->has('is_paid') ? $request->boolean('is_paid') : true,
+            'is_gst_applicable' => $request->boolean('is_gst_applicable'),
         ]);
 
         $validated = $request->validate([
@@ -311,6 +328,7 @@ class ExpenseController extends Controller
             'account_id' => ['nullable', 'required_if:is_paid,1', 'exists:accounts,id'],
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'is_gst_applicable' => ['required', 'boolean'],
             'incurred_at' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -357,6 +375,13 @@ class ExpenseController extends Controller
         $validated['due_date'] = $validated['is_paid'] ? null : ($validated['due_date'] ?? null);
         $vendor = Vendor::find($validated['vendor_id']);
         $validated['vendor'] = $vendor?->name;
+        if ($validated['is_gst_applicable'] && blank($vendor?->gst_number)) {
+            return back()->withErrors(['vendor_id' => 'A vendor GST TIN is required for a GST tax invoice. Edit the vendor and add its GST number.'])->withInput();
+        }
+        if ($validated['is_gst_applicable'] && blank($validated['reference'] ?? null)) {
+            return back()->withErrors(['reference' => 'Invoice / bill number is required for a GST tax invoice.'])->withInput();
+        }
+        $validated = $this->calculateExpenseGst($validated);
 
         try {
             $expense = DB::transaction(function () use ($validated) {
@@ -408,6 +433,7 @@ class ExpenseController extends Controller
             'account_id' => $expense->account_id,
             'business_unit' => $expense->business_unit,
             'is_paid' => $expense->is_paid ? 1 : 0,
+            'is_gst_applicable' => $expense->is_gst_applicable ? 1 : 0,
         ]);
 
         return redirect($nextExpenseUrl)
@@ -451,6 +477,7 @@ class ExpenseController extends Controller
     {
         $request->merge([
             'is_paid' => $request->has('is_paid') ? $request->boolean('is_paid') : true,
+            'is_gst_applicable' => $request->boolean('is_gst_applicable'),
         ]);
 
         $validated = $request->validate([
@@ -460,6 +487,7 @@ class ExpenseController extends Controller
             'account_id' => ['nullable', 'required_if:is_paid,1', 'exists:accounts,id'],
             'business_unit' => ['required', 'in:' . implode(',', array_keys(Expense::getBusinessUnits()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'is_gst_applicable' => ['required', 'boolean'],
             'incurred_at' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'reference' => ['nullable', 'string', 'max:255'],
@@ -507,6 +535,13 @@ class ExpenseController extends Controller
         $validated['due_date'] = $validated['is_paid'] ? null : ($validated['due_date'] ?? null);
         $vendor = Vendor::find($validated['vendor_id']);
         $validated['vendor'] = $vendor?->name;
+        if ($validated['is_gst_applicable'] && blank($vendor?->gst_number)) {
+            return back()->withErrors(['vendor_id' => 'A vendor GST TIN is required for a GST tax invoice. Edit the vendor and add its GST number.'])->withInput();
+        }
+        if ($validated['is_gst_applicable'] && blank($validated['reference'] ?? null)) {
+            return back()->withErrors(['reference' => 'Invoice / bill number is required for a GST tax invoice.'])->withInput();
+        }
+        $validated = $this->calculateExpenseGst($validated);
 
         try {
             DB::transaction(function () use ($validated, $expense) {
@@ -872,6 +907,7 @@ class ExpenseController extends Controller
         $requestedAccountId = (int) $request->query('account_id', 0);
         $requestedBusinessUnit = (string) $request->query('business_unit', '');
         $requestedPaid = $request->query('is_paid');
+        $requestedGst = $request->query('is_gst_applicable');
 
         $defaultCategoryId = $categories->contains('id', $requestedCategoryId) ? $requestedCategoryId : null;
         $defaultAccountId = $accounts->contains('id', $requestedAccountId) ? $requestedAccountId : null;
@@ -881,8 +917,64 @@ class ExpenseController extends Controller
         $defaultIsPaid = $requestedPaid === null
             ? true
             : filter_var($requestedPaid, FILTER_VALIDATE_BOOLEAN);
+        $defaultIsGst = $requestedGst === null
+            ? false
+            : filter_var($requestedGst, FILTER_VALIDATE_BOOLEAN);
 
-        return [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid];
+        return [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid, $defaultIsGst];
+    }
+
+    private function calculateExpenseGst(array $validated): array
+    {
+        $subtotal = round((float) $validated['amount'], 2);
+        $gstRate = $validated['is_gst_applicable'] ? 8.00 : 0.00;
+        $gstAmount = $validated['is_gst_applicable'] ? round($subtotal * 0.08, 2) : 0.00;
+
+        $validated['subtotal_amount'] = $subtotal;
+        $validated['gst_rate'] = $gstRate;
+        $validated['gst_amount'] = $gstAmount;
+        $validated['amount'] = round($subtotal + $gstAmount, 2);
+
+        return $validated;
+    }
+
+    private function exportGstCsv($expenses)
+    {
+        $gstExpenses = $expenses->where('is_gst_applicable', true)->values();
+        $filename = 'gst-input-tax-expenses-' . now()->format('Y-m-d-His') . '.csv';
+
+        return response()->streamDownload(function () use ($gstExpenses) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Supplier TIN',
+                'Supplier Name',
+                'Supplier Invoice Number',
+                'Invoice Date',
+                'Invoice Total Excluding GST',
+                'GST Charged at 8%',
+                'Invoice Total Including GST',
+                'Business Unit',
+                'Expense Category',
+                'Payment Status',
+            ]);
+
+            foreach ($gstExpenses as $expense) {
+                fputcsv($handle, [
+                    $expense->vendorEntity?->gst_number,
+                    $expense->vendorEntity?->name ?? $expense->vendor,
+                    $expense->reference,
+                    $expense->incurred_at?->format('Y-m-d'),
+                    number_format((float) $expense->subtotal_amount, 2, '.', ''),
+                    number_format((float) $expense->gst_amount, 2, '.', ''),
+                    number_format((float) $expense->amount, 2, '.', ''),
+                    Expense::getBusinessUnits()[$expense->business_unit] ?? $expense->business_unit,
+                    $expense->category?->name,
+                    $expense->is_paid ? 'Paid' : 'Due',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     private function expenseFilters(Request $request, string $defaultPeriod = 'month'): array

@@ -91,15 +91,28 @@
                         <div>
                             <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Vendor</dt>
                             <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $expense->vendorEntity?->name ?? $expense->vendor ?? '-' }}</dd>
+                            @if ($expense->vendorEntity?->gst_number)
+                                <dd class="mt-1 text-xs text-gray-500">GST TIN: {{ $expense->vendorEntity->gst_number }}</dd>
+                            @endif
                         </div>
                         <div>
                             <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Date</dt>
                             <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $expense->incurred_at->format('d M Y') }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</dt>
+                            <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ $expense->is_gst_applicable ? 'Total Payable' : 'Amount' }}</dt>
                             <dd class="mt-1 text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 tabular-nums">MVR {{ number_format($expense->amount, 2) }}</dd>
                         </div>
+                        @if ($expense->is_gst_applicable)
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount Before GST</dt>
+                                <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">MVR {{ number_format($expense->subtotal_amount, 2) }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-blue-600 dark:text-blue-300 uppercase tracking-wide">GST ({{ number_format($expense->gst_rate, 0) }}%)</dt>
+                                <dd class="mt-1 text-sm font-semibold text-blue-700 dark:text-blue-200">MVR {{ number_format($expense->gst_amount, 2) }}</dd>
+                            </div>
+                        @endif
                         <div>
                             <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment Status</dt>
                             <dd class="mt-1 text-sm font-semibold {{ $expense->is_paid ? 'text-emerald-700' : 'text-amber-700' }}">{{ $expense->is_paid ? 'Paid' : 'Due' }}</dd>

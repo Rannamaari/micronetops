@@ -87,7 +87,7 @@
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl p-4">
                     <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Expenses</p>
                     <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">MVR {{ number_format($totalExpenses, 2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $expenses->count() }} entries</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $expenses->count() }} entries · Before GST: {{ number_format($netExpenseTotal, 2) }}</p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-2xl p-4">
                     <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">COGS</p>
@@ -109,6 +109,68 @@
                     <p class="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">MVR {{ number_format($averageExpense, 2) }}</p>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">COGS purchases: {{ number_format($cogsPurchaseTotal, 2) }}</p>
                 </div>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm dark:border-blue-900 dark:bg-gray-800">
+                <div class="flex flex-col gap-3 border-b border-blue-100 bg-blue-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-blue-900 dark:bg-blue-900/20">
+                    <div>
+                        <h3 class="text-base font-semibold text-blue-950 dark:text-blue-100">GST Input Tax Summary</h3>
+                        <p class="mt-1 text-sm text-blue-700 dark:text-blue-300">Tax invoices received from GST-registered vendors for the selected filters.</p>
+                    </div>
+                    <a href="{{ route('expenses.reports', array_merge(request()->query(), ['export' => 'gst_csv'])) }}" class="inline-flex justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
+                        Export GST CSV
+                    </a>
+                </div>
+                <div class="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+                    <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Tax Invoices</p>
+                        <p class="mt-2 text-2xl font-bold">{{ $gstExpenseCount }}</p>
+                    </div>
+                    <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">Before GST</p>
+                        <p class="mt-2 text-xl font-bold">MVR {{ number_format($gstSubtotal, 2) }}</p>
+                    </div>
+                    <div class="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
+                        <p class="text-xs uppercase tracking-wide text-blue-600 dark:text-blue-300">Input GST 8%</p>
+                        <p class="mt-2 text-xl font-bold text-blue-700 dark:text-blue-200">MVR {{ number_format($gstTotal, 2) }}</p>
+                    </div>
+                    <div class="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-900/20">
+                        <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Total Paid / Payable</p>
+                        <p class="mt-2 text-xl font-bold text-emerald-800 dark:text-emerald-200">MVR {{ number_format($gstGrossTotal, 2) }}</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto border-t border-gray-100 dark:border-gray-700">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Vendor / TIN</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Invoice No.</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Before GST</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">GST</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @forelse ($gstExpenses as $expense)
+                                <tr>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm">{{ $expense->incurred_at?->format('d M Y') }}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <a href="{{ route('expenses.show', $expense) }}" class="font-medium text-blue-700 hover:underline dark:text-blue-300">{{ $expense->vendorEntity?->name ?? $expense->vendor }}</a>
+                                        <div class="text-xs text-gray-500">TIN: {{ $expense->vendorEntity?->gst_number }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">{{ $expense->reference }}</td>
+                                    <td class="px-4 py-3 text-right text-sm">{{ number_format($expense->subtotal_amount, 2) }}</td>
+                                    <td class="px-4 py-3 text-right text-sm font-semibold text-blue-700 dark:text-blue-300">{{ number_format($expense->gst_amount, 2) }}</td>
+                                    <td class="px-4 py-3 text-right text-sm font-semibold">{{ number_format($expense->amount, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No GST tax invoices match the selected filters.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <p class="border-t border-gray-100 px-4 py-3 text-xs text-gray-500 dark:border-gray-700">Use this as a preparation report and verify tax invoices before filing with MIRA.</p>
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">

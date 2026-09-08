@@ -46,7 +46,7 @@
                         <x-expense-payment-fields :accounts="$accounts" :selected="$defaultAccountId" :is-paid="$defaultIsPaid" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium">Amount</label>
+                                <label class="block text-sm font-medium">Amount Before GST</label>
                                 <input id="expense-amount" type="number" step="0.01" name="amount" class="mt-1 w-full rounded border-gray-300" value="{{ old('amount') }}" required>
                             </div>
                             <div>
@@ -54,9 +54,11 @@
                                 <input type="date" name="incurred_at" class="mt-1 w-full rounded border-gray-300" value="{{ old('incurred_at', $defaultDate) }}" required>
                             </div>
                         </div>
+                        <x-expense-gst-fields :is-gst="$defaultIsGst" />
                         <div>
                             <label class="block text-sm font-medium">Invoice / Bill Number</label>
                             <input name="reference" class="mt-1 w-full rounded border-gray-300" value="{{ old('reference') }}" placeholder="Enter supplier invoice or bill number">
+                            @error('reference')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Notes</label>
@@ -152,8 +154,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const option = document.createElement('option');
                 option.value = data.id;
                 option.textContent = `${data.name} (${data.phone})`;
+                option.dataset.gstNumber = data.gst_number || '';
+                option.dataset.search = `${data.name} ${data.phone} ${data.gst_number || ''}`.toLowerCase();
                 vendorSelect.appendChild(option);
                 vendorSelect.value = data.id;
+                vendorSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 vendorForm.reset();
                 vendorModal.classList.add('hidden');
             } catch (err) {
@@ -186,6 +191,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <div>
                 <label class="block text-sm font-medium">Address</label>
                 <input name="address" class="mt-1 w-full rounded border-gray-300">
+            </div>
+            <div>
+                <label class="block text-sm font-medium">GST TIN / Registration Number</label>
+                <input name="gst_number" class="mt-1 w-full rounded border-gray-300" placeholder="Required for GST invoices">
             </div>
             <p id="vendor-error" class="text-sm text-red-600"></p>
             <div class="flex justify-end gap-3 pt-2">

@@ -12,12 +12,14 @@
         <option value="">Select vendor</option>
         @foreach ($vendors as $vendor)
             <option value="{{ $vendor->id }}"
-                    data-search="{{ strtolower(trim($vendor->name . ' ' . $vendor->phone . ' ' . $vendor->contact_name)) }}"
+                    data-search="{{ strtolower(trim($vendor->name . ' ' . $vendor->phone . ' ' . $vendor->contact_name . ' ' . $vendor->gst_number)) }}"
+                    data-gst-number="{{ $vendor->gst_number }}"
                     @selected((string) old('vendor_id', $selected) === (string) $vendor->id)>
                 {{ $vendor->name }}{{ $vendor->phone ? ' (' . $vendor->phone . ')' : '' }}
             </option>
         @endforeach
     </select>
+    @error('vendor_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
     <p id="vendor-search-empty" class="hidden mt-1 text-xs text-amber-600">No matching vendor. Use Add Vendor to create one.</p>
 </div>
 

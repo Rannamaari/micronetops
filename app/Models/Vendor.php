@@ -14,6 +14,7 @@ class Vendor extends Model
         'phone',
         'contact_name',
         'address',
+        'gst_number',
         'is_active',
     ];
 

@@ -26,7 +26,27 @@
     </x-slot>
 
     <div class="py-4 sm:py-6">
-        <div class="max-w-5xl mx-auto px-4 sm:px-4 lg:px-8 space-y-4 sm:space-y-6">
+        <div class="max-w-5xl mx-auto px-4 sm:px-4 lg:px-8 space-y-4 sm:space-y-6"
+             x-data="{
+                paymentDialogOpen: false,
+                paymentMethod: 'cash',
+                paymentAccountId: '',
+                selectedSaleId: null,
+                selectedAmount: 0,
+                paymentUrl: '',
+                openPaymentDialog(id, amount, url) {
+                    this.selectedSaleId = id;
+                    this.selectedAmount = Number(amount);
+                    this.paymentUrl = url;
+                    this.paymentMethod = 'cash';
+                    this.paymentAccountId = '';
+                    this.paymentDialogOpen = true;
+                },
+                closePaymentDialog() {
+                    this.paymentDialogOpen = false;
+                }
+             }"
+             @keydown.escape.window="closePaymentDialog()">
             {{-- Flash messages --}}
             @if(session('success'))
                 <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm">
@@ -160,7 +180,7 @@
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bill #</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
-                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lines</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer Address</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
@@ -168,7 +188,12 @@
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach($logs as $log)
-                                    @php $totals = $log->totals; @endphp
+                                    @php
+                                        $totals = $log->totals;
+                                        $saleAddress = $log->customer_address_text
+                                            ?: $log->customerAddress?->address
+                                            ?: $log->customer?->address;
+                                    @endphp
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
                                         <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">#{{ $log->id }}</td>
                                         <td class="px-4 py-3">
@@ -187,7 +212,9 @@
                                                 Walk-in
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300">{{ $log->lines->count() }}</td>
+                                        <td class="max-w-xs px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                                            <span class="line-clamp-2" title="{{ $saleAddress }}">{{ $saleAddress ?: 'No address recorded' }}</span>
+                                        </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{{ number_format($totals['grand'], 2) }} MVR</td>
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex flex-col items-center gap-1">
@@ -214,6 +241,16 @@
                                                        {{ $log->isInvoiceStage() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' }}">
                                                     {{ $log->isInvoiceStage() ? 'Open Invoice' : 'Continue Quote' }}
                                                 </a>
+                                                @if($log->status === \App\Models\DailySalesLog::STATUS_INVOICED)
+                                                    <button type="button"
+                                                            @click="openPaymentDialog({{ $log->id }}, {{ (float) $totals['grand'] }}, @js(route('sales.daily.submit', $log)))"
+                                                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition">
+                                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Paid
+                                                    </button>
+                                                @endif
                                                 @if($log->canEditQuotation() && Auth::user()->canDeleteSales())
                                                     <form method="POST" action="{{ route('sales.daily.destroy', $log) }}"
                                                           onsubmit="return confirm('Delete draft sale #{{ $log->id }}? This cannot be undone.')">
@@ -236,7 +273,12 @@
                     {{-- Mobile Cards --}}
                     <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($logs as $log)
-                            @php $totals = $log->totals; @endphp
+                            @php
+                                $totals = $log->totals;
+                                $saleAddress = $log->customer_address_text
+                                    ?: $log->customerAddress?->address
+                                    ?: $log->customer?->address;
+                            @endphp
                             <div class="p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
@@ -270,8 +312,13 @@
                                             @else
                                                 Walk-in
                                             @endif
-                                            <span class="mx-1">&middot;</span>
-                                            {{ $log->lines->count() }} line(s)
+                                        </div>
+                                        <div class="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span class="line-clamp-2">{{ $saleAddress ?: 'No address recorded' }}</span>
                                         </div>
                                     </div>
                                     <div class="text-right shrink-0">
@@ -285,6 +332,16 @@
                                            {{ $log->isInvoiceStage() ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300' : 'bg-indigo-600 hover:bg-indigo-700 text-white' }}">
                                         {{ $log->isInvoiceStage() ? 'Open Invoice' : 'Continue Quote' }}
                                     </a>
+                                    @if($log->status === \App\Models\DailySalesLog::STATUS_INVOICED)
+                                        <button type="button"
+                                                @click="openPaymentDialog({{ $log->id }}, {{ (float) $totals['grand'] }}, @js(route('sales.daily.submit', $log)))"
+                                                class="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 text-white transition">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Paid
+                                        </button>
+                                    @endif
                                     @if($log->canEditQuotation() && Auth::user()->canDeleteSales())
                                         <form method="POST" action="{{ route('sales.daily.destroy', $log) }}"
                                               onsubmit="return confirm('Delete draft sale #{{ $log->id }}?')">
@@ -326,6 +383,84 @@
                         </div>
                     </div>
                 @endif
+            </div>
+
+            {{-- Quick payment dialog --}}
+            <div x-show="paymentDialogOpen"
+                 x-cloak
+                 class="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="quick-payment-title">
+                <div class="absolute inset-0 bg-gray-950/55" @click="closePaymentDialog()"></div>
+                <div class="relative w-full rounded-t-2xl bg-white p-5 shadow-2xl dark:bg-gray-800 sm:max-w-md sm:rounded-2xl sm:p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 id="quick-payment-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Mark Invoice Paid</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Invoice #<span x-text="selectedSaleId"></span> ·
+                                <span class="font-semibold text-gray-700 dark:text-gray-200" x-text="selectedAmount.toFixed(2) + ' MVR'"></span>
+                            </p>
+                        </div>
+                        <button type="button" @click="closePaymentDialog()"
+                                class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                                aria-label="Close payment dialog">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <form method="POST" :action="paymentUrl" class="mt-5 space-y-5">
+                        @csrf
+                        <input type="hidden" name="cash_tendered" :value="paymentMethod === 'cash' ? selectedAmount.toFixed(2) : ''">
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">How was the invoice paid?</label>
+                            <div class="mt-2 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-900/60">
+                                <button type="button" @click="paymentMethod = 'cash'; paymentAccountId = ''"
+                                        :class="paymentMethod === 'cash' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+                                        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition">
+                                    Cash
+                                </button>
+                                <button type="button" @click="paymentMethod = 'transfer'"
+                                        :class="paymentMethod === 'transfer' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+                                        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition">
+                                    Transfer
+                                </button>
+                            </div>
+                            <input type="hidden" name="payment_method" :value="paymentMethod">
+                        </div>
+
+                        <div x-show="paymentMethod === 'transfer'" x-cloak>
+                            <label for="quick-payment-account" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposited To Account</label>
+                            <select id="quick-payment-account" name="transfer_account_id" x-model="paymentAccountId"
+                                    :required="paymentMethod === 'transfer'"
+                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                                <option value="">Select receiving account</option>
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div x-show="paymentMethod === 'cash'" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                            Cash will be included in End of Day. The deposit account is selected when the cash is deposited or handed over.
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="button" @click="closePaymentDialog()"
+                                    class="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    :disabled="paymentMethod === 'transfer' && paymentAccountId === ''"
+                                    class="flex-1 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400">
+                                Confirm Paid
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
