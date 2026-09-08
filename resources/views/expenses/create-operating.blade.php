@@ -9,7 +9,8 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <form method="POST" action="{{ route('expenses.store') }}" class="space-y-4">
+                    <x-expense-entry-success />
+                    <form id="expense-entry-form" method="POST" action="{{ route('expenses.store') }}" class="space-y-4">
                         @csrf
                         @if ($errors->any())
                             <div class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -29,7 +30,7 @@
                             <input id="category-search" type="text" placeholder="Search category..." class="mt-1 w-full rounded border-gray-300" />
                             <select id="category-select" name="expense_category_id" class="mt-2 w-full rounded border-gray-300" required>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" data-type="{{ $category->type }}" @selected((string) old('expense_category_id') === (string) $category->id)>{{ $category->name }} ({{ $category->type }})</option>
+                                    <option value="{{ $category->id }}" data-type="{{ $category->type }}" @selected((string) old('expense_category_id', $defaultCategoryId) === (string) $category->id)>{{ $category->name }} ({{ $category->type }})</option>
                                 @endforeach
                             </select>
                         </div>
@@ -38,11 +39,11 @@
                             <label class="block text-sm font-medium">Business Unit</label>
                             <select id="business-unit" name="business_unit" class="mt-1 w-full rounded border-gray-300" required>
                                 @foreach ($businessUnits as $key => $label)
-                                    <option value="{{ $key }}" @selected(old('business_unit') === $key)>{{ $label }}</option>
+                                    <option value="{{ $key }}" @selected(old('business_unit', $defaultBusinessUnit) === $key)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <x-expense-payment-fields :accounts="$accounts" />
+                        <x-expense-payment-fields :accounts="$accounts" :selected="$defaultAccountId" :is-paid="$defaultIsPaid" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium">Amount</label>
@@ -63,7 +64,7 @@
                         </div>
                         <div class="flex items-center justify-end gap-3">
                             <a href="{{ route('expenses.index') }}" class="text-gray-600 hover:underline">Cancel</a>
-                            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Expense</button>
+                            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save & Add Another Expense</button>
                         </div>
                     </form>
                 </div>

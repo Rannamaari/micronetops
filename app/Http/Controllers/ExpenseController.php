@@ -30,7 +30,11 @@ class ExpenseController extends Controller
         $filters = $this->expenseFilters($request, 'all');
         $query = $this->buildExpenseQuery($filters)->with(['category', 'vendorEntity', 'account']);
 
-        $expenses = $query->orderByDesc('incurred_at')->paginate(10)->withQueryString();
+        $expenses = $query
+            ->orderByDesc('incurred_at')
+            ->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
         $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get();
         $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
         $businessUnits = Expense::getBusinessUnits();
@@ -54,6 +58,7 @@ class ExpenseController extends Controller
         $expenses = $this->buildExpenseQuery($filters)
             ->with(['category', 'vendorEntity', 'account', 'inventoryPurchases'])
             ->orderByDesc('incurred_at')
+            ->orderByDesc('id')
             ->get();
 
         $businessUnits = Expense::getBusinessUnits();
@@ -230,6 +235,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -239,7 +245,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
+        return view('expenses.create', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
     }
 
     public function createCogs(Request $request)
@@ -254,6 +260,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -263,7 +270,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
+        return view('expenses.create-cogs', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
     }
 
     public function createOperating(Request $request)
@@ -278,6 +285,7 @@ class ExpenseController extends Controller
         $inventoryItems = InventoryItem::where('is_active', true)->where('is_service', false)->orderBy('name')->get();
         $inventoryCategories = InventoryCategory::where('is_active', true)->orderBy('name')->get();
         $defaultDate = $this->requestedExpenseDate($request);
+        [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid] = $this->expenseFormDefaults($request, $categories, $accounts);
         $vendorsJson = $vendors->map(function ($vendor) {
             return [
                 'name' => $vendor->name,
@@ -287,7 +295,7 @@ class ExpenseController extends Controller
             ];
         })->values()->toJson();
 
-        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate'));
+        return view('expenses.create-operating', compact('categories', 'vendors', 'businessUnits', 'vendorsJson', 'accounts', 'inventoryItems', 'inventoryCategories', 'defaultDate', 'defaultCategoryId', 'defaultAccountId', 'defaultBusinessUnit', 'defaultIsPaid'));
     }
 
     public function store(Request $request)
@@ -394,9 +402,16 @@ class ExpenseController extends Controller
         $createRoute = $expense->category?->type === ExpenseCategory::TYPE_COGS
             ? 'expenses.create-cogs'
             : 'expenses.create-operating';
+        $nextExpenseUrl = route($createRoute, [
+            'date' => $expense->incurred_at->toDateString(),
+            'expense_category_id' => $expense->expense_category_id,
+            'account_id' => $expense->account_id,
+            'business_unit' => $expense->business_unit,
+            'is_paid' => $expense->is_paid ? 1 : 0,
+        ]);
 
-        return redirect()->route('expenses.index')
-            ->with('success', 'Expense recorded successfully.')
+        return redirect($nextExpenseUrl)
+            ->with('success', 'Expense added successfully. The form is ready for another expense.')
             ->with('last_expense', [
                 'id' => $expense->id,
                 'amount' => (float) $expense->amount,
@@ -406,7 +421,7 @@ class ExpenseController extends Controller
                 'category' => $expense->category?->name ?? 'Expense',
                 'invoice_number' => $expense->reference,
                 'is_paid' => $expense->is_paid,
-                'add_another_url' => route($createRoute, ['date' => $expense->incurred_at->toDateString()]),
+                'add_another_url' => $nextExpenseUrl,
             ]);
     }
 
@@ -849,6 +864,25 @@ class ExpenseController extends Controller
         } catch (\Throwable) {
             return now()->toDateString();
         }
+    }
+
+    private function expenseFormDefaults(Request $request, $categories, $accounts): array
+    {
+        $requestedCategoryId = (int) $request->query('expense_category_id', 0);
+        $requestedAccountId = (int) $request->query('account_id', 0);
+        $requestedBusinessUnit = (string) $request->query('business_unit', '');
+        $requestedPaid = $request->query('is_paid');
+
+        $defaultCategoryId = $categories->contains('id', $requestedCategoryId) ? $requestedCategoryId : null;
+        $defaultAccountId = $accounts->contains('id', $requestedAccountId) ? $requestedAccountId : null;
+        $defaultBusinessUnit = array_key_exists($requestedBusinessUnit, Expense::getBusinessUnits())
+            ? $requestedBusinessUnit
+            : null;
+        $defaultIsPaid = $requestedPaid === null
+            ? true
+            : filter_var($requestedPaid, FILTER_VALIDATE_BOOLEAN);
+
+        return [$defaultCategoryId, $defaultAccountId, $defaultBusinessUnit, $defaultIsPaid];
     }
 
     private function expenseFilters(Request $request, string $defaultPeriod = 'month'): array

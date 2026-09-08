@@ -15,6 +15,47 @@ class ExpenseReportsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_expense_list_orders_by_expense_date_then_latest_entry(): void
+    {
+        $manager = User::factory()->create(['role' => User::ROLE_MANAGER]);
+        $vendor = Vendor::create(['name' => 'Order Test Vendor', 'phone' => '7000001', 'is_active' => true]);
+        $category = ExpenseCategory::create([
+            'name' => 'Order Test',
+            'type' => ExpenseCategory::TYPE_OPERATING,
+            'is_active' => true,
+        ]);
+
+        Expense::create([
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_IT,
+            'amount' => 100,
+            'incurred_at' => '2026-08-20',
+            'reference' => 'SAME-DATE-FIRST',
+        ]);
+        Expense::create([
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_IT,
+            'amount' => 200,
+            'incurred_at' => '2026-08-20',
+            'reference' => 'SAME-DATE-LATEST',
+        ]);
+        Expense::create([
+            'expense_category_id' => $category->id,
+            'vendor_id' => $vendor->id,
+            'business_unit' => Expense::UNIT_IT,
+            'amount' => 50,
+            'incurred_at' => '2026-08-01',
+            'reference' => 'BACKDATED',
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('expenses.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['SAME-DATE-LATEST', 'SAME-DATE-FIRST', 'BACKDATED']);
+    }
+
     public function test_manager_can_view_expense_report_dashboard_for_current_month(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-29'));

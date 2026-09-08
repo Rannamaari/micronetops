@@ -61,10 +61,18 @@ class PettyCashAccountFlowTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        $response->assertRedirect(route('expenses.index'));
+        $response->assertRedirect(route('expenses.create-operating', [
+            'date' => '2026-09-07',
+            'expense_category_id' => $category->id,
+            'account_id' => $staffAccount->id,
+            'business_unit' => Expense::UNIT_MOTO,
+            'is_paid' => 1,
+        ]));
         $response->assertSessionHas('last_expense', function (array $lastExpense) {
             return $lastExpense['date'] === '2026-09-07'
                 && str_contains($lastExpense['add_another_url'], 'expenses/create-operating?date=2026-09-07')
+                && str_contains($lastExpense['add_another_url'], 'expense_category_id=')
+                && str_contains($lastExpense['add_another_url'], 'account_id=')
                 && $lastExpense['invoice_number'] === 'RCPT-100';
         });
         $expense = Expense::latest('id')->firstOrFail();
@@ -78,17 +86,20 @@ class PettyCashAccountFlowTest extends TestCase
         $this->assertEquals(700.00, PettyCash::userBalance($staff));
 
         $this->actingAs($manager)
-            ->get(route('expenses.index'))
+            ->get($response->headers->get('Location'))
             ->assertOk()
-            ->assertSee('Last expense added successfully')
-            ->assertSee('Add Another Expense');
+            ->assertSee('Expense added successfully')
+            ->assertSee('Add Another Expense')
+            ->assertSee('Save & Add Another Expense', false)
+            ->assertSee('value="2026-09-07"', false);
 
         $this->actingAs($manager)
             ->get(route('expenses.create-operating', ['date' => '2026-09-07']))
             ->assertOk()
             ->assertSee('Invoice / Bill Number')
             ->assertSee('id="vendor-search"', false)
-            ->assertSee('value="2026-09-07"', false);
+            ->assertSee('value="2026-09-07"', false)
+            ->assertSee('Save & Add Another Expense', false);
     }
 
     public function test_cogs_expense_deducts_staff_cash_and_adds_inventory(): void
