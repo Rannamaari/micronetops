@@ -210,6 +210,14 @@
         <p class="text-gray-400 text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto">
             We started as an IT and security company in 2017. Today, we design and build websites, business applications, POS platforms, booking systems, and HR software for organisations across the Maldives.
         </p>
+        <a href="{{ asset('downloads/Micronet_Company_Profile_2026.pdf') }}"
+           download="Micronet_Company_Profile_2026.pdf"
+           class="mt-8 inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold px-7 py-3.5 rounded-2xl transition-all duration-200 shadow-xl shadow-red-950/30 hover:-translate-y-0.5">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M5 20h14"/>
+            </svg>
+            Download Company Profile
+        </a>
     </div>
 </section>
 
