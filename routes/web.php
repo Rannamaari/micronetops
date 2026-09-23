@@ -39,6 +39,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\SalesSearchController;
+use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -87,6 +88,7 @@ Route::get('/', function () {
 
 // Contact form route (public, no auth required)
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
 
 // Operations system route - redirects to login or dashboard
 Route::get('/ops', function () {

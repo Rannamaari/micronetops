@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>About Us — Micronet | Our Story Since 2017</title>
-    <meta name="description" content="Learn how Micronet started in 2017 as an IT security company in the Maldives and grew into a full-service technical solutions group including Micro Moto Garage, Micro Cool, and EasyFix.">
-    <meta name="keywords" content="Micronet about us, Micronet history, IT company Maldives 2017, Micro Moto Garage, Micro Cool, EasyFix Maldives">
+    <meta name="description" content="Micronet builds websites, POS systems, travel booking platforms, HR software, and custom business applications for organisations in the Maldives.">
+    <meta name="keywords" content="Micronet Maldives, software company Maldives, MicroPOS, HR software Maldives, travel booking system, custom web development">
     <meta name="author" content="Micronet">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://micronet.mv/about">
@@ -207,8 +207,8 @@
             <span class="text-red-500">Built for the Maldives.</span>
         </h1>
 
-        <p class="text-gray-400 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto">
-            We started as a small IT security company in 2017. Seven years later, we're a team of technicians, mechanics, and problem-solvers serving homes and businesses across the country.
+        <p class="text-gray-400 text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto">
+            We started as an IT and security company in 2017. Today, we design and build websites, business applications, POS platforms, booking systems, and HR software for organisations across the Maldives.
         </p>
     </div>
 </section>
@@ -231,10 +231,10 @@
                 Micronet was founded in <strong class="text-gray-900">2017</strong> with a single focus — IT and security solutions. We installed networks, set up CCTV systems, and supported businesses that needed reliable technical help in Malé.
             </p>
             <p class="text-gray-600 text-lg leading-relaxed mb-5">
-                Over time, the same customers who called us for networking started asking for help with other things — a broken AC, a motorcycle that needed servicing, a website for their business. The need was real, so we showed up.
+                As our customers grew, they needed more than technical support. They needed websites, retail systems, booking platforms, HR tools, and custom software designed around the way their businesses actually operate.
             </p>
             <p class="text-gray-600 text-lg leading-relaxed">
-                That's how Micronet became more than just an IT company. One step at a time, one customer at a time, we grew into a team that handles the full range of technical and repair needs — because in the Maldives, reliable help shouldn't be hard to find.
+                We began turning those requirements into working products. Today, Micronet combines software development, infrastructure, security, and practical business knowledge to deliver systems that teams can confidently use every day.
             </p>
         </div>
 
@@ -319,6 +319,85 @@
                 </div>
 
             </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ================================================================
+     SOFTWARE PRODUCTS & PROJECTS
+================================================================ -->
+<section id="products" class="py-20 lg:py-28 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16 items-end mb-14">
+            <div>
+                <span class="text-red-600 font-semibold text-xs uppercase tracking-widest">Products &amp; Projects</span>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mt-3 leading-tight">Software built for real businesses.</h2>
+            </div>
+            <div>
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    We do more than build company websites. We develop complete systems for sales, staff, bookings, service operations, and customer management. Some are ready-to-deploy products; others are custom-built around a client&rsquo;s requirements.
+                </p>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-5">
+            <article class="group bg-white border border-gray-200 rounded-3xl p-7 sm:p-8 hover:border-red-200 hover:shadow-xl transition-all duration-300">
+                <div class="flex items-start justify-between gap-4 mb-7">
+                    <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.63.63-.18 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-10 0a2 2 0 100 4 2 2 0 000-4z"/></svg>
+                    </div>
+                    <span class="bg-green-50 text-green-700 border border-green-100 text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Available for businesses</span>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900">MicroPOS</h3>
+                <p class="text-gray-500 leading-relaxed mt-3">A practical point-of-sale and retail management platform for billing, inventory, customers, purchasing, and business reporting.</p>
+                <div class="mt-6 pt-5 border-t border-gray-100 text-sm text-gray-600"><strong class="text-gray-900">Completed deployments:</strong> Island Thrift and Moscow Traders in Himmafushi.</div>
+                <a href="{{ route('services.show', 'pos-retail-systems') }}" class="inline-flex items-center text-red-600 font-bold text-sm mt-6 hover:text-red-700">Explore POS systems <span class="ml-2">&rarr;</span></a>
+            </article>
+
+            <article class="group bg-white border border-gray-200 rounded-3xl p-7 sm:p-8 hover:border-red-200 hover:shadow-xl transition-all duration-300">
+                <div class="flex items-start justify-between gap-4 mb-7">
+                    <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.36-1.86M17 20H7m10 0v-2c0-.66-.13-1.28-.36-1.86M7 20H2v-2a3 3 0 015.36-1.86M7 20v-2c0-.66.13-1.28.36-1.86m0 0a5 5 0 019.28 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <span class="bg-green-50 text-green-700 border border-green-100 text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Available for businesses</span>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900">HR &amp; Workforce Software</h3>
+                <p class="text-gray-500 leading-relaxed mt-3">A central system for employee records, attendance, leave, payroll-ready information, loans, documents, and HR reporting.</p>
+                <div class="mt-6 pt-5 border-t border-gray-100 text-sm text-gray-600"><strong class="text-gray-900">Designed for:</strong> growing companies that need staff information and approvals in one secure place.</div>
+                <a href="{{ route('services.show', 'app-development') }}" class="inline-flex items-center text-red-600 font-bold text-sm mt-6 hover:text-red-700">Discuss HR software <span class="ml-2">&rarr;</span></a>
+            </article>
+
+            <article class="group bg-white border border-gray-200 rounded-3xl p-7 sm:p-8 hover:border-red-200 hover:shadow-xl transition-all duration-300">
+                <div class="flex items-start justify-between gap-4 mb-7">
+                    <div class="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 15l2 2 4-4"/></svg>
+                    </div>
+                    <span class="bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Custom implementation</span>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900">Travel &amp; Booking Systems</h3>
+                <p class="text-gray-500 leading-relaxed mt-3">Online platforms for accommodation, excursions, transfers, availability, enquiries, reservations, and customer communication.</p>
+                <div class="mt-6 pt-5 border-t border-gray-100 text-sm text-gray-600"><strong class="text-gray-900">Completed project:</strong> Himmafushi.net, a booking and local service discovery platform.</div>
+                <a href="{{ route('services.show', 'booking-services') }}" class="inline-flex items-center text-red-600 font-bold text-sm mt-6 hover:text-red-700">Explore booking systems <span class="ml-2">&rarr;</span></a>
+            </article>
+
+            <article class="group bg-gray-950 border border-gray-900 rounded-3xl p-7 sm:p-8 hover:border-red-800 transition-all duration-300 text-white">
+                <div class="flex items-start justify-between gap-4 mb-7">
+                    <div class="w-14 h-14 bg-red-600 text-white rounded-2xl flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <span class="bg-red-500/10 text-red-300 border border-red-500/20 text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">Built by Micronet</span>
+                </div>
+                <h3 class="text-2xl font-black">EasyFix Platform</h3>
+                <p class="text-gray-400 leading-relaxed mt-3">A complete service operations platform connecting customer requests with scheduling, jobs, quotations, invoicing, expenses, and daily management.</p>
+                <div class="mt-6 pt-5 border-t border-gray-800 text-sm text-gray-400"><strong class="text-white">What it demonstrates:</strong> our ability to turn a service idea into a working customer and operations system.</div>
+                <a href="{{ route('services.show', 'app-development') }}" class="inline-flex items-center text-red-400 font-bold text-sm mt-6 hover:text-red-300">Build a custom system <span class="ml-2">&rarr;</span></a>
+            </article>
+        </div>
+
+        <div class="mt-10 rounded-3xl bg-red-600 px-6 py-8 sm:px-10 sm:py-9 flex flex-col lg:flex-row lg:items-center justify-between gap-6 text-white">
+            <div><h3 class="text-2xl sm:text-3xl font-black">Have a system idea of your own?</h3><p class="text-red-100 mt-2 max-w-2xl">Share your workflow or business challenge. We can plan, design, develop, and support the solution from idea to launch.</p></div>
+            <a href="{{ route('home') }}#contact" class="flex-shrink-0 inline-flex items-center justify-center bg-white text-red-600 hover:bg-red-50 font-bold px-7 py-4 rounded-2xl">Tell us your requirements <span class="ml-2">&rarr;</span></a>
         </div>
     </div>
 </section>

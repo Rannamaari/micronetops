@@ -5,9 +5,17 @@
                 <a href="{{ route('vendors.index') }}" class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">&larr; Back to Vendors</a>
                 <h2 class="mt-1 text-xl font-semibold leading-tight text-gray-800 dark:text-gray-100">{{ $vendor->name }}</h2>
             </div>
-            <a href="{{ route('vendors.edit', $vendor) }}" class="inline-flex justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-blue-600 dark:hover:bg-blue-500">
-                Edit Vendor
-            </a>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                @if($vendor->is_active)
+                    <a href="{{ route('expenses.create-cogs', ['vendor_id' => $vendor->id]) }}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13 5.4 5M7 13l-2 2h14m-10 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm10 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+                        Buy From Vendor
+                    </a>
+                @endif
+                <a href="{{ route('vendors.edit', $vendor) }}" class="inline-flex justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-blue-600 dark:hover:bg-blue-500">
+                    Edit Vendor
+                </a>
+            </div>
         </div>
     </x-slot>
 

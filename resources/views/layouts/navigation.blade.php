@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+<nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-md border-b border-gray-200 {{ request()->routeIs('sales.daily.*') ? '' : 'sticky top-0 z-50' }} shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-14 sm:h-16">
             <!-- Logo -->

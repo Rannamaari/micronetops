@@ -36,7 +36,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <x-expense-vendor-picker :vendors="$vendors" />
+                        <x-expense-vendor-picker :vendors="$vendors" :selected="$defaultVendorId" />
                         <div>
                             <label class="block text-sm font-medium">Business Unit</label>
                             <select id="business-unit" name="business_unit" class="mt-1 w-full rounded border-gray-300" required>
@@ -48,7 +48,7 @@
                         <x-expense-payment-fields :accounts="$accounts" :selected="$defaultAccountId" :is-paid="$defaultIsPaid" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium">Amount Before GST</label>
+                                <label class="block text-sm font-medium">Total Amount</label>
                                 <input id="expense-amount" type="number" step="0.01" name="amount" class="mt-1 w-full rounded border-gray-300" value="{{ old('amount') }}" required>
                             </div>
                             <div>

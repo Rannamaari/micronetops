@@ -182,7 +182,7 @@
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bill #</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer Address</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Address</th>
                                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
@@ -215,7 +215,10 @@
                                             @endif
                                         </td>
                                         <td class="max-w-xs px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                                            <span class="line-clamp-2" title="{{ $saleAddress }}">{{ $saleAddress ?: 'No address recorded' }}</span>
+                                            <span class="block line-clamp-2" title="{{ $saleAddress }}">{{ $saleAddress ?: '-' }}</span>
+                                            @if($log->customer?->phone)
+                                                <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ $log->customer->phone }}</span>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-gray-100">{{ number_format($totals['grand'], 2) }} MVR</td>
                                         <td class="px-4 py-3 text-center">
@@ -320,7 +323,12 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            <span class="line-clamp-2">{{ $saleAddress ?: 'No address recorded' }}</span>
+                                            <div class="min-w-0">
+                                                <span class="block line-clamp-2">{{ $saleAddress ?: '-' }}</span>
+                                                @if($log->customer?->phone)
+                                                    <span class="mt-0.5 block text-[11px] text-gray-400 dark:text-gray-500">{{ $log->customer->phone }}</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-right shrink-0">

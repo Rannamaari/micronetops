@@ -26,11 +26,18 @@ class VendorExpenseHistoryTest extends TestCase
         $this->actingAs($manager)
             ->get(route('vendors.show', $vendor))
             ->assertOk()
+            ->assertSee('Buy From Vendor')
+            ->assertSee(route('expenses.create-cogs', ['vendor_id' => $vendor->id]))
             ->assertSee('Expense History')
             ->assertSee('ISLAND-001')
             ->assertSee('MVR 108.00')
             ->assertSee('MVR 8.00')
             ->assertDontSee('OTHER-001');
+
+        $this->actingAs($manager)
+            ->get(route('expenses.create-cogs', ['vendor_id' => $vendor->id]))
+            ->assertOk()
+            ->assertSeeInOrder(['value="'.$vendor->id.'"', 'selected', 'Island Supplier'], false);
     }
 
     public function test_vendor_expenses_can_be_filtered_by_date_range(): void

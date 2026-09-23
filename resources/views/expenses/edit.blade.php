@@ -68,8 +68,8 @@
                         <x-expense-payment-fields :accounts="$accounts" :selected="$expense->account_id" :is-paid="$expense->is_paid" :due-date="$expense->due_date" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium">Amount Before GST</label>
-                                <input id="expense-amount" type="number" step="0.01" name="amount" class="mt-1 w-full rounded border-gray-300" value="{{ old('amount', $expense->subtotal_amount ?: $expense->amount) }}" required>
+                                <label class="block text-sm font-medium">Total Amount</label>
+                                <input id="expense-amount" type="number" step="0.01" name="amount" class="mt-1 w-full rounded border-gray-300" value="{{ old('amount', $expense->amount) }}" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium">Incurred At</label>

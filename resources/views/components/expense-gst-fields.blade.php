@@ -12,14 +12,14 @@
         <input type="checkbox" id="expense-has-gst" name="is_gst_applicable" value="1"
                class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" @checked($gstSelected)>
         <span>
-            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">GST Tax Invoice (8%)</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400">Adds 8% GST to the amount entered above.</span>
+            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">Total includes GST (8%)</span>
+            <span class="block text-xs text-gray-500 dark:text-gray-400">The total amount is split automatically into net amount and GST.</span>
         </span>
     </label>
 
     <div id="expense-gst-summary" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 {{ $gstSelected ? '' : 'hidden' }}">
         <div class="rounded-lg bg-white p-3 dark:bg-gray-800">
-            <p class="text-xs text-gray-500">Before GST</p>
+            <p class="text-xs text-gray-500">Net amount</p>
             <p class="mt-1 font-semibold">MVR <span id="expense-gst-subtotal">0.00</span></p>
         </div>
         <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
@@ -27,7 +27,7 @@
             <p class="mt-1 font-semibold text-blue-700 dark:text-blue-200">MVR <span id="expense-gst-amount">0.00</span></p>
         </div>
         <div class="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
-            <p class="text-xs text-emerald-700 dark:text-emerald-300">Total Payable</p>
+            <p class="text-xs text-emerald-700 dark:text-emerald-300">Total amount</p>
             <p class="mt-1 font-semibold text-emerald-800 dark:text-emerald-200">MVR <span id="expense-gst-total">0.00</span></p>
         </div>
     </div>
@@ -59,11 +59,12 @@
             if (!checkbox || !amount || !summary) return;
 
             const update = () => {
-                const subtotal = Number.parseFloat(amount.value || '0') || 0;
-                const gst = checkbox.checked ? Math.round(subtotal * 8) / 100 : 0;
+                const total = Number.parseFloat(amount.value || '0') || 0;
+                const subtotal = checkbox.checked ? Math.round((total / 1.08) * 100) / 100 : total;
+                const gst = checkbox.checked ? Math.round((total - subtotal) * 100) / 100 : 0;
                 subtotalOutput.textContent = subtotal.toFixed(2);
                 gstOutput.textContent = gst.toFixed(2);
-                totalOutput.textContent = (subtotal + gst).toFixed(2);
+                totalOutput.textContent = total.toFixed(2);
                 summary.classList.toggle('hidden', !checkbox.checked);
                 expenditure?.classList.toggle('hidden', !checkbox.checked);
 

@@ -58,6 +58,7 @@
 
             <!-- Mobile Bottom Navigation -->
             @auth
+                @unless(request()->routeIs('sales.daily.*'))
                 <nav class="mobile-bottom-nav md:hidden">
                     <a href="{{ Auth::user()->isOperationsStaff() ? route('sales.daily.index') : route('dashboard') }}" class="{{ request()->routeIs('dashboard') || (Auth::user()->isOperationsStaff() && request()->routeIs('sales.daily.*')) ? 'active' : '' }}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,6 +103,7 @@
                         </a>
                     @endif
                 </nav>
+                @endunless
             @endauth
         </div>
 

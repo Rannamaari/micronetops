@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-	    <title>Micronet — Trusted IT, Technical Services & Consultations in the Maldives</title>
-	    <meta name="description" content="From CCTV installation and networking to on-site technical consultations — Micronet delivers reliable IT and technical solutions for homes and businesses across the Maldives.">
+	    <title>Micronet — Websites, Apps & Business Systems in the Maldives</title>
+	    <meta name="description" content="Micronet builds websites, apps, POS systems, booking services, and IT infrastructure for businesses across the Maldives.">
     <meta name="keywords" content="Micronet, IT support Maldives, CCTV installation Male, networking Maldives, IP PBX Maldives, IP PABX Maldives, VoIP Maldives, SIP trunk Maldives, SIP connections, PBX setup, technical consultations, on-site support, web development, EasyFix, technical services Maldives">
     <meta name="author" content="Micronet">
     <meta name="robots" content="index, follow">
@@ -281,15 +281,15 @@
 
 	                <!-- Headline -->
 	                <h1 class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-black text-white leading-[1.1] mb-6">
-	                    Your Trusted Partner for
-	                    <span class="text-red-500"> IT,</span>
-	                    <span class="text-white"> Technical&nbsp;Services</span>
-	                    <span class="text-red-500"> &amp; Consultations</span>
-	                    <span class="block text-gray-400 text-3xl sm:text-4xl lg:text-[2.5rem] mt-2 font-extrabold">in the Maldives</span>
+	                    We Turn Business Ideas
+	                    <span class="text-red-500"> Into Websites,</span>
+	                    <span class="text-white"> Apps</span>
+	                    <span class="text-red-500"> &amp; Systems</span>
+	                    <span class="block text-gray-400 text-3xl sm:text-4xl lg:text-[2.5rem] mt-2 font-extrabold">built in the Maldives</span>
 	                </h1>
 
 	                <p class="text-gray-400 text-lg sm:text-xl leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-	                    From CCTV installation and networking to on-site technical support and consultations — Micronet delivers reliable solutions for homes and businesses.
+	                    Tell us how your business works and what you want to improve. We design and build the website, app, POS, booking service, or business system that brings it to life.
 	                </p>
 
                 <!-- CTAs -->
@@ -334,14 +334,14 @@
                 <div class="float absolute -top-4 -left-6 z-10">
                     <div class="bg-white/8 backdrop-blur border border-white/10 rounded-2xl p-4 flex items-center space-x-3 shadow-xl">
                         <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <!-- Camera icon -->
+
                             <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.847v6.306a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+								<path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
                             </svg>
                         </div>
                         <div>
-                            <div class="text-xs text-gray-500">Now Available</div>
-                            <div class="text-sm font-bold text-white">CCTV Installation</div>
+							<div class="text-xs text-gray-500">Now Building</div>
+							<div class="text-sm font-bold text-white">Web &amp; App Systems</div>
                         </div>
                     </div>
                 </div>
@@ -413,7 +413,7 @@
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
 
             <!-- CCTV -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+            <a href="{{ route('services.show', 'cctv-security') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                 <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
                     <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.847v6.306a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
@@ -421,10 +421,10 @@
                 </div>
                 <h3 class="text-base font-bold text-gray-900 mb-2">CCTV Installation</h3>
                 <p class="text-gray-500 text-sm leading-relaxed">Professional CCTV setup and monitoring for homes, offices, and businesses.</p>
-            </div>
+            </a>
 
 	            <!-- Networking -->
-	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	            <a href="{{ route('services.show', 'networking-it') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
 	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
 	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
@@ -432,10 +432,10 @@
 	                </div>
 	                <h3 class="text-base font-bold text-gray-900 mb-2">Networking & IT Support</h3>
 	                <p class="text-gray-500 text-sm leading-relaxed">Network setup, troubleshooting, and ongoing IT support for businesses and homes.</p>
-	            </div>
+	            </a>
 
 	            <!-- IP PBX / SIP -->
-	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	            <a href="{{ route('services.show', 'ip-pbx-sip') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
 	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
 	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
@@ -443,32 +443,32 @@
 	                </div>
 	                <h3 class="text-base font-bold text-gray-900 mb-2">IP PBX &amp; SIP (VoIP)</h3>
 	                <p class="text-gray-500 text-sm leading-relaxed">IP PBX setup, SIP connections, extensions, and call routing for your office.</p>
-	            </div>
+	            </a>
 
 	            <!-- Web Dev -->
-	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	            <a href="{{ route('services.show', 'web-development') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
 	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
 	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
 	                    </svg>
 	                </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Website & Web App Development</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Custom websites and web apps built to grow your business online.</p>
-            </div>
+                <h3 class="text-base font-bold text-gray-900 mb-2">Website & Web Development</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">Custom websites, portals, and online services built around your business.</p>
+            </a>
 
             <!-- Computer Repair -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+            <a href="{{ route('services.show', 'app-development') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                 <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
                     <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                 </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Computer & Device Repair</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Laptop, PC, and device repairs with fast turnarounds and reliable diagnostics.</p>
-            </div>
+                <h3 class="text-base font-bold text-gray-900 mb-2">Custom Apps & Systems</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">We turn your workflow, spreadsheet, or idea into a useful business system.</p>
+            </a>
 
 	            <!-- Consultations -->
-	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	            <a href="{{ route('services.show', 'technology-consulting') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
 	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
 	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.707.707M18.36 18.36l.707.707M1 12h2M21 12h2M4.22 19.78l.707-.707M18.36 5.64l.707-.707M12 7a5 5 0 110 10A5 5 0 0112 7z"/>
@@ -476,31 +476,43 @@
 	                </div>
 	                <h3 class="text-base font-bold text-gray-900 mb-2">Technical Consultations</h3>
 	                <p class="text-gray-500 text-sm leading-relaxed">On-site assessments, troubleshooting, and practical recommendations you can act on.</p>
-	            </div>
+	            </a>
 
 	            <!-- Installations -->
-	            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default">
+	            <a href="{{ route('services.show', 'booking-services') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
 	                <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
 	                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
 	                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
 	                    </svg>
 	                </div>
-	                <h3 class="text-base font-bold text-gray-900 mb-2">Installations & Setup</h3>
-	                <p class="text-gray-500 text-sm leading-relaxed">On-site installations, configuration, and handover for homes and businesses.</p>
-	            </div>
+	                <h3 class="text-base font-bold text-gray-900 mb-2">Booking & Online Services</h3>
+	                <p class="text-gray-500 text-sm leading-relaxed">Simple booking, enquiries, and customer journeys that work around the clock.</p>
+	            </a>
 
             <!-- Home Support — spans 2 cols on xl -->
-            <div class="service-card group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default sm:col-span-2 lg:col-span-1">
+            <a href="{{ route('services.show', 'pos-retail-systems') }}" class="service-card group block bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer sm:col-span-2 lg:col-span-1">
                 <div class="svc-icon w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-5">
                     <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
                 </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2">Home & Office Technical Support</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">On-site technical assistance for homes and offices — from setup to maintenance.</p>
-            </div>
+                <h3 class="text-base font-bold text-gray-900 mb-2">POS & Retail Systems</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">Sales, inventory, billing, and reporting systems for retail operations.</p>
+            </a>
 
+        </div>
+    </div>
+</section>
+
+<section id="projects" class="py-20 lg:py-28 bg-zinc-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl"><span class="text-red-400 font-semibold text-xs uppercase tracking-widest">Built by Micronet</span><h2 class="text-3xl sm:text-4xl lg:text-5xl font-black mt-3">Systems for businesses that need more than a template.</h2><p class="text-zinc-400 text-lg mt-5 leading-relaxed">We create practical digital products for real operations. Bring us your idea and we will help turn it into something your team and customers can use.</p></div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+            <article class="rounded-2xl border border-white/10 bg-white/[.03] p-6"><p class="text-red-400 text-xs font-bold uppercase tracking-wider">Service platform</p><h3 class="font-bold text-xl mt-3">EasyFix</h3><p class="text-zinc-400 text-sm leading-relaxed mt-3">A digital service platform supporting handyman requests and operations in Greater Mal&eacute;.</p></article>
+            <article class="rounded-2xl border border-white/10 bg-white/[.03] p-6"><p class="text-red-400 text-xs font-bold uppercase tracking-wider">Retail POS</p><h3 class="font-bold text-xl mt-3">MicroPOS</h3><p class="text-zinc-400 text-sm leading-relaxed mt-3">Used by Island Thrift in Himmafushi for day-to-day retail operations.</p></article>
+            <article class="rounded-2xl border border-white/10 bg-white/[.03] p-6"><p class="text-red-400 text-xs font-bold uppercase tracking-wider">Retail operations</p><h3 class="font-bold text-xl mt-3">Moscow Traders</h3><p class="text-zinc-400 text-sm leading-relaxed mt-3">A system tailored for Moscow Traders, a major shopping centre in Himmafushi.</p></article>
+            <article class="rounded-2xl border border-white/10 bg-white/[.03] p-6"><p class="text-red-400 text-xs font-bold uppercase tracking-wider">Booking service</p><h3 class="font-bold text-xl mt-3">Himmafushi.net</h3><p class="text-zinc-400 text-sm leading-relaxed mt-3">An online booking experience for visitors and local service discovery.</p></article>
         </div>
     </div>
 </section>
@@ -934,10 +946,10 @@
         </div>
 
 	        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-5 leading-tight">
-	            Need Help With Consultations or<br class="hidden sm:block"> Technical Services?
+	            Have an idea for a website,<br class="hidden sm:block"> app, or business system?
 	        </h2>
         <p class="text-gray-400 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-            Call us today and let our team take care of the rest. Available for homes and businesses across the Maldives.
+            Share what you need and we will get back to you with the right next step. We build for businesses across the Maldives.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -958,6 +970,21 @@
                 WhatsApp Us
             </a>
         </div>
+
+        <form method="POST" action="{{ route('contact.store') }}" class="mt-10 max-w-3xl mx-auto text-left bg-white rounded-3xl p-6 sm:p-8 shadow-2xl">
+            @csrf
+            <input type="hidden" name="service" value="Homepage project enquiry">
+            @if(session('success'))<div class="mb-5 rounded-xl bg-green-50 text-green-800 p-4 text-sm font-semibold">{{ session('success') }}</div>@endif
+            @if(session('error'))<div class="mb-5 rounded-xl bg-red-50 text-red-800 p-4 text-sm font-semibold">{{ session('error') }}</div>@endif
+            <div class="grid sm:grid-cols-2 gap-4">
+                <label class="text-sm font-bold text-gray-800">Your name<input required name="name" value="{{ old('name') }}" class="mt-2 w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500" placeholder="Full name"></label>
+                <label class="text-sm font-bold text-gray-800">Company name<input name="company_name" value="{{ old('company_name') }}" class="mt-2 w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500" placeholder="Business or organisation"></label>
+                <label class="text-sm font-bold text-gray-800">Phone number<input required name="phone" value="{{ old('phone') }}" class="mt-2 w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500" placeholder="e.g. 9996210"></label>
+                <label class="text-sm font-bold text-gray-800">Email <span class="font-normal text-gray-400">optional</span><input type="email" name="email" value="{{ old('email') }}" class="mt-2 w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500" placeholder="you@company.com"></label>
+            </div>
+            <label class="block mt-4 text-sm font-bold text-gray-800">Tell us what you need<textarea required name="message" rows="4" class="mt-2 w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500" placeholder="Describe your business, idea, or system requirement...">{{ old('message') }}</textarea></label>
+            <button class="mt-5 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl">Send project enquiry</button>
+        </form>
 
         <!-- Contact details strip -->
         <div class="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
@@ -1021,7 +1048,7 @@
                     <img src="{{ asset('logo.png') }}" alt="Micronet" class="h-9 w-auto brightness-0 invert">
                 </div>
                 <p class="text-sm leading-relaxed mb-6 max-w-xs">
-                    Your trusted partner for IT support, repairs, and technical services in the Maldives. Reliable solutions for homes and businesses.
+                    Websites, apps, POS systems, booking services, and IT solutions built for businesses in the Maldives.
                 </p>
                 <!-- Social links -->
                 <div class="flex space-x-2.5">
