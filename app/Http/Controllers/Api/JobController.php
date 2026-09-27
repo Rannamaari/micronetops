@@ -655,7 +655,7 @@ class JobController extends Controller
             ],
             'it' => [
                 'name' => 'Micronet',
-                'tagline' => 'IT & Technical Services',
+                'tagline' => 'Engineering & General Services',
                 'address' => 'Janavaree Hingun, Near Dharubaaruge',
                 'phone' => '+960 9996210',
                 'email' => 'hello@micronet.mv',
