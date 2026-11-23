@@ -23,6 +23,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryCategoryController;
 use App\Http\Controllers\InventoryPurchaseController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\JobDeskController;
 use App\Http\Controllers\JobItemController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\PnLController;
@@ -112,6 +113,24 @@ Route::get('/ops', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'operations'])
     ->name('dashboard');
+
+// Job Desk - staff job cards, customer-call tracking and alerts
+Route::prefix('desk')
+    ->name('desk.')
+    ->middleware(['auth', 'role:admin,manager,moto_mechanic,ac_mechanic,operations_staff', 'desk.locale'])
+    ->group(function () {
+        Route::get('/', [JobDeskController::class, 'index'])->name('index');
+        Route::get('board', [JobDeskController::class, 'board'])->middleware('role:admin,manager')->name('board');
+        Route::post('locale', [JobDeskController::class, 'locale'])->name('locale');
+        Route::get('jobs/{job}', [JobDeskController::class, 'show'])->name('show');
+        Route::post('jobs/{job}/accept', [JobDeskController::class, 'accept'])->name('accept');
+        Route::post('jobs/{job}/status', [JobDeskController::class, 'status'])->name('status');
+        Route::post('jobs/{job}/invoiced', [JobDeskController::class, 'invoiced'])->name('invoiced');
+        Route::post('jobs/{job}/contact', [JobDeskController::class, 'contact'])->name('contact');
+        Route::post('jobs/{job}/remark', [JobDeskController::class, 'remark'])->name('remark');
+        Route::post('jobs/{job}/fault', [JobDeskController::class, 'fault'])->name('fault');
+        Route::post('jobs/{job}/cancel', [JobDeskController::class, 'cancel'])->name('cancel');
+    });
 
 // HR Dashboard - Admin and HR users only
 Route::get('/hr', [HRController::class, 'dashboard'])

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -14,6 +15,11 @@ class Job extends Model
      * We handle timestamps manually due to mixed column types.
      */
     public $timestamps = false;
+
+    /**
+     * Job Desk alerts attached for display (not a database column).
+     */
+    public array $deskAlerts = [];
 
     /**
      * Check if created_at is stored as integer (Unix timestamp).
@@ -95,6 +101,21 @@ class Job extends Model
     public const CANCEL_RESCHEDULED_ELSEWHERE = 'rescheduled_elsewhere';
     public const CANCEL_EQUIPMENT_ISSUE = 'equipment_issue';
     public const CANCEL_OTHER = 'other';
+    public const CANCEL_LATE_SERVICE = 'late_service';
+
+    // Why the customer must be called (Job Desk)
+    public const CONTACT_REASON_OVERDUE = 'overdue';
+    public const CONTACT_REASON_WAITING_PARTS = 'waiting_parts';
+    public const CONTACT_REASON_FAULT = 'fault';
+    public const CONTACT_REASON_CANCELLED_BY_US = 'cancelled_by_us';
+
+    // Customer contact log (Job Desk)
+    public const CONTACT_METHODS = ['call', 'whatsapp', 'visit'];
+    public const CONTACT_OUTCOME_INFORMED = 'informed';
+    public const CONTACT_OUTCOME_NO_ANSWER = 'no_answer';
+    public const CONTACT_OUTCOME_RESCHEDULED = 'rescheduled';
+    public const CONTACT_OUTCOMES = ['informed', 'no_answer', 'rescheduled'];
+    public const CONTACT_EXPLANATIONS = ['running_late', 'waiting_parts', 'overloaded', 'wrong_time', 'fault', 'completed', 'other'];
 
     public static function getCancellationReasons(): array
     {
@@ -102,6 +123,7 @@ class Job extends Model
             self::CANCEL_CUSTOMER_REQUEST => 'Customer requested cancellation',
             self::CANCEL_CUSTOMER_UNREACHABLE => 'Customer unreachable',
             self::CANCEL_CUSTOMER_NO_SHOW => 'Customer no-show',
+            self::CANCEL_LATE_SERVICE => 'Customer refused – we were late',
             self::CANCEL_PARTS_UNAVAILABLE => 'Parts not available',
             self::CANCEL_DUPLICATE => 'Duplicate job',
             self::CANCEL_PRICE_ISSUE => 'Price/payment issue',
@@ -109,6 +131,14 @@ class Job extends Model
             self::CANCEL_EQUIPMENT_ISSUE => 'Equipment/vehicle sold or disposed',
             self::CANCEL_OTHER => 'Other reason',
         ];
+    }
+
+    /**
+     * Cancellations where we are the reason, so the customer is owed an explanation.
+     */
+    public static function cancellationReasonsByUs(): array
+    {
+        return [self::CANCEL_PARTS_UNAVAILABLE, self::CANCEL_OTHER];
     }
 
     public static function getStatuses(): array
@@ -187,6 +217,10 @@ class Job extends Model
         'cancellation_reason',
         'cancellation_notes',
         'cancelled_at',
+        'invoiced_at',
+        'customer_contact_required_since',
+        'customer_contact_reason',
+        'customer_last_contacted_at',
     ];
 
     protected $casts = [
@@ -206,6 +240,9 @@ class Job extends Model
         'completed_at'      => 'datetime',
         'closed_at'         => 'datetime',
         'cancelled_at'      => 'datetime',
+        'invoiced_at'       => 'datetime',
+        'customer_contact_required_since' => 'datetime',
+        'customer_last_contacted_at'      => 'datetime',
     ];
 
     /**
@@ -417,7 +454,7 @@ class Job extends Model
     public function assignees()
     {
         return $this->belongsToMany(User::class, 'job_assignees')
-            ->withPivot(['assigned_at', 'assigned_by'])
+            ->withPivot(['assigned_at', 'assigned_by', 'accepted_at'])
             ->withTimestamps();
     }
 
@@ -495,6 +532,16 @@ class Job extends Model
             'content' => $notes ?: "Status changed from {$oldStatus} to {$newStatus}",
             'metadata' => ['from' => $oldStatus, 'to' => $newStatus],
         ]);
+
+        // Job Desk: starting work counts as accepting it.
+        if ($user && $newStatus === self::STATUS_IN_PROGRESS) {
+            $this->markAcceptedBy($user, false);
+        }
+
+        // Job Desk: putting a job on hold means the customer must be told.
+        if ($newStatus === self::STATUS_WAITING_PARTS) {
+            $this->requireCustomerContact(self::CONTACT_REASON_WAITING_PARTS);
+        }
     }
 
     /**
@@ -528,6 +575,11 @@ class Job extends Model
                 'cancellation_reason' => $reason,
             ],
         ]);
+
+        // Job Desk: if we are the reason, the customer is owed an explanation.
+        if (in_array($reason, self::cancellationReasonsByUs(), true)) {
+            $this->requireCustomerContact(self::CONTACT_REASON_CANCELLED_BY_US);
+        }
     }
 
     /**
@@ -558,21 +610,232 @@ class Job extends Model
      */
     public function assignTechnicians(array $userIds, ?User $assignedBy = null): void
     {
+        $userIds = array_values(array_unique(array_map('intval', $userIds)));
+
+        // Keep existing assignees' assigned/accepted times so Job Desk alerts
+        // don't restart (or re-ask for acceptance) every time the list is saved.
+        $existingIds = $this->assignees()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+
+        $removed = array_diff($existingIds, $userIds);
+        if (!empty($removed)) {
+            $this->assignees()->detach($removed);
+        }
+
         $pivotData = [];
-        foreach ($userIds as $userId) {
+        foreach (array_diff($userIds, $existingIds) as $userId) {
             $pivotData[$userId] = [
                 'assigned_at' => now(),
                 'assigned_by' => $assignedBy?->id,
             ];
         }
+        if (!empty($pivotData)) {
+            $this->assignees()->attach($pivotData);
+        }
 
-        $this->assignees()->sync($pivotData);
+        $this->unsetRelation('assignees');
 
         // Log the assignment
         if ($assignedBy) {
             $names = User::whereIn('id', $userIds)->pluck('name')->join(', ');
             $this->addNote("Assigned to: {$names}", $assignedBy, 'assignment');
         }
+    }
+
+    // ========================================
+    // Job Desk
+    // ========================================
+
+    /**
+     * Business unit in the same terms as User::allowedBusinessUnit() and fault tickets.
+     */
+    public function businessUnit(): string
+    {
+        return match ($this->job_type) {
+            self::TYPE_AC => 'cool',
+            self::TYPE_IT => 'it',
+            self::TYPE_EASYFIX => 'easyfix',
+            default => 'moto',
+        };
+    }
+
+    /**
+     * The time we promised the customer (end of the slot if set, else the start).
+     */
+    public function promisedAt(): ?Carbon
+    {
+        return $this->scheduled_end_at ?? $this->scheduled_at;
+    }
+
+    public function isOverdue(?Carbon $now = null): bool
+    {
+        $now ??= now();
+        $promised = $this->promisedAt();
+
+        return $this->isActive() && $promised !== null && $promised->lt($now);
+    }
+
+    /**
+     * Since when the customer has been owed a call, or null if nothing is owed.
+     * Owed when a trigger set the flag, or the job is overdue and nobody has
+     * spoken to the customer since the promised time passed.
+     */
+    public function customerCallOwedSince(?Carbon $now = null): ?Carbon
+    {
+        $since = $this->customer_contact_required_since;
+
+        if ($this->isOverdue($now)) {
+            $promised = $this->promisedAt();
+            $contactedAfter = $this->customer_last_contacted_at
+                && $this->customer_last_contacted_at->gte($promised);
+
+            if (!$contactedAfter && ($since === null || $promised->lt($since))) {
+                $since = $promised;
+            }
+        }
+
+        return $since;
+    }
+
+    public function owesCustomerCall(?Carbon $now = null): bool
+    {
+        return $this->customerCallOwedSince($now) !== null;
+    }
+
+    public function customerCallReason(?Carbon $now = null): ?string
+    {
+        if ($this->customer_contact_required_since) {
+            return $this->customer_contact_reason ?: self::CONTACT_REASON_OVERDUE;
+        }
+
+        return $this->owesCustomerCall($now) ? self::CONTACT_REASON_OVERDUE : null;
+    }
+
+    /**
+     * Flag that the customer must be told something. Keeps the earliest time.
+     */
+    public function requireCustomerContact(string $reason): void
+    {
+        if ($this->customer_contact_required_since !== null) {
+            return;
+        }
+
+        $this->customer_contact_required_since = now();
+        $this->customer_contact_reason = $reason;
+        $this->save();
+    }
+
+    /**
+     * Record a call / WhatsApp / visit with the customer.
+     * "Informed" and "rescheduled" clear the flag; "no answer" keeps it open.
+     */
+    public function logCustomerContact(
+        ?User $user,
+        string $method,
+        string $outcome,
+        ?string $explanation = null,
+        ?string $note = null,
+        $newTime = null
+    ): JobNote {
+        $metadata = [
+            'method' => $method,
+            'outcome' => $outcome,
+            'explanation' => $explanation,
+        ];
+
+        if ($outcome !== self::CONTACT_OUTCOME_NO_ANSWER) {
+            $this->customer_last_contacted_at = now();
+            $this->customer_contact_required_since = null;
+            $this->customer_contact_reason = null;
+        }
+
+        if ($outcome === self::CONTACT_OUTCOME_RESCHEDULED && $newTime) {
+            $newStart = $newTime instanceof Carbon ? $newTime : Carbon::parse($newTime);
+            $metadata['old_time'] = $this->scheduled_at?->toDateTimeString();
+            $metadata['new_time'] = $newStart->toDateTimeString();
+
+            if ($this->scheduled_at && $this->scheduled_end_at && $this->scheduled_end_at->gt($this->scheduled_at)) {
+                $duration = $this->scheduled_at->diffInMinutes($this->scheduled_end_at);
+                $this->scheduled_end_at = $newStart->copy()->addMinutes($duration);
+            } else {
+                $this->scheduled_end_at = null;
+            }
+            $this->scheduled_at = $newStart;
+
+            if ($this->status === self::STATUS_NEW) {
+                $this->status = self::STATUS_SCHEDULED;
+            }
+        }
+
+        $this->save();
+
+        $metadata['note'] = $note;
+        $content = 'Customer contact (' . str_replace('_', ' ', $method) . '): ' . str_replace('_', ' ', $outcome);
+        if ($explanation) {
+            $content .= ' – ' . str_replace('_', ' ', $explanation);
+        }
+        if (!empty($metadata['new_time'])) {
+            $content .= ' – new time ' . Carbon::parse($metadata['new_time'])->format('M j, g:i A');
+        }
+        if ($note) {
+            $content .= ' – ' . $note;
+        }
+
+        return $this->notes()->create([
+            'user_id' => $user?->id,
+            'type' => JobNote::TYPE_CUSTOMER_CONTACT,
+            'content' => $content,
+            'metadata' => $metadata,
+        ]);
+    }
+
+    /**
+     * Staff member presses "Accept".
+     */
+    public function markAcceptedBy(User $user, bool $logNote = true): bool
+    {
+        $updated = $this->assignees()
+            ->wherePivot('user_id', $user->id)
+            ->wherePivotNull('accepted_at')
+            ->updateExistingPivot($user->id, ['accepted_at' => now()]);
+
+        $this->unsetRelation('assignees');
+
+        if ($updated && $logNote) {
+            $this->addNote("Accepted by {$user->name}", $user, JobNote::TYPE_ACCEPTED);
+        }
+
+        return (bool) $updated;
+    }
+
+    public function isAssignedTo(User $user): bool
+    {
+        if ($this->relationLoaded('assignees')) {
+            return $this->assignees->contains('id', $user->id);
+        }
+
+        return $this->assignees()->where('users.id', $user->id)->exists();
+    }
+
+    public function hasAccepted(User $user): bool
+    {
+        $assignee = $this->assignees->firstWhere('id', $user->id);
+
+        return $assignee !== null && $assignee->pivot->accepted_at !== null;
+    }
+
+    /**
+     * Invoice handed to the customer.
+     */
+    public function markInvoiced(?User $user): void
+    {
+        if ($this->invoiced_at !== null) {
+            return;
+        }
+
+        $this->invoiced_at = now();
+        $this->save();
+
+        $this->addNote('Invoice given to customer', $user, JobNote::TYPE_INVOICED);
     }
 
     // ========================================

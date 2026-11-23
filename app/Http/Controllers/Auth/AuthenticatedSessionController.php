@@ -28,9 +28,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $homeRoute = $request->user()->isOperationsStaff()
-            ? 'sales.daily.index'
-            : 'dashboard';
+        $user = $request->user();
+
+        // Mechanics start on the Job Desk so they see their jobs and alerts first.
+        $homeRoute = match (true) {
+            $user->isOperationsStaff() => 'sales.daily.index',
+            $user->isAnyMechanic() => 'desk.index',
+            default => 'dashboard',
+        };
 
         return redirect()->intended(route($homeRoute, absolute: false));
     }

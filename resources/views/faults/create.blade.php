@@ -67,7 +67,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Business Unit <span class="text-red-500">*</span>
                         </label>
-                        <div class="flex gap-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="business_unit" value="moto" x-model="businessUnit" class="sr-only peer">
                                 <div class="p-3 text-center rounded-lg border-2 transition
@@ -82,6 +82,22 @@
                                             peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20
                                             border-gray-200 dark:border-gray-600 hover:border-gray-300">
                                     <span class="text-sm font-semibold" :class="businessUnit === 'cool' ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-700 dark:text-gray-300'">Micro Cool</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="business_unit" value="it" x-model="businessUnit" class="sr-only peer">
+                                <div class="p-3 text-center rounded-lg border-2 transition
+                                            peer-checked:border-indigo-500 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-900/20
+                                            border-gray-200 dark:border-gray-600 hover:border-gray-300">
+                                    <span class="text-sm font-semibold" :class="businessUnit === 'it' ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'">Micronet</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="business_unit" value="easyfix" x-model="businessUnit" class="sr-only peer">
+                                <div class="p-3 text-center rounded-lg border-2 transition
+                                            peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/20
+                                            border-gray-200 dark:border-gray-600 hover:border-gray-300">
+                                    <span class="text-sm font-semibold" :class="businessUnit === 'easyfix' ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300'">Easy Fix</span>
                                 </div>
                             </label>
                         </div>

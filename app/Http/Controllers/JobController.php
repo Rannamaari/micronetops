@@ -11,6 +11,7 @@ use App\Models\AcUnit;
 use App\Models\User;
 use App\Models\InventoryItem;
 use App\Services\InvoiceReminderSmsService;
+use App\Services\JobDesk;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -116,7 +117,7 @@ class JobController extends Controller
         ];
 
         // Get technicians for filter dropdown
-        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])->get();
+        $technicians = User::whereIn('role', User::jobAssignableRoles())->get();
 
         return view('jobs.index', compact('jobs', 'view', 'type', 'priority', 'search', 'when', 'statusCounts', 'dateCounts', 'technicians'));
     }
@@ -152,7 +153,7 @@ class JobController extends Controller
         }
 
         // Get technicians for assignment
-        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', User::jobAssignableRoles())
             ->orderBy('name')
             ->get();
 
@@ -425,11 +426,13 @@ class JobController extends Controller
         $partItems = $inventoryItems->where('is_service', false);
 
         // Get technicians for reassignment
-        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', User::jobAssignableRoles())
             ->orderBy('name')
             ->get();
 
-        return view('jobs.show', compact('job', 'inventoryItems', 'serviceItems', 'partItems', 'technicians'));
+        $deskAlerts = app(JobDesk::class)->alertsFor($job);
+
+        return view('jobs.show', compact('job', 'inventoryItems', 'serviceItems', 'partItems', 'technicians', 'deskAlerts'));
     }
 
     /**
@@ -633,6 +636,15 @@ class JobController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Cancelling must go through the cancel form (reason + customer told).
+        if ($validated['status'] === Job::STATUS_CANCELLED && $job->status !== Job::STATUS_CANCELLED) {
+            $message = 'Use "Cancel Job" to cancel, so the reason and customer contact are recorded.';
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $message], 422);
+            }
+            return back()->with('error', $message);
+        }
+
         $job->updateStatus($validated['status'], auth()->user(), $validated['notes'] ?? null);
 
         $statusLabels = Job::getStatuses();
@@ -689,13 +701,35 @@ class JobController extends Controller
         $validated = $request->validate([
             'cancellation_reason' => ['required', Rule::in(array_keys(Job::getCancellationReasons()))],
             'cancellation_notes' => ['nullable', 'string', 'max:500'],
+            'customer_informed' => ['nullable', 'boolean'],
+            'contact_method' => ['nullable', Rule::in(Job::CONTACT_METHODS)],
         ]);
+
+        // Job Desk rule: no customer goes without an explanation.
+        $informed = (bool) ($validated['customer_informed'] ?? false);
+        if (!$informed && app(JobDesk::class)->cancellationNeedsCustomerTold($job, $validated['cancellation_reason'])) {
+            $message = 'Tell the customer first, then tick "Customer has been told".';
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $message], 422);
+            }
+            return back()->withErrors(['customer_informed' => $message])->withInput();
+        }
 
         $job->cancel(
             $validated['cancellation_reason'],
             $validated['cancellation_notes'] ?? null,
             auth()->user()
         );
+
+        if ($informed) {
+            $job->logCustomerContact(
+                auth()->user(),
+                $validated['contact_method'] ?? 'call',
+                Job::CONTACT_OUTCOME_INFORMED,
+                'other',
+                'Told about the cancellation'
+            );
+        }
 
         $reasonLabel = Job::getCancellationReasons()[$validated['cancellation_reason']];
 
@@ -868,7 +902,7 @@ class JobController extends Controller
      */
     public function calendar(Request $request)
     {
-        $technicians = User::whereIn('role', [User::ROLE_MOTO_MECHANIC, User::ROLE_AC_MECHANIC, User::ROLE_MANAGER, User::ROLE_ADMIN])
+        $technicians = User::whereIn('role', User::jobAssignableRoles())
             ->orderBy('name')
             ->get();
 

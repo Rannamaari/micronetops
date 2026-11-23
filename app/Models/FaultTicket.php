@@ -40,7 +40,30 @@ class FaultTicket extends Model
             $ticket->update([
                 'ticket_number' => 'FT-' . str_pad($ticket->id, 5, '0', STR_PAD_LEFT),
             ]);
+
+            // Job Desk: a fault on a job means the customer must be called with a plan.
+            if ($ticket->job_id && ($job = Job::find($ticket->job_id))) {
+                $job->requireCustomerContact(Job::CONTACT_REASON_FAULT);
+            }
         });
+    }
+
+    /**
+     * Business units a fault can belong to.
+     */
+    public static function units(): array
+    {
+        return [
+            'moto' => 'Micro Moto',
+            'cool' => 'Micro Cool',
+            'it' => 'Micronet',
+            'easyfix' => 'Easy Fix',
+        ];
+    }
+
+    public function getUnitLabelAttribute(): string
+    {
+        return self::units()[$this->business_unit] ?? ucfirst((string) $this->business_unit);
     }
 
     // Relationships

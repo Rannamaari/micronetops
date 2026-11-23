@@ -28,6 +28,7 @@ class User extends Authenticatable
         'is_premium',
         'premium_expires_at',
         'premium_features',
+        'locale',
     ];
 
     /**
@@ -253,6 +254,30 @@ class User extends Authenticatable
     public function canCreateJobs(): bool
     {
         return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF]);
+    }
+
+    /**
+     * Job Desk: staff who work on jobs (sees My Jobs and team alerts).
+     */
+    public function canUseJobDesk(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER, self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF]);
+    }
+
+    /**
+     * Job Desk: sees every job and the admin board.
+     */
+    public function canManageJobDesk(): bool
+    {
+        return $this->hasAnyRole([self::ROLE_ADMIN, self::ROLE_MANAGER]);
+    }
+
+    /**
+     * Roles that can be assigned to jobs.
+     */
+    public static function jobAssignableRoles(): array
+    {
+        return [self::ROLE_MOTO_MECHANIC, self::ROLE_AC_MECHANIC, self::ROLE_OPERATIONS_STAFF, self::ROLE_MANAGER, self::ROLE_ADMIN];
     }
 
     /**

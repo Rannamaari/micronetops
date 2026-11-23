@@ -26,6 +26,10 @@ class JobNote extends Model
     public const TYPE_STATUS_CHANGE = 'status_change';
     public const TYPE_ASSIGNMENT = 'assignment';
     public const TYPE_SYSTEM = 'system';
+    public const TYPE_CUSTOMER_CONTACT = 'customer_contact';
+    public const TYPE_ACCEPTED = 'accepted';
+    public const TYPE_INVOICED = 'invoiced';
+    public const TYPE_FAULT = 'fault';
 
     public function job()
     {
@@ -46,6 +50,10 @@ class JobNote extends Model
             self::TYPE_STATUS_CHANGE => 'arrow-path',
             self::TYPE_ASSIGNMENT => 'user-plus',
             self::TYPE_SYSTEM => 'cog',
+            self::TYPE_CUSTOMER_CONTACT => 'phone',
+            self::TYPE_ACCEPTED => 'check',
+            self::TYPE_INVOICED => 'document-text',
+            self::TYPE_FAULT => 'exclamation-triangle',
             default => 'chat-bubble-left',
         };
     }
@@ -59,6 +67,10 @@ class JobNote extends Model
             self::TYPE_STATUS_CHANGE => 'blue',
             self::TYPE_ASSIGNMENT => 'green',
             self::TYPE_SYSTEM => 'gray',
+            self::TYPE_CUSTOMER_CONTACT => 'amber',
+            self::TYPE_ACCEPTED => 'green',
+            self::TYPE_INVOICED => 'blue',
+            self::TYPE_FAULT => 'red',
             default => 'indigo',
         };
     }

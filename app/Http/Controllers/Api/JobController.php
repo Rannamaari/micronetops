@@ -13,6 +13,7 @@ use App\Models\JobItem;
 use App\Models\Payment;
 use App\Models\PettyCash;
 use App\Models\User;
+use App\Services\JobDesk;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,7 +43,8 @@ class JobController extends Controller
      *   "priority": "normal",            // urgent|high|normal|low
      *   "scheduled_at": "2026-04-23 14:00:00", // optional
      *   "scheduled_end_at": "...",       // optional
-     *   "due_date": "2026-04-30"         // optional; null => due upon receipt
+     *   "due_date": "2026-04-30",        // optional; null => due upon receipt
+     *   "assignees": ["Ali", 12]         // optional; staff names or ids (Job Desk)
      * }
      */
     public function store(Request $request): JsonResponse
@@ -65,11 +67,23 @@ class JobController extends Controller
                 'scheduled_at' => ['nullable', 'date'],
                 'scheduled_end_at' => ['nullable', 'date', 'after_or_equal:scheduled_at'],
                 'due_date' => ['nullable', 'date'],
+                'assignees' => ['nullable', 'array'],
+                'assignees.*' => ['nullable'],
             ], [
                 'customer_phone.regex' => 'Customer phone can contain digits and common separators only. Letters are not allowed.',
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        // Job Desk: resolve staff before creating anything, so a typo creates nothing.
+        [$assigneeIds, $assigneeErrors] = app(JobDesk::class)->resolveStaff($validated['assignees'] ?? []);
+        if (!empty($assigneeErrors)) {
+            return response()->json([
+                'error' => 'Could not match staff.',
+                'details' => ['assignees' => $assigneeErrors],
+                'staff' => User::whereIn('role', User::jobAssignableRoles())->orderBy('name')->pluck('name'),
+            ], 422);
         }
 
         if (empty($validated['customer_id']) && (empty($validated['customer_phone']) || empty($validated['customer_name']))) {
@@ -178,10 +192,19 @@ class JobController extends Controller
             // Ignore if note system not available.
         }
 
+        if (!empty($assigneeIds)) {
+            $job->assignTechnicians($assigneeIds, $actor);
+        }
+
         ActivityLog::record('job.created', "API: Job #{$job->id} created for '{$job->customer_name}'", $job, [], $actor?->id, 'api');
+
+        $job->load('assignees');
 
         return response()->json([
             'message' => 'Job created.',
+            'desk' => app(JobDesk::class)->apiSummary($job),
+            'desk_url' => route('desk.show', $job),
+            'admin_url' => route('jobs.show', $job),
             'job_id' => $job->id,
             'easyfix_job_id' => $job->easyfix_job_id,
             'job_type' => $job->job_type,
@@ -203,7 +226,7 @@ class JobController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $job = Job::with('customer:id,name,phone,gst_number', 'items.inventoryItem:id,name,sku', 'payments')->find($id);
+        $job = Job::with('customer:id,name,phone,gst_number', 'items.inventoryItem:id,name,sku', 'payments', 'assignees')->find($id);
         if (!$job) {
             return response()->json(['error' => "Job #{$id} not found."], 404);
         }
@@ -232,6 +255,7 @@ class JobController extends Controller
                 'easyfix_job_id' => $job->easyfix_job_id,
                 'easyfix_quote_id' => $job->easyfix_quote_id,
                 'easyfix_invoice_id' => $job->easyfix_invoice_id,
+                'desk' => app(JobDesk::class)->apiSummary($job),
                 'totals' => [
                     'labour_total' => number_format((float) $job->labour_total, 2),
                     'parts_total' => number_format((float) $job->parts_total, 2),
@@ -545,6 +569,12 @@ class JobController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
+        }
+
+        if ($validated['status'] === Job::STATUS_CANCELLED && $job->status !== Job::STATUS_CANCELLED) {
+            return response()->json([
+                'error' => 'Use POST /api/jobs/{id}/cancel so the reason and customer contact are recorded.',
+            ], 422);
         }
 
         $actor = User::where('role', 'admin')->first();

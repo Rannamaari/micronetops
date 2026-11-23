@@ -12,6 +12,7 @@
                 $isSalesSection = request()->routeIs('customers.*')
                     || request()->routeIs('leads.*')
                     || request()->routeIs('jobs.*')
+                    || request()->routeIs('desk.*')
                     || request()->routeIs('sales.*')
                     || request()->routeIs('inventory.*')
                     || request()->routeIs('inventory-categories.*');
@@ -189,6 +190,9 @@
                             @unless(Auth::user()->isOperationsStaff())
                                 <a href="{{ route('leads.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('leads.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Leads</a>
                             @endunless
+                            @if(Auth::user()->canUseJobDesk())
+                                <a href="{{ route('desk.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('desk.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Job Desk</a>
+                            @endif
                             <a href="{{ route('jobs.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('jobs.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Jobs</a>
                             @if(Auth::user()->canCreateInventory())
                                 <a href="{{ route('inventory.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('inventory.*') || request()->routeIs('inventory-categories.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 active:bg-gray-50' }}">Inventory</a>
@@ -316,6 +320,11 @@
                             Leads
                         </a>
                     @endunless
+                    @if(Auth::user()->canUseJobDesk())
+                        <a href="{{ route('desk.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('desk.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
+                            Job Desk
+                        </a>
+                    @endif
                     <a href="{{ route('jobs.index') }}" class="text-sm lg:text-base whitespace-nowrap transition-all duration-200 py-2 {{ request()->routeIs('jobs.*') ? 'font-semibold text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300' }}">
                         Jobs
                     </a>

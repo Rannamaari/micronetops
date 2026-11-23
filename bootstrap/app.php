@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'operations'    => \App\Http\Middleware\EnsureUserCanAccessOperations::class,
             'auth.register' => \App\Http\Middleware\RedirectToRegister::class,
             'api.token'     => \App\Http\Middleware\ApiTokenMiddleware::class,
+            'desk.locale'   => \App\Http\Middleware\SetDeskLocale::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

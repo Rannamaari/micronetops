@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FaultTicketController extends Controller
@@ -18,7 +19,7 @@ class FaultTicketController extends Controller
      * GET /api/faults
      * List tickets. Defaults to open only. Filter by status or unit.
      *
-     * Query: ?status=open|in_progress|resolved|closed|all  &business_unit=moto|cool
+     * Query: ?status=open|in_progress|resolved|closed|all  &business_unit=moto|cool|it|easyfix
      */
     public function index(Request $request): JsonResponse
     {
@@ -71,7 +72,7 @@ class FaultTicketController extends Controller
             $validated = $request->validate([
                 'title'          => ['required', 'string', 'max:255'],
                 'description'    => ['required', 'string'],
-                'business_unit'  => ['required', 'in:moto,cool'],
+                'business_unit'  => ['required', Rule::in(array_keys(FaultTicket::units()))],
                 'priority'       => ['nullable', 'in:urgent,normal'],
                 'customer_name'  => ['required', 'string', 'max:255'],
                 'customer_phone' => ['required', 'string', 'max:50'],
@@ -87,7 +88,12 @@ class FaultTicketController extends Controller
             ['phone' => $validated['customer_phone']],
             [
                 'name'     => $validated['customer_name'],
-                'category' => $validated['business_unit'] === 'cool' ? 'ac' : 'moto',
+                'category' => match ($validated['business_unit']) {
+                    'cool' => 'ac',
+                    'it' => 'it',
+                    'easyfix' => 'easyfix',
+                    default => 'moto',
+                },
             ]
         );
 
@@ -255,7 +261,7 @@ class FaultTicketController extends Controller
             'ticket_number'  => $t->ticket_number,
             'title'          => $t->title,
             'business_unit'  => $t->business_unit,
-            'unit_label'     => $t->business_unit === 'cool' ? 'Micro Cool' : 'Micro Moto',
+            'unit_label'     => $t->unit_label,
             'priority'       => $t->priority,
             'status'         => $t->status,
             'overdue'        => $t->isOverdue(),
@@ -291,9 +297,13 @@ class FaultTicketController extends Controller
         if ($user) return $user;
 
         // Try partial name match scoped to relevant mechanic role
-        $mechRole = $unit === 'cool' ? 'ac_mechanic' : 'moto_mechanic';
+        $roles = match ($unit) {
+            'cool' => ['ac_mechanic'],
+            'moto' => ['moto_mechanic'],
+            default => ['operations_staff', 'moto_mechanic', 'ac_mechanic'],
+        };
         return User::whereRaw('lower(name) like ?', ['%' . strtolower($nameOrId) . '%'])
-            ->whereIn('role', [$mechRole, 'admin', 'manager'])
+            ->whereIn('role', [...$roles, 'admin', 'manager'])
             ->first();
     }
 }

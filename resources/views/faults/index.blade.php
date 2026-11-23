@@ -86,8 +86,9 @@
                     <select name="unit" onchange="this.form.submit()"
                             class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option value="">All Units</option>
-                        <option value="moto" {{ request('unit') === 'moto' ? 'selected' : '' }}>Micro Moto</option>
-                        <option value="cool" {{ request('unit') === 'cool' ? 'selected' : '' }}>Micro Cool</option>
+                        @foreach(\App\Models\FaultTicket::units() as $unitKey => $unitLabel)
+                            <option value="{{ $unitKey }}" {{ request('unit') === $unitKey ? 'selected' : '' }}>{{ $unitLabel }}</option>
+                        @endforeach
                     </select>
                 </form>
             </div>
@@ -112,7 +113,7 @@
                                 onclick="window.location='{{ route('faults.show', $ticket) }}'">
                                 <td class="px-4 py-3 text-sm font-mono font-medium text-gray-900 dark:text-gray-100">
                                     {{ $ticket->ticket_number }}
-                                    <span class="block text-xs text-gray-500">{{ $ticket->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</span>
+                                    <span class="block text-xs text-gray-500">{{ $ticket->unit_label }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                                     {{ $ticket->customer_name }}
@@ -174,7 +175,7 @@
                         <div class="flex justify-between items-start mb-2">
                             <div>
                                 <span class="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">{{ $ticket->ticket_number }}</span>
-                                <span class="ml-2 text-xs text-gray-500">{{ $ticket->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}</span>
+                                <span class="ml-2 text-xs text-gray-500">{{ $ticket->unit_label }}</span>
                             </div>
                             <div class="flex gap-1">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-semibold

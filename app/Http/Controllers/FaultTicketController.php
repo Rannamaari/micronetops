@@ -109,7 +109,7 @@ class FaultTicketController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'business_unit' => ['required', Rule::in(['moto', 'cool'])],
+            'business_unit' => ['required', Rule::in(array_keys(FaultTicket::units()))],
             'priority' => ['required', Rule::in(['urgent', 'normal'])],
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:255',

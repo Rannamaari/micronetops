@@ -30,6 +30,19 @@
                     {{ $errors->first() }}
                 </div>
             @endif
+            @if (session('error'))
+                <div class="px-4 py-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg text-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            {{-- Job Desk: alerts and link to the staff job card --}}
+            @if(!empty($deskAlerts) || $job->owesCustomerCall())
+                <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 rounded-xl border {{ collect($deskAlerts)->contains('level', 'danger') ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50' }}">
+                    @include('desk.partials.alerts', ['alerts' => $deskAlerts])
+                    <a href="{{ route('desk.show', $job) }}" class="text-sm font-semibold text-indigo-700 whitespace-nowrap">Open on Job Desk &rarr;</a>
+                </div>
+            @endif
 
             {{-- Job header - Mobile optimized --}}
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
@@ -1161,6 +1174,26 @@
                             <textarea name="cancellation_notes" x-model="notes" rows="2"
                                       class="block w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm focus:border-red-500 focus:ring-red-500"
                                       placeholder="Any additional details..."></textarea>
+                        </div>
+
+                        {{-- Job Desk: no customer goes without an explanation --}}
+                        @php $owesCall = $job->owesCustomerCall(); @endphp
+                        <div x-show="reason" x-collapse
+                             x-data="{ byUs: @js(\App\Models\Job::cancellationReasonsByUs()), owes: @js($owesCall) }"
+                             class="p-3 rounded-xl border-2"
+                             :class="(owes || byUs.includes(reason)) && reason !== 'customer_unreachable' ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-600'">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                <input type="checkbox" name="customer_informed" value="1" class="rounded">
+                                Customer has been told
+                            </label>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1" x-show="(owes || byUs.includes(reason)) && reason !== 'customer_unreachable'">
+                                Required: no customer goes without an explanation.
+                            </p>
+                            <select name="contact_method" class="mt-2 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                                <option value="call">Phone call</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="visit">In person</option>
+                            </select>
                         </div>
                     </div>
 

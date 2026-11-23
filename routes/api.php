@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BusinessExpenseController;
 use App\Http\Controllers\Api\JobController as ApiJobController;
+use App\Http\Controllers\Api\JobDeskController as ApiJobDeskController;
 use App\Http\Controllers\Api\BotHelperController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
@@ -67,6 +68,18 @@ Route::middleware('api.token')->group(function () {
         Route::delete('/{id}/items/{itemId}', [ApiJobController::class, 'removeItem']);
         Route::get('/{id}/quotation',   [ApiJobController::class, 'quotationHtml']);
         Route::get('/{id}/invoice',     [ApiJobController::class, 'invoiceHtml']);
+
+        // Job Desk
+        Route::post('/{id}/notes',      [ApiJobDeskController::class, 'addNote']);
+        Route::post('/{id}/contact',    [ApiJobDeskController::class, 'contact']);
+        Route::patch('/{id}/assignees', [ApiJobDeskController::class, 'assignees']);
+        Route::post('/{id}/cancel',     [ApiJobDeskController::class, 'cancel']);
+    });
+
+    // --- Job Desk (staff list + everything that needs attention) ---
+    Route::prefix('desk')->group(function () {
+        Route::get('/staff',  [ApiJobDeskController::class, 'staff']);
+        Route::get('/alerts', [ApiJobDeskController::class, 'alerts']);
     });
 
     // --- Fault Tickets ---

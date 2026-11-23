@@ -33,8 +33,13 @@
                     {{ ucfirst($faultTicket->priority) }}
                 </span>
                 <span class="inline-flex px-3 py-1 rounded-full text-sm font-medium
-                    {{ $faultTicket->business_unit === 'moto' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' }}">
-                    {{ $faultTicket->business_unit === 'moto' ? 'Micro Moto' : 'Micro Cool' }}
+                    {{ match ($faultTicket->business_unit) {
+                        'moto' => 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+                        'it' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+                        'easyfix' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                        default => 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+                    } }}">
+                    {{ $faultTicket->unit_label }}
                 </span>
             </div>
         </div>
