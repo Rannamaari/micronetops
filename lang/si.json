@@ -1,6 +1,7 @@
 {
     ":count job needs you now (escalated)|:count jobs need you now (escalated)": "රැකියා :count කට දැන්ම ඔබ අවශ්‍යයි (හදිසි)|රැකියා :count කට දැන්ම ඔබ අවශ්‍යයි (හදිසි)",
     ":count job|:count jobs": "රැකියා :count|රැකියා :count",
+    ":count open job|:count open jobs": "විවෘත රැකියා :count|විවෘත රැකියා :count",
     "Accept job": "රැකියාව භාර ගන්න",
     "Accepted": "භාර ගත්තා",
     "Accepted the job": "රැකියාව භාර ගත්තා",
@@ -90,6 +91,7 @@
     "New time agreed": "නව වේලාවක් එකඟ වුණා",
     "No answer": "පිළිතුරක් නැත",
     "No jobs assigned to you right now.": "දැනට ඔබට රැකියා කිසිවක් නැත.",
+    "No open jobs.": "විවෘත රැකියා නැත.",
     "No update for 24 hours": "පැය 24ක් යාවත්කාලීනයක් නැත",
     "Nobody": "කිසිවෙක් නැත",
     "Nobody assigned": "කිසිවෙකු භාර දී නැත",

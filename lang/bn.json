@@ -1,6 +1,7 @@
 {
     ":count job needs you now (escalated)|:count jobs need you now (escalated)": ":countটি কাজে এখনই আপনাকে দরকার (জরুরি)|:countটি কাজে এখনই আপনাকে দরকার (জরুরি)",
     ":count job|:count jobs": ":countটি কাজ|:countটি কাজ",
+    ":count open job|:count open jobs": ":countটি খোলা কাজ|:countটি খোলা কাজ",
     "Accept job": "কাজ গ্রহণ করুন",
     "Accepted": "গ্রহণ করেছে",
     "Accepted the job": "কাজটি গ্রহণ করেছে",
@@ -90,6 +91,7 @@
     "New time agreed": "নতুন সময় ঠিক হয়েছে",
     "No answer": "কেউ ধরেনি",
     "No jobs assigned to you right now.": "এখন আপনার কোনো কাজ নেই।",
+    "No open jobs.": "কোনো খোলা কাজ নেই।",
     "No update for 24 hours": "২৪ ঘণ্টা কোনো আপডেট নেই",
     "Nobody": "কেউ নেই",
     "Nobody assigned": "কাউকে দায়িত্ব দেওয়া হয়নি",

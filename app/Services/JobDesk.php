@@ -449,13 +449,15 @@ class JobDesk
     }
 
     /**
-     * Everything with an alert, for the admin board.
+     * Admin board: every open job (problems first). With $onlyAlerts, just the ones with an alert.
      */
-    public function boardJobs(): Collection
+    public function boardJobs(bool $onlyAlerts = false): Collection
     {
-        return $this->decorate($this->candidateJobs())
-            ->filter(fn (Job $job) => count($job->deskAlerts) > 0)
-            ->values();
+        $jobs = $this->decorate($this->candidateJobs());
+
+        return $onlyAlerts
+            ? $jobs->filter(fn (Job $job) => count($job->deskAlerts) > 0)->values()
+            : $jobs;
     }
 
     /**

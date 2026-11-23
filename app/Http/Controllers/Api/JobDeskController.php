@@ -49,7 +49,7 @@ class JobDeskController extends Controller
      */
     public function alerts(): JsonResponse
     {
-        $jobs = $this->desk->boardJobs();
+        $jobs = $this->desk->boardJobs(true);
 
         return response()->json([
             'generated_at' => now()->format('Y-m-d H:i'),

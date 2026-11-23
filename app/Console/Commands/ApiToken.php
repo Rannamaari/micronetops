@@ -49,7 +49,9 @@ class ApiToken extends Command
         $token = bin2hex(random_bytes(32));
 
         if (preg_match('/^OPENCLAW_API_TOKEN=.*$/m', $env)) {
-            $env = preg_replace('/^OPENCLAW_API_TOKEN=.*$/m', 'OPENCLAW_API_TOKEN=' . $token, $env);
+            // Keep a single line: drop every existing one, then write the new token once.
+            $env = preg_replace('/^OPENCLAW_API_TOKEN=.*(\R|$)/m', '', $env);
+            $env = rtrim($env) . PHP_EOL . 'OPENCLAW_API_TOKEN=' . $token . PHP_EOL;
         } else {
             $env = rtrim($env) . PHP_EOL . 'OPENCLAW_API_TOKEN=' . $token . PHP_EOL;
         }
@@ -68,10 +70,17 @@ class ApiToken extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * The token the app actually uses: when the line appears more than once, the last one wins.
+     */
     private function currentToken(string $env): string
     {
-        if (preg_match('/^OPENCLAW_API_TOKEN=(.*)$/m', $env, $m)) {
-            return trim($m[1], " \t\"'");
+        if (preg_match_all('/^OPENCLAW_API_TOKEN=(.*)$/m', $env, $m) && !empty($m[1])) {
+            if (count($m[1]) > 1) {
+                $this->warn('.env has ' . count($m[1]) . ' OPENCLAW_API_TOKEN lines – the last one is used. Delete the others.');
+            }
+
+            return trim(end($m[1]), " \t\r\"'");
         }
 
         return '';

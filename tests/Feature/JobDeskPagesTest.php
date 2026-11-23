@@ -318,6 +318,12 @@ class JobDeskPagesTest extends TestCase
         $this->makeJob(['title' => 'UNASSIGNED-JOB']);
 
         $this->actingAs($admin)->get(route('desk.board'))->assertOk()->assertSee('UNASSIGNED-JOB');
+
+        // Jobs with no problem yet are on the board too
+        $quiet = $this->makeJob(['title' => 'QUIET-JOB', 'scheduled_at' => now()->addHours(5)]);
+        $quiet->assignTechnicians([$tech->id]);
+        $quiet->fresh()->markAcceptedBy($tech);
+        $this->actingAs($admin)->get(route('desk.board'))->assertSee('QUIET-JOB');
         $this->actingAs($admin)->get(route('desk.board', ['alert' => 'overdue']))->assertOk()->assertDontSee('UNASSIGNED-JOB');
         $this->actingAs($tech)->get(route('desk.board'))->assertForbidden();
     }

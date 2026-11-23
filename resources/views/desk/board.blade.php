@@ -66,7 +66,8 @@
                 @endif
             </form>
 
-            {{-- Jobs --}}
+            {{-- Jobs: every open job, problems first --}}
+            <div class="text-sm text-gray-600">{{ trans_choice(':count open job|:count open jobs', $jobs->count(), ['count' => $jobs->count()]) }}</div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="hidden md:grid grid-cols-12 gap-3 px-4 py-2 text-xs font-semibold text-gray-500 border-b">
                     <div class="col-span-4">{{ __('Job') }}</div>
@@ -96,7 +97,7 @@
                         </div>
                     </a>
                 @empty
-                    <div class="p-8 text-center text-gray-500">{{ __('All clear – no alerts right now.') }}</div>
+                    <div class="p-8 text-center text-gray-500">{{ __('No open jobs.') }}</div>
                 @endforelse
             </div>
         </div>
