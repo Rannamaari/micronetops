@@ -364,15 +364,18 @@ class JobDesk
      */
     public function canView(User $user, Job $job): bool
     {
-        if (!$user->canUseJobDesk()) {
-            return false;
-        }
-        if ($user->canManageJobDesk() || $job->isAssignedTo($user)) {
-            return true;
-        }
+        // Any staff member with the link can open the card (Hussain shares links in the group).
+        return $user->canUseJobDesk();
+    }
 
-        return $this->unitAllowed($user, $job)
-            && count($this->teamAlerts($this->alertsFor($job))) > 0;
+    /**
+     * Staff can put themselves on an open job.
+     */
+    public function canSelfAssign(User $user, Job $job): bool
+    {
+        return $user->canUseJobDesk()
+            && $job->isActive()
+            && !$job->isAssignedTo($user);
     }
 
     /**
@@ -429,6 +432,20 @@ class JobDesk
         return $this->decorate($jobs)
             ->filter(fn (Job $job) => count($this->teamAlerts($job->deskAlerts)) > 0)
             ->values();
+    }
+
+    /**
+     * Active jobs nobody is assigned to (in the user's business unit), for staff to pick up.
+     */
+    public function openJobs(User $user): Collection
+    {
+        $jobs = self::withRelations(Job::query())
+            ->whereIn('status', Job::getActiveStatuses())
+            ->whereDoesntHave('assignees')
+            ->get()
+            ->filter(fn (Job $job) => $this->unitAllowed($user, $job));
+
+        return $this->decorate($jobs);
     }
 
     /**

@@ -143,6 +143,17 @@
                 @endif
             </div>
 
+            {{-- Assign myself --}}
+            @if($canSelfAssign)
+                <form method="POST" action="{{ route('desk.take', $job) }}" class="bg-white rounded-xl shadow-sm p-4">
+                    @csrf
+                    @if($job->assignees->isEmpty())
+                        <p class="text-sm text-red-700 font-semibold mb-2">{{ __('Nobody is on this job yet.') }}</p>
+                    @endif
+                    <button class="w-full px-4 py-4 rounded-xl bg-indigo-600 text-white text-lg font-bold">{{ __('Assign to me') }}</button>
+                </form>
+            @endif
+
             {{-- Work actions --}}
             @if($canWork)
                 <div class="bg-white rounded-xl shadow-sm p-4 space-y-3">

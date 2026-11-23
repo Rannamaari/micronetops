@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Customer;
 use App\Models\FaultTicket;
 use App\Models\Job;
 use App\Models\JobNote;
@@ -37,10 +38,16 @@ class JobDeskController extends Controller
             fn (Job $job) => collect($job->deskAlerts)->contains('type', JobDesk::ALERT_CALL_CUSTOMER)
         )->values();
 
+        // Unassigned jobs that already show in the call box are not repeated below.
+        $openJobs = $this->desk->openJobs($user)
+            ->reject(fn (Job $job) => $teamJobs->contains('id', $job->id))
+            ->values();
+
         return view('desk.index', [
             'myJobs' => $myJobs,
             'myCalls' => $myCalls,
             'teamJobs' => $teamJobs,
+            'openJobs' => $openJobs,
             'counts' => $this->desk->counts($myJobs),
         ]);
     }
@@ -95,11 +102,136 @@ class JobDeskController extends Controller
             'faults' => $faults,
             'canWork' => $this->desk->canWork($user, $job),
             'canContact' => $this->desk->canContact($user, $job),
+            'canSelfAssign' => $this->desk->canSelfAssign($user, $job),
             'isAssigned' => $job->isAssignedTo($user),
             'hasAccepted' => $job->isAssignedTo($user) && $job->hasAccepted($user),
             'owesCall' => $job->owesCustomerCall(),
             'callReason' => $job->customerCallReason(),
         ]);
+    }
+
+    /**
+     * Simple "New job" form for staff.
+     */
+    public function create(Request $request)
+    {
+        return view('desk.create', [
+            'types' => $this->allowedJobTypes($request->user()),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $user = $request->user();
+        $types = $this->allowedJobTypes($user);
+
+        $validated = $request->validate([
+            'job_type' => ['required', Rule::in(array_keys($types))],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9\\s+()-]+$/'],
+            'location' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:100'],
+            'problem_description' => ['required', 'string', 'max:2000'],
+            'scheduled_at' => ['nullable', 'date'],
+            'priority' => ['nullable', Rule::in(array_keys(Job::getPriorities()))],
+            'assign_me' => ['nullable', 'boolean'],
+        ], [
+            'customer_phone.regex' => __('Phone can only contain numbers.'),
+        ]);
+
+        // Same customer for the same number: drop spaces/dashes and the +960 country code.
+        $phone = preg_replace('/[^0-9]/', '', $validated['customer_phone']);
+        if (strlen($phone) > 7 && str_starts_with($phone, '960')) {
+            $phone = substr($phone, 3);
+        }
+
+        $job = DB::transaction(function () use ($validated, $phone, $user) {
+            $customer = Customer::firstOrCreate(
+                ['phone' => $phone],
+                [
+                    'name' => $validated['customer_name'],
+                    'address' => $validated['location'],
+                    'category' => $validated['job_type'] === 'ac' ? 'ac' : $validated['job_type'],
+                ]
+            );
+
+            $job = Job::create([
+                'job_type' => $validated['job_type'],
+                'job_category' => 'general',
+                'job_date' => now()->toDateString(),
+                'title' => $validated['title'],
+                'customer_id' => $customer->id,
+                'customer_name' => $customer->name,
+                'customer_phone' => $customer->phone,
+                'customer_email' => $customer->email,
+                'location' => $validated['location'],
+                'address' => $validated['location'],
+                'problem_description' => $validated['problem_description'],
+                'priority' => $validated['priority'] ?? Job::PRIORITY_NORMAL,
+                'scheduled_at' => $validated['scheduled_at'] ?? null,
+                'status' => !empty($validated['scheduled_at']) ? Job::STATUS_SCHEDULED : Job::STATUS_NEW,
+                'payment_status' => 'unpaid',
+                'labour_total' => 0,
+                'parts_total' => 0,
+                'travel_charges' => 0,
+                'discount' => 0,
+                'gst_amount' => 0,
+                'total_amount' => 0,
+            ]);
+
+            $job->addNote("Job logged on Job Desk by {$user->name}", $user, JobNote::TYPE_SYSTEM);
+
+            if (!empty($validated['assign_me'])) {
+                $job->assignTechnicians([$user->id], $user);
+                $job->markAcceptedBy($user, false);
+            }
+
+            return $job;
+        });
+
+        ActivityLog::record('job.created', "Job #{$job->id} logged on Job Desk by {$user->name} for '{$job->customer_name}'", $job);
+
+        return redirect()->route('desk.show', $job)->with('success', __('Job #:id logged.', ['id' => $job->id]));
+    }
+
+    /**
+     * Mechanics log jobs for their own business; everyone else for any.
+     */
+    private function allowedJobTypes(User $user): array
+    {
+        $all = [
+            Job::TYPE_AC => 'Micro Cool',
+            Job::TYPE_BIKE => 'Micro Moto',
+            Job::TYPE_IT => 'Micronet',
+            Job::TYPE_EASYFIX => 'Easy Fix',
+        ];
+
+        return match ($user->allowedBusinessUnit()) {
+            'cool' => [Job::TYPE_AC => $all[Job::TYPE_AC]],
+            'moto' => [Job::TYPE_BIKE => $all[Job::TYPE_BIKE]],
+            default => $all,
+        };
+    }
+
+    /**
+     * "Assign to me" – staff put themselves on the job (others stay assigned).
+     */
+    public function take(Request $request, Job $job)
+    {
+        $user = $request->user();
+        $job->load('assignees');
+        abort_unless($this->desk->canSelfAssign($user, $job), 403);
+
+        DB::transaction(function () use ($job, $user) {
+            $ids = $job->assignees->pluck('id')->push($user->id)->all();
+            $job->assignTechnicians($ids, $user);
+            // Choosing the job themselves counts as accepting it.
+            $job->markAcceptedBy($user, false);
+        });
+
+        ActivityLog::record('job.self_assigned', "Job #{$job->id}: {$user->name} assigned themselves (Job Desk)", $job);
+
+        return $this->backToCard($job, __('You are now assigned to this job.'));
     }
 
     public function accept(Request $request, Job $job)

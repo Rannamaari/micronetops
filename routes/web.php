@@ -122,7 +122,10 @@ Route::prefix('desk')
         Route::get('/', [JobDeskController::class, 'index'])->name('index');
         Route::get('board', [JobDeskController::class, 'board'])->middleware('role:admin,manager')->name('board');
         Route::post('locale', [JobDeskController::class, 'locale'])->name('locale');
+        Route::get('jobs/new', [JobDeskController::class, 'create'])->name('create');
+        Route::post('jobs', [JobDeskController::class, 'store'])->name('store');
         Route::get('jobs/{job}', [JobDeskController::class, 'show'])->name('show');
+        Route::post('jobs/{job}/take', [JobDeskController::class, 'take'])->name('take');
         Route::post('jobs/{job}/accept', [JobDeskController::class, 'accept'])->name('accept');
         Route::post('jobs/{job}/status', [JobDeskController::class, 'status'])->name('status');
         Route::post('jobs/{job}/invoiced', [JobDeskController::class, 'invoiced'])->name('invoiced');

@@ -5,6 +5,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Job Desk') }}</h2>
             <div class="flex items-center gap-2">
+                <a href="{{ route('desk.create') }}" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium">+ {{ __('New job') }}</a>
                 @if(auth()->user()->canManageJobDesk())
                     <a href="{{ route('desk.board') }}" class="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-sm font-medium">{{ __('Admin board') }}</a>
                 @endif
@@ -41,6 +42,19 @@
                             @include('desk.partials.job-row', ['job' => $job])
                         @endforeach
                     @endif
+                </section>
+            @endif
+
+            {{-- Open jobs nobody has taken --}}
+            @if($openJobs->isNotEmpty())
+                <section class="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-4 space-y-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-indigo-900">{{ __('Open jobs – nobody assigned') }}</h3>
+                        <p class="text-sm text-indigo-800">{{ __('Open a job and press "Assign to me" to take it.') }}</p>
+                    </div>
+                    @foreach($openJobs as $job)
+                        @include('desk.partials.job-row', ['job' => $job])
+                    @endforeach
                 </section>
             @endif
 

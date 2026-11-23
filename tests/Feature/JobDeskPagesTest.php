@@ -44,7 +44,7 @@ class JobDeskPagesTest extends TestCase
         $tech = $this->staff();
         $mine = $this->makeJob(['title' => 'MINE-JOB']);
         $mine->assignTechnicians([$tech->id]);
-        $this->makeJob(['title' => 'OTHER-JOB']);
+        $this->makeJob(['title' => 'OTHER-JOB'])->assignTechnicians([$this->staff()->id]);
 
         $this->actingAs($tech)->get(route('desk.index'))
             ->assertOk()
@@ -52,13 +52,80 @@ class JobDeskPagesTest extends TestCase
             ->assertDontSee('OTHER-JOB');
     }
 
-    public function test_staff_cannot_open_a_job_that_is_not_theirs(): void
+    public function test_any_staff_with_the_link_can_view_comment_and_assign_themselves(): void
     {
-        $tech = $this->staff();
+        $tech = $this->staff(User::ROLE_MOTO_MECHANIC); // even from another business
+        $other = $this->staff();
         $job = $this->makeJob();
+        $job->assignTechnicians([$other->id]);
 
-        $this->actingAs($tech)->get(route('desk.show', $job))->assertForbidden();
+        // Can open and comment, but cannot change the job until assigned
+        $this->actingAs($tech)->get(route('desk.show', $job))->assertOk()->assertSee('Assign to me')->assertDontSee('Work completed');
+        $this->actingAs($tech)->post(route('desk.remark', $job), ['content' => 'Customer also wants gas top-up'])->assertSessionHasNoErrors();
         $this->actingAs($tech)->post(route('desk.status', $job), ['action' => 'start'])->assertForbidden();
+
+        $this->actingAs($tech)->post(route('desk.take', $job))->assertRedirect(route('desk.show', $job));
+
+        $job = $job->fresh();
+        $this->assertTrue($job->isAssignedTo($tech));
+        $this->assertTrue($job->isAssignedTo($other), 'existing assignee stays');
+        $this->assertNotNull($job->assignees->firstWhere('id', $tech->id)->pivot->accepted_at);
+
+        $this->actingAs($tech)->get(route('desk.show', $job))->assertDontSee('Assign to me')->assertSee('Work completed');
+        $this->actingAs($tech)->post(route('desk.take', $job))->assertForbidden();
+    }
+
+    public function test_unassigned_jobs_show_as_open_jobs_in_the_right_business(): void
+    {
+        $acTech = $this->staff();
+        $motoTech = $this->staff(User::ROLE_MOTO_MECHANIC);
+        $this->makeJob(['title' => 'OPEN-AC-JOB']);
+
+        $this->actingAs($acTech)->get(route('desk.index'))->assertSee('Open jobs – nobody assigned')->assertSee('OPEN-AC-JOB');
+        $this->actingAs($motoTech)->get(route('desk.index'))->assertDontSee('OPEN-AC-JOB');
+    }
+
+    public function test_staff_can_log_a_new_job_without_assigning_anyone(): void
+    {
+        $ops = $this->staff(User::ROLE_OPERATIONS_STAFF);
+
+        $this->actingAs($ops)->get(route('desk.create'))->assertOk()->assertSee('Micronet');
+
+        $this->actingAs($ops)->post(route('desk.store'), [
+            'job_type' => 'ac',
+            'customer_name' => 'Mohamed Anas',
+            'customer_phone' => '+960 919-6161',
+            'location' => 'H. Gardenia, Majeedhee Magu',
+            'title' => 'AC water leak',
+            'problem_description' => 'Leaking for 3 days',
+        ])->assertSessionHasNoErrors();
+
+        $job = Job::latest('id')->first();
+        $this->assertSame('9196161', $job->customer_phone);
+        $this->assertSame('9196161', $job->customer->phone);
+        $this->assertSame(Job::STATUS_NEW, $job->status);
+        $this->assertTrue($job->assignees->isEmpty());
+
+        // Same number again re-uses the customer, and "assign me" works
+        $this->actingAs($ops)->post(route('desk.store'), [
+            'job_type' => 'it', 'customer_name' => 'Anas', 'customer_phone' => '9196161',
+            'location' => 'Same', 'title' => 'Router', 'problem_description' => 'Slow wifi', 'assign_me' => '1',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\\TH:i'),
+        ])->assertSessionHasNoErrors();
+        $second = Job::latest('id')->first();
+        $this->assertSame($job->customer_id, $second->customer_id);
+        $this->assertTrue($second->isAssignedTo($ops));
+        $this->assertSame(Job::STATUS_SCHEDULED, $second->status);
+    }
+
+    public function test_mechanic_can_only_log_jobs_for_their_business(): void
+    {
+        $motoTech = $this->staff(User::ROLE_MOTO_MECHANIC);
+
+        $this->actingAs($motoTech)->post(route('desk.store'), [
+            'job_type' => 'ac', 'customer_name' => 'X', 'customer_phone' => '7000000',
+            'location' => 'Y', 'title' => 'Z', 'problem_description' => 'W',
+        ])->assertSessionHasErrors('job_type');
     }
 
     public function test_team_sees_a_late_job_in_their_unit_and_can_log_the_call(): void
@@ -75,9 +142,9 @@ class JobDeskPagesTest extends TestCase
             ->assertSee('Customers waiting for an explanation')
             ->assertSee('LATE-AC-JOB');
 
-        // Moto mechanic does not see AC jobs
+        // Moto mechanic does not get AC jobs on their list (but can open a shared link)
         $this->actingAs($motoTech)->get(route('desk.index'))->assertDontSee('LATE-AC-JOB');
-        $this->actingAs($motoTech)->get(route('desk.show', $job))->assertForbidden();
+        $this->actingAs($motoTech)->get(route('desk.show', $job))->assertOk();
 
         // Helper can open the card and log the call, but cannot change status
         $this->actingAs($helper)->get(route('desk.show', $job))
@@ -90,7 +157,7 @@ class JobDeskPagesTest extends TestCase
             'outcome' => 'informed',
             'explanation' => 'running_late',
             'note' => 'Coming at 11:30',
-        ])->assertRedirect(route('desk.index'))
+        ])->assertRedirect(route('desk.show', $job))
           ->assertSessionHas('success');
 
         $this->assertFalse($job->fresh()->owesCustomerCall());
