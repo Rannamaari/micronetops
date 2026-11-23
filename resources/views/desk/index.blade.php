@@ -15,7 +15,7 @@
     </x-slot>
 
     <div class="py-4 sm:py-6">
-        <div class="max-w-3xl mx-auto px-3 sm:px-6 space-y-6">
+        <div class="max-w-3xl mx-auto px-3 sm:px-6 space-y-5">
 
             @if (session('success'))
                 <div class="px-4 py-3 bg-green-100 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>
@@ -26,9 +26,9 @@
 
             {{-- Customers waiting for a call: mine first, then the team's --}}
             @if($myCalls->isNotEmpty() || $teamJobs->isNotEmpty())
-                <section class="rounded-2xl border-2 border-red-300 bg-red-50 p-4 space-y-3">
+                <section class="rounded-xl border-2 border-red-300 bg-red-50 p-3 space-y-2">
                     <div>
-                        <h3 class="text-lg font-bold text-red-800">{{ __('Customers waiting for an explanation') }}</h3>
+                        <h3 class="text-base font-bold text-red-800">{{ __('Customers waiting for an explanation') }}</h3>
                         <p class="text-sm text-red-700">{{ __('Call these customers, say sorry and give a new time. Then log the call on the job card.') }}</p>
                     </div>
 
@@ -37,7 +37,7 @@
                     @endforeach
 
                     @if($teamJobs->isNotEmpty())
-                        <div class="pt-2 text-sm font-semibold text-red-800">{{ __('Team – anyone free, please help') }}</div>
+                        <div class="pt-1 text-xs font-semibold text-red-800">{{ __('Team – anyone free, please help') }}</div>
                         @foreach($teamJobs as $job)
                             @include('desk.partials.job-row', ['job' => $job])
                         @endforeach
@@ -47,9 +47,9 @@
 
             {{-- Open jobs nobody has taken --}}
             @if($openJobs->isNotEmpty())
-                <section class="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-4 space-y-3">
+                <section class="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-3 space-y-2">
                     <div>
-                        <h3 class="text-lg font-bold text-indigo-900">{{ __('Open jobs – nobody assigned') }}</h3>
+                        <h3 class="text-base font-bold text-indigo-900">{{ __('Open jobs – nobody assigned') }}</h3>
                         <p class="text-sm text-indigo-800">{{ __('Open a job and press "Assign to me" to take it.') }}</p>
                     </div>
                     @foreach($openJobs as $job)
@@ -59,9 +59,9 @@
             @endif
 
             {{-- My jobs --}}
-            <section class="space-y-3">
+            <section class="space-y-2">
                 <div class="flex items-baseline justify-between">
-                    <h3 class="text-lg font-bold text-gray-900">{{ __('My jobs') }}</h3>
+                    <h3 class="text-base font-bold text-gray-900">{{ __('My jobs') }}</h3>
                     <span class="text-sm text-gray-500">{{ trans_choice(':count job|:count jobs', $myJobs->count(), ['count' => $myJobs->count()]) }}</span>
                 </div>
 
@@ -90,9 +90,9 @@
 
             {{-- Everyone else's jobs, so the team knows who is doing what --}}
             @if($othersJobs->isNotEmpty())
-                <section class="space-y-3">
+                <section class="space-y-2">
                     <div class="flex items-baseline justify-between">
-                        <h3 class="text-lg font-bold text-gray-900">{{ __("Team's jobs") }}</h3>
+                        <h3 class="text-base font-bold text-gray-900">{{ __("Team's jobs") }}</h3>
                         <span class="text-sm text-gray-500">{{ trans_choice(':count job|:count jobs', $othersJobs->count(), ['count' => $othersJobs->count()]) }}</span>
                     </div>
                     @foreach($othersJobs as $job)

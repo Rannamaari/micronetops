@@ -405,4 +405,17 @@ class JobDeskPagesTest extends TestCase
         $this->actingAs($other)->get(route('desk.show', $job))->assertDontSee('When will you reach the customer?');
         $this->actingAs($other)->post(route('desk.take', $job))->assertSessionHasNoErrors();
     }
+
+    public function test_rescheduled_job_that_is_only_not_accepted_is_not_in_the_red_box(): void
+    {
+        $viewer = $this->staff();
+        $tech = $this->staff();
+        $job = $this->makeJob(['title' => 'RESCHEDULED-JOB', 'scheduled_at' => now()->addDay()]);
+        $job->assignTechnicians([$tech->id]);
+        $this->travel(2)->hours(); // not accepted for 2 hours, but the customer is fine
+
+        $html = $this->actingAs($viewer)->get(route('desk.index'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('Customers waiting for an explanation', $html);
+        $this->assertStringContainsString('RESCHEDULED-JOB', $html); // still listed under Team's jobs
+    }
 }

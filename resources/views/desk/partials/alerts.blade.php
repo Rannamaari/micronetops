@@ -8,9 +8,10 @@
     ];
 @endphp
 @if(!empty($alerts))
-    <div class="flex flex-wrap gap-1.5">
+    @php $small = !empty($compact); @endphp
+    <div class="flex flex-wrap {{ $small ? 'gap-1' : 'gap-1.5' }}">
         @foreach($alerts as $alert)
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold {{ $styles[$alert['level']] ?? $styles['info'] }}">
+            <span class="inline-flex items-center gap-1 rounded-full border font-semibold {{ $small ? 'px-1.5 py-0 text-[11px]' : 'px-2 py-0.5 text-xs' }} {{ $styles[$alert['level']] ?? $styles['info'] }}">
                 @if($alert['level'] === 'danger')
                     <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                 @endif

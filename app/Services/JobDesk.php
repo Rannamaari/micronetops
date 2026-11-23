@@ -108,8 +108,9 @@ class JobDesk
 
                 if ($oldest) {
                     $minutes = $oldest->diffInMinutes($now, false);
+                    // Amber, not red: red is kept for customer-facing problems (late / call owed).
                     if ($minutes >= config('job_desk.accept_escalate_minutes')) {
-                        $alerts[] = $this->alert(self::ALERT_NOT_ACCEPTED, 'danger', self::SCOPE_TEAM, $oldest, [
+                        $alerts[] = $this->alert(self::ALERT_NOT_ACCEPTED, 'warn', self::SCOPE_TEAM, $oldest, [
                             'names' => $pending->pluck('name')->values()->all(),
                         ]);
                     } elseif ($minutes >= config('job_desk.accept_warn_minutes')) {
@@ -162,13 +163,9 @@ class JobDesk
      */
     public function teamAlerts(array $alerts): array
     {
-        return array_values(array_filter($alerts, function ($a) {
-            if ($a['type'] === self::ALERT_CALL_CUSTOMER) {
-                return $a['scope'] !== self::SCOPE_ASSIGNEE;
-            }
-
-            return $a['type'] === self::ALERT_NOT_ACCEPTED && $a['level'] === 'danger';
-        }));
+        // Only customers owed a call go in the red "waiting for an explanation" box.
+        return array_values(array_filter($alerts, fn ($a) => $a['type'] === self::ALERT_CALL_CUSTOMER
+            && $a['scope'] !== self::SCOPE_ASSIGNEE));
     }
 
     /**

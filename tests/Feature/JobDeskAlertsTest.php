@@ -71,8 +71,9 @@ class JobDeskAlertsTest extends TestCase
 
         $this->travel(30)->minutes();
         $alert = $this->alert($job, JobDesk::ALERT_NOT_ACCEPTED);
-        $this->assertSame('danger', $alert['level']);
+        $this->assertSame('warn', $alert['level'], 'not accepted is amber, never red');
         $this->assertSame(JobDesk::SCOPE_TEAM, $alert['scope']);
+        $this->assertSame([], $this->desk->teamAlerts($this->desk->alertsFor($job->fresh())), 'not in the red call box');
         $this->assertSame([$tech->name], $alert['meta']['names']);
 
         $job->fresh()->markAcceptedBy($tech);

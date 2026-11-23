@@ -1,4 +1,4 @@
-{{-- One job in a list. Expects $job (decorated with deskAlerts) --}}
+{{-- One job in a list (compact). Expects $job (decorated with deskAlerts) --}}
 @php
     $statuses = \App\Models\Job::getStatuses();
     $units = \App\Services\JobDesk::unitLabels();
@@ -6,41 +6,33 @@
     $hasDanger = collect($job->deskAlerts)->contains('level', 'danger');
 @endphp
 <a href="{{ route('desk.show', $job) }}"
-   class="block bg-white rounded-xl shadow-sm border-l-4 {{ $hasDanger ? 'border-red-500' : (count($job->deskAlerts) ? 'border-amber-400' : 'border-gray-200') }} p-4 hover:bg-gray-50 active:bg-gray-100">
-    <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-            <div class="text-xs text-gray-500">
-                #{{ $job->id }} · {{ __($units[$job->businessUnit()] ?? $job->job_type) }}
-            </div>
-            <div class="font-semibold text-gray-900 truncate">
-                {{ $job->title ?: __('Job') . ' #' . $job->id }}
-            </div>
-            <div class="text-sm text-gray-600 truncate">
-                {{ $job->customer_name }}@if($job->location) · {{ $job->location }}@endif
-            </div>
+   class="block bg-white rounded-lg shadow-sm border-l-4 {{ $hasDanger ? 'border-red-500' : (count($job->deskAlerts) ? 'border-amber-400' : 'border-gray-200') }} px-3 py-2 hover:bg-gray-50 active:bg-gray-100">
+    <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0 flex items-baseline gap-1.5">
+            <span class="text-xs text-gray-500 flex-shrink-0">#{{ $job->id }}</span>
+            <span class="text-sm font-semibold text-gray-900 truncate">{{ $job->title ?: __('Job') . ' #' . $job->id }}</span>
         </div>
-        <div class="text-right flex-shrink-0">
-            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium text-white" style="background-color: {{ $job->status_color }}">
-                {{ __($statuses[$job->status] ?? $job->status) }}
-            </span>
-            @if($promised)
-                <div class="mt-1 text-xs {{ $job->isOverdue() ? 'text-red-600 font-semibold' : 'text-gray-500' }}">
-                    {{ $promised->translatedFormat('D j M, g:i A') }}
-                </div>
-            @endif
-        </div>
+        <span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium text-white" style="background-color: {{ $job->status_color }}">
+            {{ __($statuses[$job->status] ?? $job->status) }}
+        </span>
     </div>
-    <div class="mt-2 text-xs text-gray-600">
-        {{ __('Assigned to') }}:
-        @forelse($job->assignees as $person)
-            <span class="font-semibold text-gray-800">{{ $person->name }}</span>@if(!$person->pivot->accepted_at)<span class="text-amber-700"> ({{ __('not accepted') }})</span>@endif{{ !$loop->last ? ',' : '' }}
-        @empty
-            <span class="font-semibold text-red-600">{{ __('Nobody') }}</span>
-        @endforelse
+    <div class="flex items-center justify-between gap-2 text-xs text-gray-600">
+        <span class="truncate">{{ __($units[$job->businessUnit()] ?? $job->job_type) }} · {{ $job->customer_name }}@if($job->location) · {{ $job->location }}@endif</span>
+        @if($promised)
+            <span class="flex-shrink-0 {{ $job->isOverdue() ? 'text-red-600 font-semibold' : 'text-gray-500' }}">{{ $promised->translatedFormat('D j M, g:i A') }}</span>
+        @endif
     </div>
-    @if(count($job->deskAlerts))
-        <div class="mt-2">
-            @include('desk.partials.alerts', ['alerts' => $job->deskAlerts])
-        </div>
-    @endif
+    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600">
+        <span>
+            {{ __('Assigned to') }}:
+            @forelse($job->assignees as $person)
+                <span class="font-semibold text-gray-800">{{ $person->name }}</span>@if(!$person->pivot->accepted_at)<span class="text-amber-700"> ({{ __('not accepted') }})</span>@endif{{ !$loop->last ? ',' : '' }}
+            @empty
+                <span class="font-semibold text-red-600">{{ __('Nobody') }}</span>
+            @endforelse
+        </span>
+        @if(count($job->deskAlerts))
+            @include('desk.partials.alerts', ['alerts' => $job->deskAlerts, 'compact' => true])
+        @endif
+    </div>
 </a>
