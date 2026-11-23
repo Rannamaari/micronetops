@@ -372,4 +372,28 @@ class JobDeskPagesTest extends TestCase
         $this->assertSame('Wrong Name', $job->fresh()->customer_name);
         $this->assertSame('Real Name', $customer->fresh()->name);
     }
+
+    public function test_whoever_takes_an_open_job_sets_the_promised_time(): void
+    {
+        $tech = $this->staff();
+        $job = $this->makeJob(['status' => Job::STATUS_NEW, 'scheduled_at' => null]);
+
+        $this->actingAs($tech)->get(route('desk.show', $job))->assertSee('When will you reach the customer?');
+
+        $this->actingAs($tech)->post(route('desk.take', $job))->assertSessionHasErrors('scheduled_at');
+        $this->assertFalse($job->fresh()->isAssignedTo($tech));
+
+        $time = now()->addHours(2)->format('Y-m-d\\TH:i');
+        $this->actingAs($tech)->post(route('desk.take', $job), ['scheduled_at' => $time])->assertSessionHasNoErrors();
+
+        $job = $job->fresh();
+        $this->assertTrue($job->isAssignedTo($tech));
+        $this->assertSame(Job::STATUS_SCHEDULED, $job->status);
+        $this->assertSame($time, $job->scheduled_at->format('Y-m-d\\TH:i'));
+
+        // A job that already has a time does not ask again
+        $other = $this->staff();
+        $this->actingAs($other)->get(route('desk.show', $job))->assertDontSee('When will you reach the customer?');
+        $this->actingAs($other)->post(route('desk.take', $job))->assertSessionHasNoErrors();
+    }
 }

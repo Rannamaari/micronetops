@@ -266,11 +266,29 @@ class JobDeskController extends Controller
         $job->load('assignees');
         abort_unless($this->desk->canSelfAssign($user, $job), 403);
 
-        DB::transaction(function () use ($job, $user) {
+        // Whoever takes a job with no promised time decides when they will reach the customer.
+        $needsTime = $job->scheduled_at === null;
+        $validated = $request->validate([
+            'scheduled_at' => [$needsTime ? 'required' : 'nullable', 'date', 'after:-10 minutes'],
+        ], [
+            'scheduled_at.required' => __('Set the time you will reach the customer.'),
+            'scheduled_at.after' => __('The time must be now or later.'),
+        ]);
+
+        DB::transaction(function () use ($job, $user, $needsTime, $validated) {
             $ids = $job->assignees->pluck('id')->push($user->id)->all();
             $job->assignTechnicians($ids, $user);
             // Choosing the job themselves counts as accepting it.
             $job->markAcceptedBy($user, false);
+
+            if ($needsTime) {
+                $job->scheduled_at = Carbon::parse($validated['scheduled_at']);
+                if ($job->status === Job::STATUS_NEW) {
+                    $job->status = Job::STATUS_SCHEDULED;
+                }
+                $job->save();
+                $job->addNote('Promised time set to ' . $job->scheduled_at->format('D j M, g:i A') . " by {$user->name}", $user, JobNote::TYPE_SYSTEM);
+            }
         });
 
         ActivityLog::record('job.self_assigned', "Job #{$job->id}: {$user->name} assigned themselves (Job Desk)", $job);

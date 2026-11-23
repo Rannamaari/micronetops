@@ -160,6 +160,12 @@
                     @if($job->assignees->isEmpty())
                         <p class="text-sm text-red-700 font-semibold mb-2">{{ __('Nobody is on this job yet.') }}</p>
                     @endif
+                    @if(!$job->scheduled_at)
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="take_time">{{ __('When will you reach the customer?') }}</label>
+                        <input type="datetime-local" id="take_time" name="scheduled_at" required
+                               value="{{ old('scheduled_at') }}" min="{{ now()->format('Y-m-d\TH:i') }}"
+                               class="block w-full rounded-lg border-gray-300 text-base mb-3">
+                    @endif
                     <button class="w-full px-4 py-4 rounded-xl bg-indigo-600 text-white text-lg font-bold">{{ __('Assign to me') }}</button>
                 </form>
             @endif
