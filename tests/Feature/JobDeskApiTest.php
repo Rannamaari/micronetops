@@ -35,6 +35,7 @@ class JobDeskApiTest extends TestCase
             'customer_name' => 'Ahmed',
             'customer_phone' => '7771234',
             'title' => 'AC service',
+            'customer_email' => 'ahmed@example.com',
             'location' => 'Ma. Rose Villa',
             'scheduled_at' => now()->addHours(5)->format('Y-m-d H:i:s'),
             'assignees' => ['ali'],
@@ -47,6 +48,8 @@ class JobDeskApiTest extends TestCase
             ->assertJsonPath('desk.assignees.0.accepted', false);
 
         $this->assertTrue(Job::find($jobId)->isAssignedTo($ali));
+        $this->assertSame('ahmed@example.com', Job::find($jobId)->customer->email);
+        $this->assertSame('ahmed@example.com', Job::find($jobId)->customer_email);
     }
 
     public function test_unknown_or_ambiguous_staff_creates_nothing(): void

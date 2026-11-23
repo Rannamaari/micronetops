@@ -36,6 +36,7 @@ class JobController extends Controller
      *   "customer_name": "Ahmed",        // required if no customer_id
      *   "customer_phone": "7777777",     // required if no customer_id (7 digits ok; stored as given)
      *   "customer_gst_number": "...",    // optional
+     *   "customer_email": "a@b.com",     // optional
      *   "title": "Router setup",         // optional
      *   "problem_description": "...",    // optional
      *   "customer_notes": "...",         // optional (printed on quotation/invoice)
@@ -56,6 +57,7 @@ class JobController extends Controller
                 'customer_name' => ['nullable', 'string', 'max:255'],
                 'customer_phone' => self::CUSTOMER_PHONE_RULES,
                 'customer_gst_number' => ['nullable', 'string', 'max:50'],
+                'customer_email' => ['nullable', 'email', 'max:255'],
                 'easyfix_user_id' => ['nullable', 'string', 'max:255'],
                 'easyfix_job_id' => ['nullable', 'string', 'max:255'],
                 'title' => ['nullable', 'string', 'max:100'],
@@ -110,6 +112,7 @@ class JobController extends Controller
                     'name' => $validated['customer_name'] ?? 'Unknown',
                     'address' => $validated['location'] ?? null,
                     'gst_number' => $validated['customer_gst_number'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
                     'easyfix_user_id' => $validated['easyfix_user_id'] ?? null,
                     'category' => match ($validated['job_type']) {
                         'ac' => 'ac',
@@ -125,6 +128,10 @@ class JobController extends Controller
                 $changed = false;
                 if (!empty($validated['customer_gst_number']) && empty($customer->gst_number)) {
                     $customer->gst_number = $validated['customer_gst_number'];
+                    $changed = true;
+                }
+                if (!empty($validated['customer_email']) && empty($customer->email)) {
+                    $customer->email = $validated['customer_email'];
                     $changed = true;
                 }
                 if (!empty($validated['location']) && empty($customer->address)) {
@@ -163,7 +170,7 @@ class JobController extends Controller
 
             'customer_name' => $customer?->name ?? $validated['customer_name'] ?? 'Walk-in',
             'customer_phone' => $customer?->phone ?? $validated['customer_phone'] ?? null,
-            'customer_email' => $customer?->email ?? null,
+            'customer_email' => $customer?->email ?? $validated['customer_email'] ?? null,
 
             'vehicle_id' => null,
             'ac_unit_id' => null,
