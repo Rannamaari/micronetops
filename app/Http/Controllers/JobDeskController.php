@@ -43,11 +43,17 @@ class JobDeskController extends Controller
             ->reject(fn (Job $job) => $teamJobs->contains('id', $job->id))
             ->values();
 
+        // Everyone else's jobs (not already shown in the call box above).
+        $othersJobs = $this->desk->othersJobs($user)
+            ->reject(fn (Job $job) => $teamJobs->contains('id', $job->id))
+            ->values();
+
         return view('desk.index', [
             'myJobs' => $myJobs,
             'myCalls' => $myCalls,
             'teamJobs' => $teamJobs,
             'openJobs' => $openJobs,
+            'othersJobs' => $othersJobs,
             'counts' => $this->desk->counts($myJobs),
         ]);
     }

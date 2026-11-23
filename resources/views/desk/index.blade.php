@@ -87,6 +87,19 @@
                     </div>
                 @endforelse
             </section>
+
+            {{-- Everyone else's jobs, so the team knows who is doing what --}}
+            @if($othersJobs->isNotEmpty())
+                <section class="space-y-3">
+                    <div class="flex items-baseline justify-between">
+                        <h3 class="text-lg font-bold text-gray-900">{{ __("Team's jobs") }}</h3>
+                        <span class="text-sm text-gray-500">{{ trans_choice(':count job|:count jobs', $othersJobs->count(), ['count' => $othersJobs->count()]) }}</span>
+                    </div>
+                    @foreach($othersJobs as $job)
+                        @include('desk.partials.job-row', ['job' => $job])
+                    @endforeach
+                </section>
+            @endif
         </div>
     </div>
 </x-app-layout>

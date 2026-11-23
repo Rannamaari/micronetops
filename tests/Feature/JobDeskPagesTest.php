@@ -46,10 +46,13 @@ class JobDeskPagesTest extends TestCase
         $mine->assignTechnicians([$tech->id]);
         $this->makeJob(['title' => 'OTHER-JOB'])->assignTechnicians([$this->staff()->id]);
 
-        $this->actingAs($tech)->get(route('desk.index'))
+        $response = $this->actingAs($tech)->get(route('desk.index'))
             ->assertOk()
             ->assertSee('MINE-JOB')
-            ->assertDontSee('OTHER-JOB');
+            ->assertSee("Team's jobs")
+            ->assertSee('OTHER-JOB');
+        // My job is listed before the team's jobs
+        $this->assertLessThan(strpos($response->getContent(), 'OTHER-JOB'), strpos($response->getContent(), 'MINE-JOB'));
     }
 
     public function test_any_staff_with_the_link_can_view_comment_and_assign_themselves(): void
@@ -75,14 +78,14 @@ class JobDeskPagesTest extends TestCase
         $this->actingAs($tech)->post(route('desk.take', $job))->assertForbidden();
     }
 
-    public function test_unassigned_jobs_show_as_open_jobs_in_the_right_business(): void
+    public function test_unassigned_jobs_show_as_open_jobs_to_everyone(): void
     {
         $acTech = $this->staff();
         $motoTech = $this->staff(User::ROLE_MOTO_MECHANIC);
         $this->makeJob(['title' => 'OPEN-AC-JOB']);
 
         $this->actingAs($acTech)->get(route('desk.index'))->assertSee('Open jobs – nobody assigned')->assertSee('OPEN-AC-JOB');
-        $this->actingAs($motoTech)->get(route('desk.index'))->assertDontSee('OPEN-AC-JOB');
+        $this->actingAs($motoTech)->get(route('desk.index'))->assertSee('OPEN-AC-JOB');
     }
 
     public function test_staff_can_log_a_new_job_without_assigning_anyone(): void
@@ -142,8 +145,8 @@ class JobDeskPagesTest extends TestCase
             ->assertSee('Customers waiting for an explanation')
             ->assertSee('LATE-AC-JOB');
 
-        // Moto mechanic does not get AC jobs on their list (but can open a shared link)
-        $this->actingAs($motoTech)->get(route('desk.index'))->assertDontSee('LATE-AC-JOB');
+        // Everyone sees every job, including other businesses
+        $this->actingAs($motoTech)->get(route('desk.index'))->assertSee('LATE-AC-JOB');
         $this->actingAs($motoTech)->get(route('desk.show', $job))->assertOk();
 
         // Helper can open the card and log the call, but cannot change status

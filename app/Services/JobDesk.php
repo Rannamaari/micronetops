@@ -425,9 +425,9 @@ class JobDesk
      */
     public function teamJobs(User $user): Collection
     {
+        // Everyone sees every job, so the whole team is on the same page.
         $jobs = $this->candidateJobs()
-            ->reject(fn (Job $job) => $job->isAssignedTo($user))
-            ->filter(fn (Job $job) => $this->unitAllowed($user, $job));
+            ->reject(fn (Job $job) => $job->isAssignedTo($user));
 
         return $this->decorate($jobs)
             ->filter(fn (Job $job) => count($this->teamAlerts($job->deskAlerts)) > 0)
@@ -442,10 +442,21 @@ class JobDesk
         $jobs = self::withRelations(Job::query())
             ->whereIn('status', Job::getActiveStatuses())
             ->whereDoesntHave('assignees')
-            ->get()
-            ->filter(fn (Job $job) => $this->unitAllowed($user, $job));
+            ->get();
 
         return $this->decorate($jobs);
+    }
+
+    /**
+     * Every other open job (assigned to someone else), so all staff can see who is doing what.
+     */
+    public function othersJobs(User $user): Collection
+    {
+        return $this->decorate(
+            $this->candidateJobs()->filter(
+                fn (Job $job) => $job->assignees->isNotEmpty() && !$job->isAssignedTo($user)
+            )
+        );
     }
 
     /**

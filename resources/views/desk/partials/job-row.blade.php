@@ -30,6 +30,14 @@
             @endif
         </div>
     </div>
+    <div class="mt-2 text-xs text-gray-600">
+        {{ __('Assigned to') }}:
+        @forelse($job->assignees as $person)
+            <span class="font-semibold text-gray-800">{{ $person->name }}</span>@if(!$person->pivot->accepted_at)<span class="text-amber-700"> ({{ __('not accepted') }})</span>@endif{{ !$loop->last ? ',' : '' }}
+        @empty
+            <span class="font-semibold text-red-600">{{ __('Nobody') }}</span>
+        @endforelse
+    </div>
     @if(count($job->deskAlerts))
         <div class="mt-2">
             @include('desk.partials.alerts', ['alerts' => $job->deskAlerts])
