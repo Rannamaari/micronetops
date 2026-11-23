@@ -39,8 +39,8 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_name">{{ __('Customer name') }}</label>
-                        <input id="customer_name" name="customer_name" value="{{ old('customer_name') }}" required maxlength="255" class="block w-full rounded-lg border-gray-300 text-base">
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_name">{{ __('Customer name (optional)') }}</label>
+                        <input id="customer_name" name="customer_name" value="{{ old('customer_name') }}" maxlength="255" placeholder="{{ __('Leave blank if not known') }}" class="block w-full rounded-lg border-gray-300 text-base">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_phone">{{ __('Phone') }}</label>

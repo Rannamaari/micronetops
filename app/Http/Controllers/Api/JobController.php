@@ -88,9 +88,9 @@ class JobController extends Controller
             ], 422);
         }
 
-        if (empty($validated['customer_id']) && (empty($validated['customer_phone']) || empty($validated['customer_name']))) {
+        if (empty($validated['customer_id']) && empty($validated['customer_phone'])) {
             return response()->json([
-                'error' => 'Provide either customer_id OR both customer_name and customer_phone.',
+                'error' => 'Provide either customer_id OR customer_phone (customer_name is optional; a "Customer <phone>" placeholder is used until the name is known).',
             ], 422);
         }
 
@@ -109,7 +109,7 @@ class JobController extends Controller
             $customer = Customer::firstOrCreate(
                 ['phone' => $validated['customer_phone']],
                 [
-                    'name' => $validated['customer_name'] ?? 'Unknown',
+                    'name' => $validated['customer_name'] ?? Customer::placeholderName($validated['customer_phone']),
                     'address' => $validated['location'] ?? null,
                     'gst_number' => $validated['customer_gst_number'] ?? null,
                     'email' => $validated['customer_email'] ?? null,
@@ -138,7 +138,7 @@ class JobController extends Controller
                     $customer->address = $validated['location'];
                     $changed = true;
                 }
-                if (!empty($validated['customer_name']) && ($customer->name === 'Unknown' || empty($customer->name))) {
+                if (!empty($validated['customer_name']) && Customer::isPlaceholderName($customer->name)) {
                     $customer->name = $validated['customer_name'];
                     $changed = true;
                 }

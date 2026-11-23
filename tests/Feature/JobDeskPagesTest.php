@@ -335,4 +335,41 @@ class JobDeskPagesTest extends TestCase
         $this->post('/login', ['email' => $tech->email, 'password' => 'password'])
             ->assertRedirect(route('desk.index', absolute: false));
     }
+
+    public function test_job_can_be_logged_without_a_name_and_named_later(): void
+    {
+        $tech = $this->staff();
+        $helper = $this->staff();
+
+        $this->actingAs($tech)->post(route('desk.store'), [
+            'job_type' => 'ac', 'customer_phone' => '955 6575',
+            'location' => 'M. Fenmeeru Villa 2B', 'title' => 'AC not cooling', 'problem_description' => 'Urgent',
+        ])->assertSessionHasNoErrors();
+
+        $job = Job::latest('id')->first();
+        $this->assertSame('Customer 9556575', $job->customer_name);
+        $this->assertSame('Customer 9556575', $job->customer->name);
+
+        $this->actingAs($helper)->get(route('desk.show', $job))->assertSee('Customer name not known yet');
+
+        $this->actingAs($helper)->post(route('desk.customer-name', $job), ['customer_name' => 'Aishath Rasha'])
+            ->assertSessionHasNoErrors();
+
+        $job = $job->fresh();
+        $this->assertSame('Aishath Rasha', $job->customer_name);
+        $this->assertSame('Aishath Rasha', $job->customer->name);
+        $this->actingAs($helper)->get(route('desk.show', $job))->assertDontSee('Customer name not known yet');
+    }
+
+    public function test_setting_a_name_never_overwrites_a_real_customer_name(): void
+    {
+        $tech = $this->staff();
+        $customer = \App\Models\Customer::create(['name' => 'Real Name', 'phone' => '7001122', 'category' => 'ac']);
+        $job = $this->makeJob(['customer_id' => $customer->id, 'customer_name' => 'Customer 7001122', 'customer_phone' => '7001122']);
+
+        $this->actingAs($tech)->post(route('desk.customer-name', $job), ['customer_name' => 'Wrong Name']);
+
+        $this->assertSame('Wrong Name', $job->fresh()->customer_name);
+        $this->assertSame('Real Name', $customer->fresh()->name);
+    }
 }

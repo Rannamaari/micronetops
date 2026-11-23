@@ -135,6 +135,16 @@
                         <div class="text-sm text-gray-600 mt-1">{{ $job->location ?: $job->address }}</div>
                     @endif
                 </div>
+                @if($nameMissing && $canContact)
+                    <form method="POST" action="{{ route('desk.customer-name', $job) }}" class="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                        @csrf
+                        <label class="block text-sm font-semibold text-amber-900 mb-1" for="customer_name_fill">{{ __('Customer name not known yet – add it when you find out') }}</label>
+                        <div class="flex gap-2">
+                            <input id="customer_name_fill" name="customer_name" required maxlength="255" class="flex-1 min-w-0 rounded-lg border-gray-300 text-base">
+                            <button class="px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold">{{ __('Save') }}</button>
+                        </div>
+                    </form>
+                @endif
                 @if($phoneDigits)
                     <div class="grid grid-cols-2 gap-2">
                         <a href="tel:{{ $phoneDigits }}" class="text-center px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold">{{ __('Call') }}</a>

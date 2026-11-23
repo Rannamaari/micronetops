@@ -103,6 +103,7 @@ class JobDeskController extends Controller
             'canWork' => $this->desk->canWork($user, $job),
             'canContact' => $this->desk->canContact($user, $job),
             'canSelfAssign' => $this->desk->canSelfAssign($user, $job),
+            'nameMissing' => Customer::isPlaceholderName($job->customer_name),
             'isAssigned' => $job->isAssignedTo($user),
             'hasAccepted' => $job->isAssignedTo($user) && $job->hasAccepted($user),
             'owesCall' => $job->owesCustomerCall(),
@@ -127,7 +128,7 @@ class JobDeskController extends Controller
 
         $validated = $request->validate([
             'job_type' => ['required', Rule::in(array_keys($types))],
-            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9\\s+()-]+$/'],
             'location' => ['required', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:100'],
@@ -146,14 +147,22 @@ class JobDeskController extends Controller
         }
 
         $job = DB::transaction(function () use ($validated, $phone, $user) {
+            $name = trim((string) ($validated['customer_name'] ?? '')) ?: Customer::placeholderName($phone);
+
             $customer = Customer::firstOrCreate(
                 ['phone' => $phone],
                 [
-                    'name' => $validated['customer_name'],
+                    'name' => $name,
                     'address' => $validated['location'],
                     'category' => $validated['job_type'] === 'ac' ? 'ac' : $validated['job_type'],
                 ]
             );
+
+            // An existing customer with only a placeholder name gets the real name now.
+            if (!$customer->wasRecentlyCreated && Customer::isPlaceholderName($customer->name)
+                && !Customer::isPlaceholderName($name)) {
+                $customer->update(['name' => $name]);
+            }
 
             $job = Job::create([
                 'job_type' => $validated['job_type'],
@@ -192,6 +201,41 @@ class JobDeskController extends Controller
         ActivityLog::record('job.created', "Job #{$job->id} logged on Job Desk by {$user->name} for '{$job->customer_name}'", $job);
 
         return redirect()->route('desk.show', $job)->with('success', __('Job #:id logged.', ['id' => $job->id]));
+    }
+
+    /**
+     * Fill in the customer's name once it is known (any staff who can see the card).
+     */
+    public function customerName(Request $request, Job $job)
+    {
+        $user = $request->user();
+        abort_unless($this->desk->canContact($user, $job), 403);
+
+        $validated = $request->validate([
+            'customer_name' => ['required', 'string', 'max:255'],
+        ]);
+        $name = trim($validated['customer_name']);
+
+        DB::transaction(function () use ($job, $user, $name) {
+            $old = $job->customer_name;
+            $job->customer_name = $name;
+            $job->save();
+
+            // Only replace a placeholder on the customer record, never a real name.
+            if ($job->customer && Customer::isPlaceholderName($job->customer->name)) {
+                $job->customer->update(['name' => $name]);
+
+                // Other jobs for the same customer still showing the placeholder get the name too.
+                Job::where('customer_id', $job->customer_id)
+                    ->where('id', '!=', $job->id)
+                    ->where('customer_name', $old)
+                    ->update(['customer_name' => $name]);
+            }
+
+            $job->addNote("Customer name set to {$name}", $user, JobNote::TYPE_SYSTEM);
+        });
+
+        return $this->backToCard($job, __('Customer name saved.'));
     }
 
     /**

@@ -109,4 +109,17 @@ class JobDeskApiTest extends TestCase
             ->assertOk();
         $this->assertSame(Job::STATUS_CANCELLED, $job->fresh()->status);
     }
+
+    public function test_api_accepts_a_job_with_phone_only(): void
+    {
+        $this->postJson('/api/jobs', [
+            'job_type' => 'ac', 'customer_phone' => '9556575', 'title' => 'AC not cooling',
+            'location' => 'M. Fenmeeru Villa 2B', 'priority' => 'urgent',
+        ], $this->headers)->assertCreated()->assertJsonPath('desk.customer_name', 'Customer 9556575');
+
+        // Name given later through the API fills the placeholder on the customer record
+        $this->postJson('/api/jobs', [
+            'job_type' => 'ac', 'customer_phone' => '9556575', 'customer_name' => 'Aishath', 'title' => 'Follow-up',
+        ], $this->headers)->assertCreated()->assertJsonPath('customer.name', 'Aishath');
+    }
 }

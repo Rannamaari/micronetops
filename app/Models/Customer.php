@@ -9,6 +9,24 @@ class Customer extends Model
 {
     use HasFactory;
 
+    /**
+     * Name used when a job is logged before we know the customer's name.
+     */
+    public static function placeholderName(?string $phone): string
+    {
+        return 'Customer ' . ($phone ?: 'unknown');
+    }
+
+    /**
+     * True for "Unknown", empty, or a "Customer <number>" placeholder.
+     */
+    public static function isPlaceholderName(?string $name): bool
+    {
+        $name = trim((string) $name);
+
+        return $name === '' || $name === 'Unknown' || (bool) preg_match('/^Customer [0-9]+$|^Customer unknown$/', $name);
+    }
+
     protected $fillable = [
         'name',
         'phone',
