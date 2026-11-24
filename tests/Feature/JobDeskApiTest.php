@@ -122,4 +122,23 @@ class JobDeskApiTest extends TestCase
             'job_type' => 'ac', 'customer_phone' => '9556575', 'customer_name' => 'Aishath', 'title' => 'Follow-up',
         ], $this->headers)->assertCreated()->assertJsonPath('customer.name', 'Aishath');
     }
+
+    public function test_fault_ticket_can_be_created_by_api_and_linked_to_a_job(): void
+    {
+        User::factory()->create(['role' => User::ROLE_ADMIN, 'name' => 'Kasun']);
+        $job = Job::create([
+            'job_type' => 'ac', 'job_category' => 'general', 'job_date' => now()->toDateString(),
+            'title' => 'AC', 'customer_name' => 'X', 'customer_phone' => '7816167',
+            'status' => Job::STATUS_SCHEDULED, 'priority' => 'urgent', 'payment_status' => 'unpaid',
+            'scheduled_at' => now()->addHour(),
+        ]);
+
+        $this->postJson('/api/faults', [
+            'business_unit' => 'cool', 'priority' => 'urgent', 'customer_name' => 'X', 'customer_phone' => '7816167',
+            'title' => 'Repeat', 'description' => 'Not cooling again', 'deadline_hours' => 24,
+            'assign_to' => 'Kasun', 'job_id' => $job->id,
+        ], $this->headers)->assertCreated()->assertJsonPath('ticket_number', 'FT-00001');
+
+        $this->assertSame(Job::CONTACT_REASON_FAULT, $job->fresh()->customerCallReason());
+    }
 }

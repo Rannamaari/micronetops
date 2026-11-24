@@ -78,6 +78,7 @@ class FaultTicketController extends Controller
                 'customer_phone' => ['required', 'string', 'max:50'],
                 'deadline_hours' => ['nullable', 'integer', 'min:1'],
                 'assign_to'      => ['nullable', 'string', 'max:255'],
+                'job_id'         => ['nullable', 'integer', 'exists:jobs,id'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
@@ -101,6 +102,9 @@ class FaultTicketController extends Controller
         $deadlineHrs = $validated['deadline_hours'] ?? 48;
 
         $ticket = FaultTicket::create([
+            // Temporary unique value; the model replaces it with FT-00000 right after insert.
+            'ticket_number'  => 'FT-TEMP-' . uniqid(),
+            'job_id'         => $validated['job_id'] ?? null,
             'business_unit'  => $validated['business_unit'],
             'priority'       => $validated['priority'] ?? 'normal',
             'status'         => 'open',
@@ -116,9 +120,11 @@ class FaultTicketController extends Controller
 
         ActivityLog::record('fault.created', "API: Fault ticket {$ticket->ticket_number} created — {$validated['title']} for {$customer->name}", $ticket, [], $actor?->id, 'api');
 
+        $ticket->refresh();
+
         return response()->json([
             'message'       => "Fault ticket {$ticket->ticket_number} created.",
-            'ticket_number' => $ticket->ticket_number,
+            'ticket_number' => $ticket->fresh()->ticket_number,
             'ticket_id'     => $ticket->id,
             'customer_id'   => $customer->id,
             'assigned_to'   => $assignee?->name ?? 'Unassigned',
@@ -163,7 +169,7 @@ class FaultTicketController extends Controller
 
         return response()->json([
             'message'       => "Ticket {$ticket->ticket_number} assigned to {$assignee->name}.",
-            'ticket_number' => $ticket->ticket_number,
+            'ticket_number' => $ticket->fresh()->ticket_number,
             'assigned_to'   => $assignee->name,
             'status'        => $ticket->status,
         ]);
@@ -233,7 +239,7 @@ class FaultTicketController extends Controller
 
         return response()->json([
             'message'       => "Ticket {$ticket->ticket_number} closed.",
-            'ticket_number' => $ticket->ticket_number,
+            'ticket_number' => $ticket->fresh()->ticket_number,
             'status'        => 'closed',
         ]);
     }
