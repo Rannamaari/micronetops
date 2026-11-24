@@ -401,20 +401,92 @@ class JobDesk
      */
     public function myJobs(User $user): Collection
     {
+        // Open work only – completed jobs live on the "Completed jobs" page.
         $jobs = self::withRelations(Job::query())
             ->assignedTo($user->id)
-            ->where(function ($q) {
-                $q->whereIn('status', Job::getActiveStatuses())
-                    ->orWhere(function ($q2) {
-                        $q2->where('status', Job::STATUS_COMPLETED)
-                            ->whereNull('invoiced_at')
-                            ->where('payment_status', '!=', 'paid');
-                    })
-                    ->orWhereNotNull('customer_contact_required_since');
-            })
+            ->whereIn('status', Job::getActiveStatuses())
             ->get();
 
         return $this->decorate($jobs);
+    }
+
+    /**
+     * Every open job (any business, anyone).
+     */
+    public function allOpenJobs(): Collection
+    {
+        return $this->decorate(
+            self::withRelations(Job::query())->whereIn('status', Job::getActiveStatuses())->get()
+        );
+    }
+
+    /**
+     * Jobs where a customer is owed a call that this user should see:
+     * their own straight away, everyone's once it reaches the team.
+     */
+    public function callJobs(User $user): Collection
+    {
+        return $this->decorate($this->candidateJobs())
+            ->filter(function (Job $job) use ($user) {
+                $call = collect($job->deskAlerts)->firstWhere('type', self::ALERT_CALL_CUSTOMER);
+
+                return $call && ($job->isAssignedTo($user) || $call['scope'] !== self::SCOPE_ASSIGNEE);
+            })
+            ->values();
+    }
+
+    /**
+     * Completed jobs, newest first.
+     */
+    public function completedJobs(int $days = 30, ?User $onlyFor = null): Collection
+    {
+        $query = Job::with('assignees')
+            ->where('status', Job::STATUS_COMPLETED)
+            ->where(function ($q) use ($days) {
+                $q->where('completed_at', '>=', now()->subDays($days))
+                    ->orWhere(fn ($q2) => $q2->whereNull('completed_at')->where('job_date', '>=', now()->subDays($days)->toDateString()));
+            })
+            ->orderByDesc('completed_at')
+            ->limit(300);
+
+        if ($onlyFor) {
+            $query->assignedTo($onlyFor->id);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Group jobs for the date view: "late", then each day ascending, then "none" (no time set).
+     *
+     * @return array<string, Collection>  keys: 'late' | 'Y-m-d' | 'none'
+     */
+    public function groupByDay(Collection $jobs, ?Carbon $now = null): array
+    {
+        $now ??= now();
+        $groups = ['late' => collect()];
+        $days = [];
+        $none = collect();
+
+        foreach ($jobs as $job) {
+            $promised = $job->promisedAt();
+            if ($promised === null) {
+                $none->push($job);
+            } elseif ($job->isOverdue($now)) {
+                $groups['late']->push($job);
+            } else {
+                $days[$promised->toDateString()][] = $job;
+            }
+        }
+
+        ksort($days);
+        foreach ($days as $day => $list) {
+            $groups[$day] = collect($list)->sortBy(fn (Job $j) => $j->promisedAt()->timestamp)->values();
+        }
+        $groups['late'] = $groups['late']->sortBy(fn (Job $j) => $j->promisedAt()->timestamp)->values();
+        $groups['none'] = $none->values();
+
+        return array_filter($groups, fn ($c) => $c->isNotEmpty());
     }
 
     /**

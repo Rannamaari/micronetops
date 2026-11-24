@@ -4,6 +4,15 @@
     $units = \App\Services\JobDesk::unitLabels();
     $promised = $job->promisedAt();
     $hasDanger = collect($job->deskAlerts)->contains('level', 'danger');
+    $timeOnly = $timeOnly ?? false;
+    // One colour per business so staff can spot their jobs at a glance.
+    $dot = match ($job->businessUnit()) {
+        'cool' => 'bg-sky-500',
+        'moto' => 'bg-orange-500',
+        'it' => 'bg-indigo-500',
+        'easyfix' => 'bg-emerald-500',
+        default => 'bg-gray-400',
+    };
 @endphp
 <a href="{{ route('desk.show', $job) }}"
    class="block bg-white rounded-lg shadow-sm border-l-4 {{ $hasDanger ? 'border-red-500' : (count($job->deskAlerts) ? 'border-amber-400' : 'border-gray-200') }} px-3 py-2 hover:bg-gray-50 active:bg-gray-100">
@@ -17,9 +26,9 @@
         </span>
     </div>
     <div class="flex items-center justify-between gap-2 text-xs text-gray-600">
-        <span class="truncate">{{ __($units[$job->businessUnit()] ?? $job->job_type) }} · {{ $job->customer_name }}@if($job->location) · {{ $job->location }}@endif</span>
+        <span class="truncate"><span class="inline-block w-2 h-2 rounded-full {{ $dot }} mr-1 align-middle"></span>{{ __($units[$job->businessUnit()] ?? $job->job_type) }} · {{ $job->customer_name }}@if($job->location) · {{ $job->location }}@endif</span>
         @if($promised)
-            <span class="flex-shrink-0 {{ $job->isOverdue() ? 'text-red-600 font-semibold' : 'text-gray-500' }}">{{ $promised->translatedFormat('D j M, g:i A') }}</span>
+            <span class="flex-shrink-0 {{ $job->isOverdue() ? 'text-red-600 font-semibold' : 'text-gray-700 font-semibold' }}">{{ $timeOnly ? $promised->translatedFormat('g:i A') : $promised->translatedFormat('D j M, g:i A') }}</span>
         @endif
     </div>
     <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600">

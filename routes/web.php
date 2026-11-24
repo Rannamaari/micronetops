@@ -121,6 +121,7 @@ Route::prefix('desk')
     ->group(function () {
         Route::get('/', [JobDeskController::class, 'index'])->name('index');
         Route::get('board', [JobDeskController::class, 'board'])->middleware('role:admin,manager')->name('board');
+        Route::get('completed', [JobDeskController::class, 'done'])->name('done');
         Route::post('locale', [JobDeskController::class, 'locale'])->name('locale');
         Route::get('jobs/new', [JobDeskController::class, 'create'])->name('create');
         Route::post('jobs', [JobDeskController::class, 'store'])->name('store');

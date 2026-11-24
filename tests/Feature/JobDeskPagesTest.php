@@ -39,20 +39,44 @@ class JobDeskPagesTest extends TestCase
         return User::factory()->create(['role' => $role]);
     }
 
-    public function test_staff_sees_their_jobs_on_my_jobs(): void
+    public function test_desk_has_my_all_and_open_tabs_grouped_by_day(): void
     {
         $tech = $this->staff();
-        $mine = $this->makeJob(['title' => 'MINE-JOB']);
+        $other = $this->staff();
+        $mine = $this->makeJob(['title' => 'MINE-JOB', 'scheduled_at' => now()->addHours(2)]);
         $mine->assignTechnicians([$tech->id]);
-        $this->makeJob(['title' => 'OTHER-JOB'])->assignTechnicians([$this->staff()->id]);
+        $this->makeJob(['title' => 'OTHER-JOB', 'scheduled_at' => now()->addDay()])->assignTechnicians([$other->id]);
+        $this->makeJob(['title' => 'OPEN-JOB', 'scheduled_at' => null, 'status' => Job::STATUS_NEW]);
+        $this->makeJob(['title' => 'DONE-JOB', 'status' => Job::STATUS_COMPLETED, 'completed_at' => now()])->assignTechnicians([$tech->id]);
 
-        $response = $this->actingAs($tech)->get(route('desk.index'))
-            ->assertOk()
-            ->assertSee('MINE-JOB')
-            ->assertSee("Team's jobs")
-            ->assertSee('OTHER-JOB');
-        // My job is listed before the team's jobs
-        $this->assertLessThan(strpos($response->getContent(), 'OTHER-JOB'), strpos($response->getContent(), 'MINE-JOB'));
+        // Default tab is "My jobs" when the person has work
+        $this->actingAs($tech)->get(route('desk.index'))->assertOk()
+            ->assertSee('MINE-JOB')->assertDontSee('OTHER-JOB')->assertDontSee('DONE-JOB')
+            ->assertSee('Today');
+
+        // All jobs: everyone's open work, grouped by day; completed jobs are not here
+        $this->actingAs($tech)->get(route('desk.index', ['show' => 'all']))->assertOk()
+            ->assertSee('MINE-JOB')->assertSee('OTHER-JOB')->assertSee('OPEN-JOB')
+            ->assertSee('Tomorrow')->assertSee('No time set')->assertDontSee('DONE-JOB');
+
+        // Open jobs: only jobs with nobody on them
+        $this->actingAs($tech)->get(route('desk.index', ['show' => 'open']))->assertOk()
+            ->assertSee('OPEN-JOB')->assertDontSee('MINE-JOB')->assertDontSee('OTHER-JOB');
+
+        // Completed jobs page
+        $this->actingAs($tech)->get(route('desk.done'))->assertOk()->assertSee('DONE-JOB')->assertDontSee('OPEN-JOB');
+        $this->actingAs($tech)->get(route('desk.done', ['show' => 'mine']))->assertOk()->assertSee('DONE-JOB');
+        $this->actingAs($other)->get(route('desk.done', ['show' => 'mine']))->assertOk()->assertDontSee('DONE-JOB');
+    }
+
+    public function test_late_jobs_are_grouped_under_late(): void
+    {
+        $tech = $this->staff();
+        $this->makeJob(['title' => 'LATE-ONE', 'scheduled_at' => now()->subHours(3)])->assignTechnicians([$tech->id]);
+
+        $html = $this->actingAs($tech)->get(route('desk.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('Late', $html);
+        $this->assertStringContainsString('LATE-ONE', $html);
     }
 
     public function test_any_staff_with_the_link_can_view_comment_and_assign_themselves(): void
@@ -84,8 +108,8 @@ class JobDeskPagesTest extends TestCase
         $motoTech = $this->staff(User::ROLE_MOTO_MECHANIC);
         $this->makeJob(['title' => 'OPEN-AC-JOB']);
 
-        $this->actingAs($acTech)->get(route('desk.index'))->assertSee('Open jobs – nobody assigned')->assertSee('OPEN-AC-JOB');
-        $this->actingAs($motoTech)->get(route('desk.index'))->assertSee('OPEN-AC-JOB');
+        $this->actingAs($acTech)->get(route('desk.index', ['show' => 'open']))->assertSee('OPEN-AC-JOB')->assertSee('Assign to me');
+        $this->actingAs($motoTech)->get(route('desk.index', ['show' => 'open']))->assertSee('OPEN-AC-JOB');
     }
 
     public function test_staff_can_log_a_new_job_without_assigning_anyone(): void

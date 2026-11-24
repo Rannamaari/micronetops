@@ -31,30 +31,45 @@ class JobDeskController extends Controller
     {
         $user = $request->user();
 
-        $myJobs = $this->desk->myJobs($user);
-        $teamJobs = $this->desk->teamJobs($user);
+        $callJobs = $this->desk->callJobs($user);
+        $allJobs = $this->desk->allOpenJobs();
+        $myJobs = $allJobs->filter(fn (Job $job) => $job->isAssignedTo($user))->values();
+        $openJobs = $allJobs->filter(fn (Job $job) => $job->assignees->isEmpty())->values();
 
-        $myCalls = $myJobs->filter(
-            fn (Job $job) => collect($job->deskAlerts)->contains('type', JobDesk::ALERT_CALL_CUSTOMER)
-        )->values();
-
-        // Unassigned jobs that already show in the call box are not repeated below.
-        $openJobs = $this->desk->openJobs($user)
-            ->reject(fn (Job $job) => $teamJobs->contains('id', $job->id))
-            ->values();
-
-        // Everyone else's jobs (not already shown in the call box above).
-        $othersJobs = $this->desk->othersJobs($user)
-            ->reject(fn (Job $job) => $teamJobs->contains('id', $job->id))
-            ->values();
+        // Three simple tabs. Start on "My jobs" when the person has work, otherwise "All jobs".
+        $tab = $request->query('show');
+        if (!in_array($tab, ['mine', 'all', 'open'], true)) {
+            $tab = $myJobs->isNotEmpty() ? 'mine' : 'all';
+        }
+        $list = match ($tab) {
+            'mine' => $myJobs,
+            'open' => $openJobs,
+            default => $allJobs,
+        };
 
         return view('desk.index', [
-            'myJobs' => $myJobs,
-            'myCalls' => $myCalls,
-            'teamJobs' => $teamJobs,
-            'openJobs' => $openJobs,
-            'othersJobs' => $othersJobs,
-            'counts' => $this->desk->counts($myJobs),
+            'callJobs' => $callJobs,
+            'tab' => $tab,
+            'tabCounts' => ['mine' => $myJobs->count(), 'all' => $allJobs->count(), 'open' => $openJobs->count()],
+            'groups' => $this->desk->groupByDay($list),
+        ]);
+    }
+
+    /**
+     * Completed jobs, grouped by the day they were finished.
+     */
+    public function done(Request $request)
+    {
+        $user = $request->user();
+        $mine = $request->query('show') === 'mine';
+        $jobs = $this->desk->completedJobs(30, $mine ? $user : null);
+
+        $groups = $jobs->groupBy(fn (Job $job) => ($job->completed_at ?? $job->job_date)?->toDateString() ?? 'unknown');
+
+        return view('desk.done', [
+            'groups' => $groups,
+            'mine' => $mine,
+            'total' => $jobs->count(),
         ]);
     }
 
