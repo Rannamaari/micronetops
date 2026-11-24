@@ -297,6 +297,11 @@
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="status" value="completed">
+                                <input type="hidden" name="send_sms" value="0">
+                                <label class="inline-flex items-center gap-2 mr-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <input type="checkbox" name="send_sms" value="1" checked class="rounded text-green-600">
+                                    Send SMS to customer
+                                </label>
                                 <button type="submit"
                                         class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 sm:py-2 bg-green-500 border border-transparent rounded-xl sm:rounded-lg font-semibold text-sm text-white hover:bg-green-600 active:bg-green-700">
                                     <svg class="w-5 h-5 mr-2 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">

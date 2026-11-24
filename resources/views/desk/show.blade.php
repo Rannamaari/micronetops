@@ -112,6 +112,18 @@
                                 @endif
                             </dd>
                         </div>
+                        <div>
+                            <dt class="text-gray-500">{{ __('Customer') }}</dt>
+                            <dd class="font-medium">
+                                @if($job->signed_off_at)
+                                    <span class="text-green-700">✓ {{ __('Customer confirmed') }} · {{ $job->signed_off_at->translatedFormat('j M, g:i A') }}</span>
+                                @elseif($job->completion_sms_sent_at)
+                                    <span class="text-gray-700">{{ __('Completed SMS sent') }}</span>
+                                @else
+                                    <span class="text-gray-500">{{ __('No SMS sent') }}</span>
+                                @endif
+                            </dd>
+                        </div>
                     @endif
                 </dl>
 
@@ -207,9 +219,14 @@
                         @endif
 
                         @if($job->isActive())
-                            <form method="POST" action="{{ route('desk.status', $job) }}">
+                            <form method="POST" action="{{ route('desk.status', $job) }}" class="col-span-2 rounded-xl border border-green-200 bg-green-50 p-2 space-y-2">
                                 @csrf
                                 <input type="hidden" name="action" value="complete">
+                                <input type="hidden" name="send_sms" value="0">
+                                <label class="flex items-center gap-3 px-1 text-sm text-gray-800">
+                                    <input type="checkbox" name="send_sms" value="1" checked class="w-5 h-5 rounded text-green-600">
+                                    <span>{{ __('Send SMS to customer') }}</span>
+                                </label>
                                 <button class="w-full px-4 py-3 rounded-xl bg-green-600 text-white font-semibold">{{ __('Work completed') }}</button>
                             </form>
                         @endif
@@ -219,6 +236,44 @@
                                 @csrf
                                 <button class="w-full px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold">{{ __('Invoice given to customer') }}</button>
                             </form>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            {{-- Optional: customer confirms with an SMS code (only when the customer is there) --}}
+            @if($canWork && $job->status === Job::STATUS_COMPLETED && !$job->signed_off_at && $signoffPhone)
+                @php $codeActive = $job->signoff_code_expires_at && $job->signoff_code_expires_at->isFuture(); @endphp
+                <div id="signoff" class="bg-white rounded-xl shadow-sm p-4" x-data="{ open: {{ $codeActive || $errors->has('code') ? 'true' : 'false' }} }">
+                    <button type="button" @click="open = !open" class="w-full flex items-center justify-between text-left">
+                        <span>
+                            <span class="font-semibold text-gray-900 block">{{ __('Confirm with customer code') }}</span>
+                            <span class="text-sm text-gray-500">{{ __('Optional. Only when the customer is with you.') }}</span>
+                        </span>
+                        <span class="text-gray-400 text-xl" x-text="open ? '−' : '+'"></span>
+                    </button>
+                    <div x-show="open" x-cloak class="mt-3 space-y-3">
+                        <ol class="text-sm text-gray-700 list-decimal pl-5 space-y-1">
+                            <li>{{ __('Press Send code. The customer gets an SMS on :phone.', ['phone' => $signoffPhone]) }}</li>
+                            <li>{{ __('Ask the customer for the 6-digit code.') }}</li>
+                            <li>{{ __('Type the code and press Confirm.') }}</li>
+                        </ol>
+                        <form method="POST" action="{{ route('desk.signoff.send', $job) }}">
+                            @csrf
+                            <button class="w-full px-4 py-3 rounded-xl {{ $codeActive ? 'bg-gray-100 text-gray-800' : 'bg-indigo-600 text-white' }} font-semibold">
+                                {{ $codeActive ? __('Send code again') : __('Send code') }}
+                            </button>
+                        </form>
+                        @if($codeActive)
+                            <form method="POST" action="{{ route('desk.signoff.verify', $job) }}" class="flex gap-2">
+                                @csrf
+                                <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------"
+                                       class="flex-1 min-w-0 rounded-xl border-gray-300 text-center text-2xl tracking-[0.4em] font-mono">
+                                <button class="px-5 py-3 rounded-xl bg-green-600 text-white font-semibold">{{ __('Confirm') }}</button>
+                            </form>
+                            @error('code')
+                                <div class="text-sm text-red-600">{{ $message }}</div>
+                            @enderror
                         @endif
                     </div>
                 </div>
@@ -381,7 +436,7 @@
                             $dot = match ($note->type) {
                                 'customer_contact' => 'bg-amber-500',
                                 'status_change' => 'bg-blue-500',
-                                'accepted', 'assignment' => 'bg-green-500',
+                                'accepted', 'assignment', 'signed_off' => 'bg-green-500',
                                 'invoiced' => 'bg-indigo-500',
                                 'fault' => 'bg-red-500',
                                 default => 'bg-gray-400',

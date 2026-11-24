@@ -327,6 +327,8 @@ class JobDesk
             'customer_phone' => $job->customer_phone,
             'promised_at' => $job->promisedAt()?->format('Y-m-d H:i'),
             'invoiced_at' => $job->invoiced_at?->format('Y-m-d H:i'),
+            'completion_sms_sent_at' => $job->completion_sms_sent_at?->format('Y-m-d H:i'),
+            'customer_signed_off_at' => $job->signed_off_at?->format('Y-m-d H:i'),
             'assignees' => $job->assignees->map(fn ($u) => [
                 'id' => $u->id,
                 'name' => $u->name,

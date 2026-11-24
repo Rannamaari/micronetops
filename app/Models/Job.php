@@ -21,6 +21,9 @@ class Job extends Model
      */
     public array $deskAlerts = [];
 
+    /** Set to false (staff unticked "Send SMS to customer") to skip the completion SMS. */
+    public bool $sendCompletionSms = true;
+
     /**
      * Check if created_at is stored as integer (Unix timestamp).
      * Cache the result to avoid repeated checks.
@@ -243,6 +246,12 @@ class Job extends Model
         'invoiced_at'       => 'datetime',
         'customer_contact_required_since' => 'datetime',
         'customer_last_contacted_at'      => 'datetime',
+        'completion_sms_sent_at'  => 'datetime',
+        'signoff_code_expires_at' => 'datetime',
+        'signoff_code_sent_at'    => 'datetime',
+        'signed_off_at'           => 'datetime',
+        'signoff_code_sends'      => 'integer',
+        'signoff_code_attempts'   => 'integer',
     ];
 
     /**
@@ -542,6 +551,20 @@ class Job extends Model
         if ($newStatus === self::STATUS_WAITING_PARTS) {
             $this->requireCustomerContact(self::CONTACT_REASON_WAITING_PARTS);
         }
+
+        // Job Desk: tell the customer the work is done (sent once per job, never blocks completion).
+        if ($newStatus === self::STATUS_COMPLETED) {
+            if ($this->sendCompletionSms) {
+                app(\App\Services\JobCustomerSms::class)->sendCompleted($this);
+            } elseif ($this->completion_sms_sent_at === null) {
+                $this->addNote('Completion SMS not sent (unticked)', $user, JobNote::TYPE_SYSTEM);
+            }
+        }
+    }
+
+    public function isSignedOff(): bool
+    {
+        return $this->signed_off_at !== null;
     }
 
     /**

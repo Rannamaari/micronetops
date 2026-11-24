@@ -52,6 +52,9 @@
                                 @else
                                     <span class="text-amber-700 font-semibold">{{ __('Invoice not given') }}</span>
                                 @endif
+                                @if($job->signed_off_at)
+                                    <div class="text-green-700 font-semibold">✓ {{ __('Customer confirmed') }}</div>
+                                @endif
                                 @if($job->completed_at)
                                     <div class="text-gray-500">{{ $job->completed_at->translatedFormat('g:i A') }}</div>
                                 @endif

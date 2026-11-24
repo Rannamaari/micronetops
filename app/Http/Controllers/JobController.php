@@ -645,6 +645,7 @@ class JobController extends Controller
             return back()->with('error', $message);
         }
 
+        $job->sendCompletionSms = $request->boolean('send_sms', true);
         $job->updateStatus($validated['status'], auth()->user(), $validated['notes'] ?? null);
 
         $statusLabels = Job::getStatuses();

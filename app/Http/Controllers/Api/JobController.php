@@ -573,6 +573,7 @@ class JobController extends Controller
             $validated = $request->validate([
                 'status' => ['required', Rule::in(array_keys(Job::getStatuses()))],
                 'notes' => ['nullable', 'string', 'max:2000'],
+                'send_sms' => ['nullable', 'boolean'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'Validation failed.', 'details' => $e->errors()], 422);
@@ -590,6 +591,7 @@ class JobController extends Controller
         }
         Auth::setUser($actor);
 
+        $job->sendCompletionSms = $request->boolean('send_sms', true);
         $job->updateStatus($validated['status'], $actor, $validated['notes'] ?? null);
 
         return response()->json([

@@ -8,6 +8,7 @@ use App\Models\FaultTicket;
 use App\Models\Job;
 use App\Models\JobNote;
 use App\Models\User;
+use App\Services\JobCustomerSms;
 use App\Services\JobDesk;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -122,6 +123,7 @@ class JobDeskController extends Controller
             'alerts' => $alerts,
             'faults' => $faults,
             'canWork' => $this->desk->canWork($user, $job),
+            'signoffPhone' => ($phone = JobCustomerSms::normalizePhone($job->customer_phone)) ? substr($phone, 3) : null,
             'canContact' => $this->desk->canContact($user, $job),
             'canSelfAssign' => $this->desk->canSelfAssign($user, $job),
             'nameMissing' => Customer::isPlaceholderName($job->customer_name),
@@ -349,6 +351,7 @@ class JobDeskController extends Controller
             return $this->backToCard($job, null, __('This action is not available for this job.'));
         }
 
+        $job->sendCompletionSms = $request->boolean('send_sms', true);
         $job->updateStatus($to, $user);
 
         ActivityLog::record('job.status_updated', "Job #{$job->id} status → {$to} (Job Desk)", $job);
@@ -511,6 +514,62 @@ class JobDeskController extends Controller
         $request->user()->forceFill(['locale' => $validated['locale']])->save();
 
         return back();
+    }
+
+    /**
+     * Optional sign-off: send the customer a 6-digit code by SMS.
+     */
+    public function signoffSend(Request $request, Job $job, JobCustomerSms $sms)
+    {
+        abort_unless($this->desk->canWork($request->user(), $job), 403);
+
+        if ($job->status !== Job::STATUS_COMPLETED) {
+            return $this->backToCard($job, null, __('Complete the job first.'));
+        }
+        if ($job->signed_off_at) {
+            return $this->backToCard($job, __('Customer already confirmed.'));
+        }
+
+        $result = $sms->sendCode($job, $request->user());
+        if ($result['ok']) {
+            return redirect()->to(route('desk.show', $job) . '#signoff')
+                ->with('success', __('Code sent. Ask the customer for the code.'));
+        }
+
+        $error = match ($result['error'] ?? '') {
+            'no_phone' => __('This job has no valid customer phone number.'),
+            'too_many_sends' => __('Code already sent 3 times. Ask the customer to check their SMS.'),
+            'wait' => __('Wait one minute before sending again.'),
+            default => __('SMS could not be sent. Try again later.'),
+        };
+
+        return redirect()->to(route('desk.show', $job) . '#signoff')->with('error', $error);
+    }
+
+    /**
+     * Optional sign-off: check the code the customer reads out.
+     */
+    public function signoffVerify(Request $request, Job $job, JobCustomerSms $sms)
+    {
+        abort_unless($this->desk->canWork($request->user(), $job), 403);
+
+        $request->validate(['code' => ['required', 'string', 'max:10']], [
+            'code.required' => __('Type the code from the customer.'),
+        ]);
+
+        $result = $sms->verifyCode($job, (string) $request->input('code'), $request->user());
+        if ($result['ok']) {
+            return $this->backToCard($job, __('Customer confirmed. Thank you!'));
+        }
+
+        $message = match ($result['error'] ?? '') {
+            'wrong' => __('Wrong code. Check with the customer and try again.'),
+            'expired', 'no_code' => __('The code has expired. Press Send code again.'),
+            'too_many_attempts' => __('Too many wrong codes. Press Send code again.'),
+            default => __('Could not confirm. Try again.'),
+        };
+
+        return redirect()->to(route('desk.show', $job) . '#signoff')->withErrors(['code' => $message]);
     }
 
     private function backToCard(Job $job, ?string $success = null, ?string $error = null)

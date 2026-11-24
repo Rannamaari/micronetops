@@ -30,6 +30,7 @@ class JobNote extends Model
     public const TYPE_ACCEPTED = 'accepted';
     public const TYPE_INVOICED = 'invoiced';
     public const TYPE_FAULT = 'fault';
+    public const TYPE_SIGNED_OFF = 'signed_off';
 
     public function job()
     {
@@ -54,6 +55,7 @@ class JobNote extends Model
             self::TYPE_ACCEPTED => 'check',
             self::TYPE_INVOICED => 'document-text',
             self::TYPE_FAULT => 'exclamation-triangle',
+            self::TYPE_SIGNED_OFF => 'check-badge',
             default => 'chat-bubble-left',
         };
     }
@@ -71,6 +73,7 @@ class JobNote extends Model
             self::TYPE_ACCEPTED => 'green',
             self::TYPE_INVOICED => 'blue',
             self::TYPE_FAULT => 'red',
+            self::TYPE_SIGNED_OFF => 'green',
             default => 'indigo',
         };
     }

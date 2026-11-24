@@ -26,6 +26,12 @@ return [
     'call_team_minutes' => (int) env('JOB_DESK_CALL_TEAM_MINUTES', 30),
     'call_admin_minutes' => (int) env('JOB_DESK_CALL_ADMIN_MINUTES', 60),
 
+    // Automatic "job completed" SMS to the customer when staff press Work completed
+    'completion_sms' => (bool) env('JOB_DESK_COMPLETION_SMS', true),
+
+    // Number customers are told to call if anything is not right
+    'customer_contact_phone' => env('JOB_DESK_CUSTOMER_PHONE', '7379493'),
+
     // Languages offered in the toggle
     'locales' => [
         'en' => 'English',
